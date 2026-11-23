@@ -56,6 +56,13 @@ import Testing
         #expect(try Self.uses(/(?:systemImage|systemName):\s*"exclamationmark\.(?:triangle|octagon)/) == [])
     }
 
+    /// The owner, 2026-11-23: every "update Sukrara" message on the Mac looks like one card, the Android card's
+    /// equivalent: an *Update…* button or the update symbol is the shared `UpdateNotice`'s, never drawn by hand.
+    @Test func updateMessagesAreUpdateNotices() throws {
+        #expect(try Self.uses(/Button\(\s*L10n\.t\("Update…"\)/) == [])
+        #expect(try Self.uses(/"clock\.arrow\.circlepath"/) == [])
+    }
+
     @Test func aStepStaysOnTheGridAndInRange() {
         func step(_ t: String, _ by: Double, _ r: ClosedRange<Double>, _ d: Int = 0) -> String {
             NumberField<Bool>.stepped(t, by: by, in: r, decimals: d)

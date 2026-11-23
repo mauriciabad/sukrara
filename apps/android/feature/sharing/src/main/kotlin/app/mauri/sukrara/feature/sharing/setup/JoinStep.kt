@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,11 +34,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
-import app.mauri.sukrara.designsystem.banner.NoticeAction
 import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.banner.NoticeTone
+import app.mauri.sukrara.designsystem.banner.UpdateNotice
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.icons.Service
+import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.feature.sharing.ConfirmWhenAllowed
 import app.mauri.sukrara.feature.sharing.MatchCodeLine
 import app.mauri.sukrara.feature.sharing.PairingCodeCard
@@ -155,7 +157,11 @@ internal fun ColumnScope.JoinStep(
         },
     )
     NameField(name, { name = it }, enabled = !busy)
-    (u.join as? JoinUi.Failed)?.let { JoinFailed(it.result, actions.updateSukrara) }
+    // why it didn't open comes and goes with the shared reveal (it keeps its words while it leaves)
+    val failed = (u.join as? JoinUi.Failed)?.result
+    var lastFailed by remember { mutableStateOf(failed) }
+    if (failed != null) lastFailed = failed
+    Reveal(failed != null) { lastFailed?.let { JoinFailed(it, actions.updateSukrara) } }
     if (busy) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -233,8 +239,8 @@ private fun ColumnScope.InviteConfirm(
 private val WAITING = setOf(FollowStatus.New, FollowStatus.Requested, FollowStatus.Active)
 
 /**
- * Why the invite didn't open. Another version (docs/48) in the update notice's pattern: the title names the app to
- * update, the text what then; *Update* only when it is this one.
+ * Why the invite didn't open. Another version (docs/48) is the app's update notice ([UpdateNotice]): the title names
+ * the app to update, the text what then; *Update* only when it is this one.
  */
 @Composable
 private fun JoinFailed(
@@ -243,21 +249,14 @@ private fun JoinFailed(
 ) {
     when (r) {
         JoinResult.UpdateToJoin -> {
-            NoticeCard(
-                stringResource(R.string.sh_join_update_text),
-                title = stringResource(DsR.string.ds_update_sukrara),
-                tone = NoticeTone.Warning,
-                icon = DsR.drawable.ds_ic_update,
-                action = NoticeAction(stringResource(DsR.string.ds_update), onUpdate),
-            )
+            UpdateNotice(stringResource(DsR.string.ds_update_sukrara), stringResource(R.string.sh_join_update_text), onUpdate)
         }
 
         JoinResult.InviterUpdates -> {
-            NoticeCard(
+            UpdateNotice(
+                stringResource(R.string.sh_join_inviter_update_title),
                 stringResource(R.string.sh_join_inviter_update_text),
-                title = stringResource(R.string.sh_join_inviter_update_title),
-                tone = NoticeTone.Warning,
-                icon = DsR.drawable.ds_ic_update,
+                onUpdate = null,
             )
         }
 

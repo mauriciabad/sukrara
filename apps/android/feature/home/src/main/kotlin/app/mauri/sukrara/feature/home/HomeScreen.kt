@@ -105,7 +105,9 @@ import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.banner.Banner
 import app.mauri.sukrara.designsystem.banner.BannerChoice
 import app.mauri.sukrara.designsystem.banner.BannerSlot
+import app.mauri.sukrara.designsystem.banner.NoticeDefaults
 import app.mauri.sukrara.designsystem.banner.NoticeTone
+import app.mauri.sukrara.designsystem.banner.UpdateNotice
 import app.mauri.sukrara.designsystem.banner.sharingUpdateBanner
 import app.mauri.sukrara.designsystem.banner.updateBanner
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
@@ -882,7 +884,9 @@ private fun ReasonPage(
 
 /**
  * The reason under the card: title, one explanation, the action. No icon: the card above already draws
- * `sensors_off`, the warm-up ring or the flag. Appears / leaves with the shared reveal motion; announced politely.
+ * `sensors_off`, the warm-up ring or the flag. The one exception is another version ([NoDataReason.UpdateToFollow]):
+ * the app's update notice ([UpdateNotice], the card the Garmin page, home's banner and the join step show), since the
+ * card above keeps showing a value. Appears / leaves with the shared reveal motion; announced politely.
  */
 @Composable
 private fun ReasonRow(
@@ -896,6 +900,15 @@ private fun ReasonRow(
     Reveal(reason != null) {
         val r = shown ?: return@Reveal
         val text = reasonText(r, now)
+        if (r is NoDataReason.UpdateToFollow) {
+            UpdateNotice(
+                text.first,
+                text.second,
+                r.action?.let { action -> { onAction(action) } },
+                Modifier.padding(NoticeDefaults.PageMargins).testTag(UPDATE_NOTICE_TAG),
+            )
+            return@Reveal
+        }
         Column(
             Modifier
                 .fillMaxWidth()
@@ -926,6 +939,9 @@ private fun ReasonRow(
         }
     }
 }
+
+/** The follower's update notice under the card (tests find it by this tag). */
+internal const val UPDATE_NOTICE_TAG = "home-update-notice"
 
 /** Title and explanation for [reason]. */
 @Composable

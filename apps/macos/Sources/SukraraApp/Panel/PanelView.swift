@@ -21,6 +21,7 @@ struct PanelView: View {
     let scroll: ChartScroll
     /// Mute all's Custom… field is open: Return belongs to it, not to Add Treatment….
     @State private var customMute = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(model: AppModel, links: PanelLinks? = nil, scroll: ChartScroll = ChartScroll()) {
         self.model = model
@@ -44,15 +45,12 @@ struct PanelView: View {
                 // the Keychain retrying: the alerts go on over the last readings, so they stay on screen under its line
                 let retrying = model.alertingOnLastData
                 let block = reason.map { reason in
-                    ReasonBlock(
+                    ReasonView(
+                        reason: reason,
                         text: NoDataText.of(
                             reason, now: context.date.timeIntervalSince1970, lastData: retrying, wearer: model.linkName),
                         act: links.flatMap { reasonAction(reason.action, $0) },
-                        symbol: reason.action == .follow
-                            ? "person.badge.plus" : reason.action == .update ? "arrow.down.circle" : "gearshape",
-                        icon: retrying
-                            ? "arrow.triangle.2.circlepath"
-                            : reason.isMaintenance ? "clock" : GlucoseCard.noReadingsSymbol)
+                        retrying: retrying)
                 }
                 if retrying, let block { block }
                 if model.notMonitoringReason == nil || retrying {
@@ -91,6 +89,10 @@ struct PanelView: View {
             }
             .padding(14)
             .frame(width: Self.cardSize.width + 28, alignment: .leading)
+            // the update notice comes and goes with its own motion (the reason it shows changes in place)
+            .animation(
+                reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35),
+                value: model.noDataReason?.isUpdate == true)
         }
     }
 
@@ -407,6 +409,41 @@ struct PanelLinks {
     let openSettingsPane: (SettingsModel.Pane) -> Void
     /// THE VERSION RULE's *Update…*: Sparkle's check (the GitHub version) or Sukrara's App Store page.
     var updateSukrara: () -> Void = {}
+}
+
+/// A no-data reason in the panel: another version is the app's update notice (`UpdateNotice`, the Follow window's
+/// too), every other reason a `ReasonBlock`.
+private struct ReasonView: View {
+    let reason: NoDataReason
+    let text: NoDataText
+    var act: (() -> Void)?
+    /// The Keychain retrying (the circling arrows).
+    var retrying = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if reason.isUpdate {
+            UpdateNotice(title: text.title, text: text.body ?? "", update: text.action == nil ? nil : act)
+                // as wide as the card's module above it (6 pt into the panel's margin)
+                .padding(.horizontal, -6)
+                .transition(UpdateNotice.transition(reduceMotion: reduceMotion))
+        } else {
+            ReasonBlock(
+                text: text, act: act,
+                symbol: reason.action == .follow ? "person.badge.plus" : "gearshape",
+                icon: retrying
+                    ? "arrow.triangle.2.circlepath"
+                    : reason.isMaintenance ? "clock" : GlucoseCard.noReadingsSymbol)
+        }
+    }
+}
+
+extension NoDataReason {
+    /// Another version (THE VERSION RULE): shown as the update notice.
+    fileprivate var isUpdate: Bool {
+        if case .updateToFollow = self { return true }
+        return false
+    }
 }
 
 /// Why there's no value and what to do about it (#72; Android's no-data reasons): the reason in a line with the "no

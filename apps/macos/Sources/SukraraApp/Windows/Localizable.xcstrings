@@ -17,22 +17,6 @@
         }
       }
     },
-    "Has a newer Sukrara" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Has a newer Sukrara"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tiene un Sukrara más nuevo"
-          }
-        }
-      }
-    },
     "Needs to update Sukrara" : {
       "localizations" : {
         "en" : {

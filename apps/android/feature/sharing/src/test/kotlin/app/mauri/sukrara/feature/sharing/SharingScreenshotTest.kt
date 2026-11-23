@@ -730,6 +730,58 @@ class SharingScreenshotTest {
     }
 }
 
+/**
+ * Every update notice of these pages (docs/48 "When versions differ"): light + dark × default + largest font, and
+ * Spanish. A review gallery into build/outputs/roborazzi (written only with roborazzi.test.record), never compared.
+ */
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [36], qualifiers = "w411dp-h891dp-xxhdpi")
+class SharingUpdateGallery {
+    @Test fun english() = gallery("", dark = listOf(false, true))
+
+    @Test
+    @Config(qualifiers = "es")
+    fun spanish() = gallery("es-", dark = listOf(false))
+
+    private fun gallery(
+        prefix: String,
+        dark: List<Boolean>,
+    ) {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+        val update =
+            setOf(
+                "followers-update",
+                "setup-join-update",
+                "setup-join-inviter-update",
+                "setup-garmin-update",
+                "nearby-pair-update",
+                "followers-update-joining",
+            )
+        // Find phones nearby's offers (setup-join-find-nearby-update) never go idle (the search spinner): the
+        // screenshot test's own pictures cover them
+        val scenes = SharingScreenshotTest().scenes().filter { it.first in update }
+        for (d in dark) {
+            for (largest in listOf(false, true)) {
+                val options =
+                    RoborazziComposeOptions {
+                        size(widthDp = 411, heightDp = 891)
+                        uiMode(if (d) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO)
+                        fontScale(if (largest) 2f else 1f)
+                    }
+                for ((name, content) in scenes) {
+                    val suffix = (if (d) "-dark" else "-light") + if (largest) "-largest" else ""
+                    captureRoboImage("build/outputs/roborazzi/$prefix$name$suffix.png", roborazziComposeOptions = options) {
+                        SukraraTheme(dark = d, dynamic = false) {
+                            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) { content() }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** The join step's QR scanner when the camera can't be used (each with its way out); the live preview needs a camera. */
 @Composable
 private fun ScanScene(state: ScanState) {

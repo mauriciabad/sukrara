@@ -314,6 +314,25 @@ A change that must move one of these is a new format beside the old one, not a v
   no notification. The older follower needs nothing new: it gets the newer wearer's events and says *Update Sukrara*
   already; over Bluetooth the HELLO's and INFO's `v` cover the same.
 
+- **One update notice per app** (the owner, 2026-11-23: "nice i like how they look on android now. on mac … it is
+  ugly. make sure prev images on android also use the card"). Android: every message is the designsystem's card,
+  `updateBanner` in a page's banner place (Garmin page, home, setup's Garmin step, the followers page, *Find phones
+  nearby*, the *Pair nearby* page) and
+  `UpdateNotice` in place (the follower's no-data reason under the card, which was plain text and a tonal button; the
+  join step's two failures): the update icon in the error colour (Warning tone), the title, the line, *Update* as the
+  card's text button at the bottom end, none when another person updates. Mac: `UpdateNotice` (Controls.swift) in the
+  panel (in the reason's place, under the glucose) and the Follow window (an invite, a nearby offer), which drew a
+  warning triangle or the
+  no-readings symbol with a bare button under it: a card on the panel card's own module (white 50 % / black 18 %,
+  12 pt corners, an outline with Increase Contrast), `clock.arrow.circlepath` in orange (the Mac's warning colour)
+  on the title's baseline, the title in headline, the line in secondary, **Update…** at the trailing edge where a
+  macOS dialog's action sits. Both grow in from their top and fade (reduced motion: the fade alone). No haptic: the
+  notice comes by itself, not under a finger (Android's haptics confirm a gesture, the Mac's a trackpad drag).
+  `ControlsTests.updateMessagesAreUpdateNotices` keeps the Mac's *Update…* and symbol in the one view. The Mac's
+  nearby offer of a newer version is the notice alone (its words say who is newer, so the *Has a newer Sukrara* line
+  went) with *Not now* beside *Update…* (the notice's optional quieter action), instead of a line, a notice and a
+  button stacked.
+
 ### Draft: States and exits (for FEATURES.md when built)
 
 **States and exits**: *versions match* → nothing shown. *A device can't read the other's format* → the device in view

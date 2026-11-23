@@ -31,11 +31,12 @@ struct FollowStep: View {
             }
             if let failure = follow.failure {
                 if let update = failure.update {
-                    Notice(title: update.title, text: update.text, tone: .warning) {
-                        if failure == .updateToJoin {
-                            Button(L10n.t("Update…")) { follow.updateSukrara() }
-                        }
-                    }
+                    // another version: the app's update notice (the panel's), *Update…* only when this Mac updates
+                    UpdateNotice(
+                        title: update.title, text: update.text,
+                        update: failure == .updateToJoin ? { follow.updateSukrara() } : nil
+                    )
+                    .transition(UpdateNotice.transition(reduceMotion: reduceMotion))
                 } else {
                     Notice(failure.message, tone: .error)
                 }
@@ -44,6 +45,7 @@ struct FollowStep: View {
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.invite)
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.scanner == nil)
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.status)
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.failure)
         .onChange(of: follow.status) { before, now in
             // Allow arrived while the step shows: a trackpad tap with the card
             if case .waiting = before, case .following = now {
@@ -179,7 +181,7 @@ struct MacNameField: View {
 
 /// A phone nearby offers pairing: its avatar, this Mac's name (editable), "Ask to follow" / "Not now". Asking
 /// moves on to `PairingCodeView`. An offer of another version (docs/48) says who updates instead, as the wearer's
-/// followers do: "Has a newer Sukrara" with "Update…", or "Needs to update Sukrara".
+/// followers do: the update notice with "Not now" and "Update…", or "Needs to update Sukrara".
 struct NearbyPairingDialog: View {
     @Bindable var follow: FollowModel
     let phone: NearbyPhone
@@ -198,15 +200,13 @@ struct NearbyPairingDialog: View {
                             Button(L10n.t("Not now")) { follow.nearby = nil }
                         }
                     case .thisApp?:
-                        Text(L10n.t("Has a newer Sukrara"))
-                        // the update notice, as for an invite of a newer version
-                        Notice(
+                        // the app's update notice, as for an invite of a newer version: its words say who is newer
+                        // (no "Has a newer Sukrara" over it), Not now beside Update…
+                        UpdateNotice(
                             title: L10n.t("Update Sukrara"),
-                            text: L10n.t("Until then, this Mac can't pair with \(phone.wearer)."), tone: .warning
-                        ) {
-                            Button(L10n.t("Update…")) { follow.updateSukrara() }
-                        }
-                        Button(L10n.t("Not now")) { follow.nearby = nil }
+                            text: L10n.t("Until then, this Mac can't pair with \(phone.wearer)."),
+                            update: { follow.updateSukrara() },
+                            secondary: (L10n.t("Not now"), { follow.nearby = nil }))
                     case .wearer?:
                         Text(L10n.t("Needs to update Sukrara"))
                         Button(L10n.t("Not now")) { follow.nearby = nil }

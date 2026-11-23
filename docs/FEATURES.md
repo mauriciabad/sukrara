@@ -3148,10 +3148,17 @@ each reads only the current version, but every mismatch is detected and **the de
   "Their Sukrara is older than this one. Open the invite again once they update it." Nothing is saved or sent.
 - **Nearby pairing** (Android's *Find phones nearby*, the Mac's Follow): a phone offering *Pair nearby* whose Bluetooth
   INFO is of another version (its frozen `v`) is listed by name and says who updates instead of *Ask to follow*: *Has a
-  newer Sukrara* (then the notice *Update Sukrara* · "Until then, this phone can't pair with Ana." + **Update**) or
-  *Needs to update Sukrara*; it can't be joined. When the wearer's is the older one, the follower sends the version
+  newer Sukrara* (then the notice *Update Sukrara* · "Until then, this phone can't pair with Ana." + **Update**; the
+  Mac shows the notice alone in the offer, *Not now* beside **Update…**) or *Needs to update Sukrara*; it can't be
+  joined. When the wearer's is the older one, the follower sends the version
   notice (from a one-time key), so the wearer's *Pair nearby* page, Settings › Sharing and home say *Update Sukrara* ·
   "Until then, someone with a newer Sukrara can't follow you."
+- **One look everywhere**: every one of these messages is the same card. Android: the designsystem's update notice
+  (`updateBanner` in a page's banner place, `UpdateNotice` in place: the follower's reason under the card, the join
+  step), the update icon in the warning colour, the title, the line, **Update** at the bottom end. Mac: `UpdateNotice`
+  (the panel under the glucose, the Follow window and its nearby offer), a card on the panel card's module with the update symbol in
+  orange, the title, the line and **Update…** at its trailing edge. Without a button when another person updates. It
+  grows in and fades out (reduced motion: a fade); TalkBack / VoiceOver read title and line, then the button.
 
 **States and exits**: *versions match* → nothing shown. *A follower reads another version* → the no-data reason
 (Android home, the Mac's panel, widgets) names the app to update; *Update* opens this copy's update (this one older),

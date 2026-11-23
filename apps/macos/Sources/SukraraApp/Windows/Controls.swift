@@ -235,3 +235,59 @@ extension Notice {
         self.init(title: title, text: text, tone: tone, actions: actions)
     }
 }
+
+/// THE update notice of the Mac (docs/48 "When versions differ"; Android's `updateBanner` / `UpdateNotice`): another
+/// Sukrara speaks another version. One card wherever it shows (the panel under the glucose, the Follow window), one step
+/// off what is behind it (the panel card's module: 12 pt corners, an outline with Increase Contrast): the update symbol
+/// in the warning colour beside the title that names the app to update, the text that says what happens until then,
+/// and one *Update…* at the trailing edge, where a dialog's action sits (`update` nil: another person updates, nothing
+/// to press; it ends by itself). VoiceOver reads the title and text as one element, then the button. It appears and
+/// leaves with `UpdateNotice.transition`; no haptic (the Mac's are for what a finger moves on the trackpad).
+struct UpdateNotice: View {
+    let title: String
+    let text: String
+    var update: (() -> Void)?
+    /// A quieter way out before *Update…* where the notice stands for a whole choice (a nearby offer's *Not now*).
+    var secondary: (label: String, action: () -> Void)?
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Image(systemName: Self.symbol)
+                    .imageScale(.large)
+                    .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.headline)
+                    Text(text)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+            if update != nil || secondary != nil {
+                HStack {
+                    Spacer(minLength: 0)
+                    if let secondary { Button(secondary.label, action: secondary.action) }
+                    if let update { Button(L10n.t("Update…"), action: update) }
+                }
+            }
+        }
+        .padding(12)
+        .background { PanelView.module(scheme: scheme, increased: contrast == .increased) }
+        .accessibilityElement(children: .contain)
+    }
+
+    /// The update symbol (Android's `ds_ic_update`: a clock with an arrow around it).
+    static let symbol = "clock.arrow.circlepath"
+
+    /// In and out: it grows from its top edge as it fades in (reduced motion: the fade alone).
+    static func transition(reduceMotion: Bool) -> AnyTransition {
+        reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
+    }
+}
