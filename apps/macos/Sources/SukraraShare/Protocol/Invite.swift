@@ -74,7 +74,7 @@ public struct InviteOpener: Sendable {
         guard wrap.kind == Wire.kindWrap, crypto.verify(wrap),
             let rumor = try? crypto.unwrap(wrap, with: link.inviteKey), rumor.kind == Wire.kindInvite,
             let body = try? JSONObject(json: rumor.content), body.string("type") == "invite",
-            (try? body.int("v")) == 3, let expiry = try? body.int("x")
+            (try? body.int("v")) == Wire.inviteVersion, let expiry = try? body.int("x")
         else { return .failure(.notAnInvite) }
         guard rumor.sender.hasPrefix(link.fingerprint) else { return .failure(.fingerprintMismatch) }
         guard expiry > now else { return .failure(.expired) }

@@ -1,0 +1,86 @@
+{
+  "about": "THE shared formats (docs/48 'Shared formats'): everything two Sukrara apps exchange, its current version, its spec, the apps that speak it (ids of docs/48's app table, contracts/apps/apps.json) and what never moves in it ('frozen'). Until 1.0.0 every app reads only the current version ('reads': 'current'; the avatar is the one exception, 'every': an app keeps every renderer it shipped and draws the fallback for a newer one). A change an older app would misread raises 'version', lands in every app of 'apps' and releases them all (tools/release); a change that must move a frozen part is a new format beside the old one, not a version. An app that meets another version names the app to update (the smaller version: docs/48 'When versions differ'). Bound by each app's tests: Android FormatsTest (:core:protocol, the sharing formats) and GarminAppsTest (:integrations, the watch payload), Mac FormatsTests (ShareTests), the Garmin apps' apps/garmin/tools/link_cases.py --check.",
+  "formats": [
+    {
+      "format": "sharing",
+      "name": "Sharing: relays and Bluetooth",
+      "version": 2,
+      "spec": "contracts/protocol/PROTOCOL-v2.md",
+      "apps": ["android", "mac"],
+      "reads": "current",
+      "carries": "live readings, hour chunks, settings, roster, owner backup, alerts, the 30500 / 30501 rumors (request, profile, rekey, history, leave, key, revoked, invite-used, declined, pair), Bluetooth's HELLO / INFO and backlog",
+      "frozen": {
+        "kinds": [21078, 21079, 30078, 1059, 30500, 30501],
+        "tag": "gk",
+        "content": ["v"],
+        "hello": ["v"]
+      }
+    },
+    {
+      "format": "treatment",
+      "name": "Treatments",
+      "version": 1,
+      "spec": "contracts/treatments/SPEC.md",
+      "apps": ["android", "mac"],
+      "reads": "current",
+      "carries": "the treatment events (kind 30078, PROTOCOL-v2 'Treatments') of the wearer's log and of each writer",
+      "frozen": {
+        "content": ["v", "id"]
+      }
+    },
+    {
+      "format": "invite",
+      "name": "Invite",
+      "version": 3,
+      "spec": "contracts/protocol/PROTOCOL-identity.md",
+      "apps": ["android", "mac"],
+      "reads": "current",
+      "carries": "the invite link and the invite rumor (kind 30502) it unlocks: expiry, relays, the wearer's profile",
+      "frozen": {
+        "link": "https://sukrara.mauri.app/join#",
+        "length": 63,
+        "kind": 30502,
+        "content": ["v"]
+      }
+    },
+    {
+      "format": "avatar",
+      "name": "Avatar",
+      "version": 1,
+      "spec": "contracts/protocol/PROTOCOL-identity.md",
+      "apps": ["android", "mac"],
+      "reads": "every",
+      "carries": "the numbers that draw a person's picture, inside every profile",
+      "frozen": {
+        "content": ["v"]
+      }
+    },
+    {
+      "format": "watch-payload",
+      "name": "Watch payload and the watch's writes",
+      "version": 5,
+      "spec": "contracts/watchface/payload/README.md",
+      "apps": ["android", "aura", "garmin-app", "garmin-field", "face-sdk"],
+      "reads": "current",
+      "carries": "the payload every profile gets (push and fetch), the fetch's report, the entries, undo and mute writes and their answers",
+      "frozen": {
+        "payload": {
+          "v": "integer",
+          "p": "string",
+          "sent": "integer",
+          "unit": "string",
+          "bands": "array",
+          "g": "object|null",
+          "g.t": "integer",
+          "g.v": "integer"
+        },
+        "port": 17582,
+        "paths": ["sukrara/face", "sukrara/app", "sukrara/field", "sukrara/entries", "sukrara/undo", "sukrara/mute"],
+        "query": "v",
+        "write": "v",
+        "answer": {"r": "v", "v": "integer"},
+        "unversioned": 5
+      }
+    }
+  ]
+}

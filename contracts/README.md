@@ -21,6 +21,7 @@ directory. Mac tests resolve `Contracts.url(…)` (env `SUKRARA_CONTRACTS`, else
 | Path | What | Read by |
 |---|---|---|
 | `apps/apps.json` | THE registry of Sukrara's apps, one per store listing: each one's version source, tag prefix, CHANGELOG, paths and channels (docs/48) | `tools/release/release.py`, `versions.py`, `test_release.py`; `tools/check` (check `changes`) |
+| `apps/formats.json` | THE shared formats (docs/48): everything two Sukrara apps exchange (sharing, treatments, invite, avatar, the watch payload and its writes), its version, its spec, the apps that speak it and what never moves in it | `FormatsTest` (Android `:core:protocol`), `GarminAppsTest` (Android `:integrations`), `FormatsTests` (Mac `ShareTests`), `apps/garmin/tools/link_cases.py --check`; the release check |
 | `alerts/SPEC.md` | the alert rules: kinds, thresholds, repeats, mutes, episodes, the alert settings JSON (§3) | `:core:alerts`, `SukraraAlerts` |
 | `alerts/scenarios/*.txt` | timeline scenarios: event sequences → expected alerts | `AlertScenarioTest` (Android), `AlertsTests` (Mac) |
 | `alerts/copy.json` | alert texts (titles, mute pill, actions) every platform must show | every alert notifier + tests |

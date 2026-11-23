@@ -305,6 +305,12 @@ class WatchWrites(
         const val MUTE = "sukrara/mute"
         const val UNDO = "sukrara/undo"
 
+        /**
+         * The version of a fetch or a write without `v` (contracts/apps/formats.json `unversioned`): the watch builds of
+         * payload version 5 from before the watch said its version.
+         */
+        const val UNVERSIONED = 5
+
         /** The send time may be this far from the phone's clock (s). */
         const val CLOCK_S = 300L
 

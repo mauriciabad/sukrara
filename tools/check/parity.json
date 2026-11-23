@@ -136,6 +136,18 @@
       }
     },
     {
+      "name": "formats",
+      "level": "warn",
+      "trigger": ["registry"],
+      "why": "THE shared formats (contracts/apps/formats.json): a version or frozen part changed there lands in every app that speaks it (FormatsTest, GarminAppsTest, FormatsTests, link_cases.py --check hold the constants to it)",
+      "sides": {
+        "registry": ["contracts/apps/formats.json"],
+        "android": ["apps/android/core/protocol/src/main/kotlin/app/mauri/sukrara/protocol/Wire.kt", "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/WatchPayload.kt"],
+        "mac": ["apps/macos/Sources/SukraraShare/Protocol/Wire.swift"],
+        "garmin": ["apps/garmin/sdk/source/read/SukraraFace.mc"]
+      }
+    },
+    {
       "name": "watchface-link",
       "level": "fail",
       "trigger": ["fixtures"],

@@ -21,6 +21,8 @@ public enum Wire {
     /// Version inside every v2 content body (treatments carry their own `v`: 1).
     public static let version = 2
     public static let treatmentVersion = 1
+    /// The invite rumor's `v` (PROTOCOL-identity "Short invites").
+    public static let inviteVersion = 3
 
     // Gift-wrap TTLs (absolute expiration = now + TTL), seconds.
     public static let ttlRequest = 7 * 86_400

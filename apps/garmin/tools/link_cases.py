@@ -28,6 +28,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 CASES = ROOT / "contracts/watchface/payload/cases.json"
 APPS = ROOT / "contracts/watchface/payload/apps.json"
 SCHEMA = ROOT / "contracts/watchface/payload/schema.json"
+FORMATS = ROOT / "contracts/apps/formats.json"
 # 0BSD like the barrel whose tests read it (Sukrara's own link tests read it too)
 OUT = ROOT / "apps/garmin/sdk/test/cases/SukraraFaceCases.mc"
 # the watch app's writes (entries.json, mutes.json, undos.json) for its outbox test (app/test/OutboxTest.mc)
@@ -122,6 +123,38 @@ def registry():
         bad.append("apps/garmin/sdk/source/read/SukraraFace.mc: no const VERSION = %d;" % v)
     if '<iq:depends name="SukraraFace" version="%s"/>' % barrel not in (ROOT / "apps/garmin/sample/manifest.xml").read_text():
         bad.append("apps/garmin/sample/manifest.xml: doesn't depend on SukraraFace %s" % barrel)
+    return bad + formats(reg, v)
+
+
+def formats(reg, v):
+    """What doesn't match the watch payload's entry in contracts/apps/formats.json (THE shared formats): its version is
+    the schema's, the Garmin apps speak it, its port and paths are apps.json's, and its frozen fields are required by
+    every profile of the schema (so every version reads them)."""
+    bad = []
+    f = next(x for x in json.loads(FORMATS.read_text())["formats"] if x["format"] == "watch-payload")
+    if f["version"] != v:
+        bad.append("contracts/apps/formats.json: watch-payload version %s, but the schema's v is %s" % (f["version"], v))
+    for app in ("aura", "garmin-app", "garmin-field", "face-sdk"):
+        if app not in f["apps"]:
+            bad.append("contracts/apps/formats.json: watch-payload isn't spoken by %s" % app)
+    frozen = f["frozen"]
+    if frozen["port"] != reg["port"]:
+        bad.append("contracts/apps/formats.json: port %s, apps.json's is %s" % (frozen["port"], reg["port"]))
+    paths = sorted({a["fetch"] for a in reg["apps"]} | {reg["entries"], reg["undo"], reg["mute"]})
+    if sorted(frozen["paths"]) != paths:
+        bad.append("contracts/apps/formats.json: paths %s, apps.json's are %s" % (frozen["paths"], paths))
+    if "const VERSION = %d;" % f["version"] not in (ROOT / "apps/garmin/sdk/source/read/SukraraFace.mc").read_text():
+        bad.append("apps/garmin/sdk/source/read/SukraraFace.mc: no const VERSION = %d;" % f["version"])
+    schema = json.loads(SCHEMA.read_text())
+    for branch in schema["oneOf"]:
+        profile = branch["properties"]["p"].get("const")
+        for path in frozen["payload"]:
+            parent, _, key = path.rpartition(".")
+            node = branch
+            if parent:
+                node = next(o for o in branch["properties"][parent]["oneOf"] if o.get("type") == "object")
+            if key not in node.get("required", []):
+                bad.append("schema.json: profile %s doesn't require %s (frozen in formats.json)" % (profile, path))
     return bad
 
 

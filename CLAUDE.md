@@ -33,8 +33,11 @@ sections your change touches.
   fails on a broken link or anchor, a URL the apps' code opens that the site lacks, an outside link in the wrong
   language, App Links / universal links / the update feed)*
 - **No backwards compatibility.** Replace formats outright and delete superseded code paths. This covers local
-  storage too (settings, files, databases) and anything from the PoC. The **wire formats** in `contracts/protocol`
-  (Nostr v2, identity) are versioned: every app speaks the same version. *(not checked)*
+  storage too (settings, files, databases) and anything from the PoC. The **shared formats**
+  ([`contracts/apps/formats.json`](contracts/apps/formats.json): sharing, invite, the watch payload…) are versioned:
+  until 1.0.0 every app reads only the current version, a change lands in every app that speaks it, and a device that
+  meets another version says which app to update; the frozen parts never move. *(tests bind each app's version to
+  `formats.json`)*
 - **Android: Kotlin only** (JNI/C is fine). Use the newest API generation. Put the GPL header on every new file
   (`// Sukrara — https://github.com/mauriciabad/sukrara` / `// Copyright (C) 2026 Maurici Abad` /
   `// SPDX-License-Identifier: GPL-3.0-or-later`; `#` for py / sh / yml, `<!-- -->` for xml).
