@@ -437,10 +437,13 @@ module FieldLayout {
         var W0 = b.equals("veryLow") || b.equals("low") ? inkOn(col) : inkBy(col);
         // the word in medium, else smaller (never under xtiny), the bell before it: both inside the screen's width at
         // the word's top (the circle cuts it there); the line inside it where it stands
-        var wf = FieldDraw.fitRole(word, FieldDraw.ME, FieldMath.min(2 * hw - 90, 2 * edgeX(-88 - FieldDraw.capOf(FieldDraw.ME)) - 40));
-        var wd = FieldDraw.ww(word, wf) + 32;
-        g.icon(-wd / 2 + 12, -88 - FieldDraw.capOf(wf) / 2, 24, W0);
-        g.w(-wd / 2 + 32, -88, word, wf, W0, -1);
+        // the bell's box 1.2 × the word's capitals (its drawing about as tall as them), 4 units before it (app.js)
+        var wf = FieldDraw.fitRole(word, FieldDraw.ME, FieldMath.min(2 * hw - 90,
+            2 * edgeX(-88 - FieldDraw.capOf(FieldDraw.ME)) - FieldDraw.capOf(FieldDraw.ME) * 1.2 - 12));
+        var bs = FieldDraw.capOf(wf) * 1.2;
+        var wd = FieldDraw.ww(word, wf) + bs + 4;
+        g.icon(-wd / 2 + bs / 2, -88 - FieldDraw.capOf(wf) / 2, bs, W0);
+        g.w(-wd / 2 + bs + 4, -88, word, wf, W0, -1);
         if (d.g != null) {
             value(g, d, 0, 30, 116, 0, true, true, W0);
         }

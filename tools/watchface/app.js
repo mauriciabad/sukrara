@@ -1404,9 +1404,11 @@ var WL = (function () {
     full(g, col);
     var W0 = b === 'veryLow' || b === 'low' ? inkOn(col) : contrast('#FFFFFF', col) >= contrast('#000000', col) ? '#FFFFFF' : '#000000';
     // the word and its bell fit the screen's width at the word's top (the circle cuts it there), the line where it stands
-    var wf = fitRole(word, 'medium', Math.min(2 * KC.hw - 90, 2 * edgeX(-88 - capOf('medium')) - 40)), wd = ww(word, wf) + 32;
-    g.icon('bell', -wd / 2 + 12, -88 - capOf(wf) / 2, 24, W0);
-    g.t(-wd / 2 + 32, -88, word, { f: wf, fill: W0, anchor: 'start' });
+    // the bell's box 1.2 × the word's capitals (its drawing about as tall as them), 4 units before it (as S.alert)
+    var bs0 = capOf('medium') * 1.2, wf = fitRole(word, 'medium', Math.min(2 * KC.hw - 90, 2 * edgeX(-88 - capOf('medium')) - bs0 - 12));
+    var bs = capOf(wf) * 1.2, wd = ww(word, wf) + bs + 4;
+    g.icon('bell', -wd / 2 + bs / 2, -88 - capOf(wf) / 2, bs, W0);
+    g.t(-wd / 2 + bs + 4, -88, word, { f: wf, fill: W0, anchor: 'start' });
     if (d.g !== null && d.g !== undefined) value(g, d, 0, 30, 116, { col: W0, inverted: true });
     g.t(0, 92, 'Sukrara · ' + (d.age < 1 ? 'now' : Math.round(d.age) + ' min ago'), { f: 'tiny', max: 2 * KC.hw - 80, edge: true, fill: W0 });
   };

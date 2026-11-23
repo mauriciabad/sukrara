@@ -15,8 +15,8 @@ module FieldFontTable {
     const PLAIN = false; // no tinted bitmaps: the bell is a font
     const ATLAS = [12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 88];
     // the bell's tile: its size (px) and the tile with its margin
-    const BELL = 16;
-    const BELL_BOX = 20;
+    const BELL = 27;
+    const BELL_BOX = 31;
 
     // key ("n<px>" a big number) → [atlas bitmap, glyph table] or [font, baseline px];
     // [] = not on this class

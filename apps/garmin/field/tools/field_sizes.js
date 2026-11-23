@@ -20,7 +20,7 @@ for (const cls of Object.keys(WL.CLS)) {
         if (!/^[0-9.:LOHI-]+$/.test(e.s[0]) || e.fw !== 700) throw new Error(cls + ': a word in Atkinson: ' + e.s[0]);
         nums.add(Math.round(e.fs * sc));
       } else if (e.isP && e.tf && e.tf.indexOf('translate') === 0 && /scale\(([\d.]+)\)/.test(e.tf) && e.stroke !== 'none') {
-        bell = Math.max(bell, Math.round(24 * sc));
+        bell = Math.max(bell, Math.round(24 * +/scale\(([\d.]+)\)/.exec(e.tf)[1] * sc)); // the icon's own size × the class
       }
     });
   };
