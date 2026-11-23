@@ -157,7 +157,7 @@ round caps and joins), otherwise filled (even-odd). Path data (exact, also in `i
 | ring (time in range) | s | `M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16M12 4a8 8 0 0 1 7.6 10.5` |
 | globe (second time zone) | s | `M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18M3 12h18M12 3c2.6 2.7 3.8 5.7 3.8 9s-1.2 6.3-3.8 9M12 3c-2.6 2.7-3.8 5.7-3.8 9s1.2 6.3 3.8 9` |
 | stairs (floors) | s | `M3 20h5v-5h5v-5h5V5h3` |
-| phoneOff | s | `M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM3 3l18 18` |
+| phoneOff (filled, its slash cut through the body: an outline read as a missing glyph's box on a watch, #250) | f | `M8.5 2h7a2.5 2.5 0 0 1 2.5 2.5v15a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 6 19.5v-15A2.5 2.5 0 0 1 8.5 2zM3.9 2.1L21.9 20.1L20.1 21.9L2.1 3.9z` |
 | sensor (Sukrara's sensor disc) | f | `M21.3 12a9.3 9.3 0 1 1-18.6 0a9.3 9.3 0 1 1 18.6 0zM18.7 12a6.7 6.7 0 1 0-13.4 0a6.7 6.7 0 1 0 13.4 0zM15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0z` |
 | rapid ▼ (Sukrara's insulin mark) | f | `M2 4.2H22L12 20.9Z` |
 | long ▽ | s, width 2.8 | `M3.5 5.4H20.5L12 19.6Z` |

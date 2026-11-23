@@ -65,7 +65,7 @@ module AuraDump {
     }
 
     const STROKED = [
-        "sun", "sunset", "bell", "ring", "globe", "stairs", "phoneOff", "long", "stopwatch", "wheelchair", "calendar",
+        "sun", "sunset", "bell", "ring", "globe", "stairs", "long", "stopwatch", "wheelchair", "calendar",
         "event", "sunrise", "cloud", "cloudSun", "rain", "snow", "storm", "fog", "thermo", "gauge", "run", "bike",
         "hourglass", "stress", "drop", "breath", "lungs", "solar", "trend", "golf",
     ];
