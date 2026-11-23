@@ -1,5 +1,5 @@
 {
-  "about": "THE shared formats (docs/48 'Shared formats'): everything two Sukrara apps exchange, its current version, its spec, the apps that speak it (ids of docs/48's app table, contracts/apps/apps.json) and what never moves in it ('frozen'). Until 1.0.0 every app reads only the current version ('reads': 'current'; the avatar is the one exception, 'every': an app keeps every renderer it shipped and draws the fallback for a newer one). A change an older app would misread raises 'version', lands in every app of 'apps' and releases them all (tools/release); a change that must move a frozen part is a new format beside the old one, not a version. An app that meets another version names the app to update (the smaller version: docs/48 'When versions differ'). Bound by each app's tests: Android FormatsTest (:core:protocol, the sharing formats) and GarminAppsTest (:integrations, the watch payload), Mac FormatsTests (ShareTests), the Garmin apps' apps/garmin/tools/link_cases.py --check.",
+  "about": "THE shared formats (docs/48 'Shared formats'): everything two Sukrara apps exchange, its current version, its spec, the apps that speak it (ids of docs/48's app table, contracts/apps/apps.json) and what never moves in it ('frozen'). Until 1.0.0 every app reads only the current version ('reads': 'current'; the avatar is the one exception, 'every': an app keeps every renderer it shipped and draws the fallback for a newer one). A change an older app would misread raises 'version', lands in every app of 'apps' and releases them all (tools/formats/release_check.py, a release check); 'first' = the apps whose release goes out first, alone (the Connect IQ apps: their store approves in up to 3 days), the others in a later release once they are out; a change that must move a frozen part is a new format beside the old one, not a version. An app that meets another version names the app to update (the smaller version: docs/48 'When versions differ'). Bound by each app's tests: Android FormatsTest (:core:protocol, the sharing formats) and GarminAppsTest (:integrations, the watch payload), Mac FormatsTests (ShareTests), the Garmin apps' apps/garmin/tools/link_cases.py --check.",
   "formats": [
     {
       "format": "sharing",
@@ -61,6 +61,7 @@
       "version": 5,
       "spec": "contracts/watchface/payload/README.md",
       "apps": ["android", "aura", "garmin-app", "garmin-field", "face-sdk"],
+      "first": ["aura", "garmin-app", "garmin-field", "face-sdk"],
       "reads": "current",
       "carries": "the payload every profile gets (push and fetch), the fetch's report, the entries, undo and mute writes and their answers",
       "frozen": {
