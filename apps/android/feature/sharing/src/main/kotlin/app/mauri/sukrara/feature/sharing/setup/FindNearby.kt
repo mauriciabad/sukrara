@@ -69,6 +69,30 @@ internal fun ColumnScope.FindNearby(
         ) { Text(stringResource(R.string.sh_find_nearby)) }
         return
     }
+    // docs/48: an offer of a newer version: the update notice, once, on its own above the list (as on Pair nearby
+    // and Settings › Sharing); the rows say who updates
+    val newer = search.offers.firstOrNull { it.update == FollowUpdate.ThisApp }
+    val who =
+        newer
+            ?.let {
+                Profile.shownName(
+                    it.pairing.profile
+                        ?.name
+                        .orEmpty(),
+                )
+            }.orEmpty()
+            .ifBlank { stringResource(R.string.sh_join_someone) }
+    BannerSlot(
+        newer?.let {
+            updateBanner(
+                "nearby",
+                stringResource(DsR.string.ds_update_sukrara),
+                stringResource(R.string.sh_find_nearby_update, who),
+                actions.updateSukrara,
+            )
+        },
+        margins = PaddingValues(0.dp),
+    )
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.groupCard),
         modifier = Modifier.fillMaxWidth().animateContentSize(),
@@ -105,29 +129,6 @@ internal fun ColumnScope.FindNearby(
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
-                // docs/48: an offer of a newer version: the update notice, once (the rows say who updates)
-                val newer = search.offers.firstOrNull { it.update == FollowUpdate.ThisApp }
-                val who =
-                    newer
-                        ?.let {
-                            Profile.shownName(
-                                it.pairing.profile
-                                    ?.name
-                                    .orEmpty(),
-                            )
-                        }.orEmpty()
-                        .ifBlank { stringResource(R.string.sh_join_someone) }
-                BannerSlot(
-                    newer?.let {
-                        updateBanner(
-                            "nearby",
-                            stringResource(DsR.string.ds_update_sukrara),
-                            stringResource(R.string.sh_find_nearby_update, who),
-                            actions.updateSukrara,
-                        )
-                    },
-                    margins = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                )
                 for (offer in search.offers) {
                     OfferRow(offer, enabled) {
                         haptics.confirm()
