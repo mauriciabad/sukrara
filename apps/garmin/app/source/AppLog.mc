@@ -557,17 +557,53 @@ class LogView extends WatchUi.View {
     }
 }
 
-class LogDelegate extends WatchUi.BehaviorDelegate {
+class LogDelegate extends TapDelegate {
+    // a drag on the amount: one step per DRAG units, from the amount the drag started on
+    const DRAG = 14;
     var view as LogView;
+    var _y0 as Float? = null;
+    var _a0 as Float = 0.0;
+    var _dragged as Number = -1000; // when a drag last changed the amount (System.getTimer)
 
     function initialize(v as LogView) {
-        BehaviorDelegate.initialize();
+        TapDelegate.initialize();
         view = v;
+    }
+
+    // a drag that changed the amount ends in a swipe too: that swipe is the drag's, not one more step
+    function swiped() as Boolean {
+        return System.getTimer() - _dragged < 400;
+    }
+
+    // touch on the amount: drag down / up through the values (down more, as a swipe down), the value under the
+    // finger as it goes; the step's grid and limits as UP / DOWN
+    function onDrag(e as WatchUi.DragEvent) as Boolean {
+        if (!view.state.equals("amount")) {
+            return false;
+        }
+        var y = (e.getCoordinates()[1] - AppDraw.oy) / AppDraw.s;
+        var t = e.getType();
+        if (t == WatchUi.DRAG_TYPE_START || _y0 == null) {
+            _y0 = y.toFloat();
+            _a0 = view.a;
+        }
+        var n = ((y - (_y0 as Float)) / DRAG).toNumber();
+        if (n != 0 || view.a != _a0) {
+            view.a = _a0;
+            view.change(n);
+            _dragged = System.getTimer();
+        }
+        if (t == WatchUi.DRAG_TYPE_STOP) {
+            _y0 = null;
+        }
+        return true;
     }
 
     function onPreviousPage() as Boolean {
         if (view.state.equals("amount")) {
-            view.change(1);
+            if (!swiped()) {
+                view.change(1);
+            }
         } else if (view.state.equals("pen")) {
             view.sel = 1 - view.sel;
             WatchUi.requestUpdate();
@@ -577,7 +613,9 @@ class LogDelegate extends WatchUi.BehaviorDelegate {
 
     function onNextPage() as Boolean {
         if (view.state.equals("amount")) {
-            view.change(-1);
+            if (!swiped()) {
+                view.change(-1);
+            }
         } else if (view.state.equals("pen")) {
             view.sel = 1 - view.sel;
             WatchUi.requestUpdate();
@@ -597,7 +635,7 @@ class LogDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // START: the amount → hold; on the hold screen START is held (onKeyPressed / onKeyReleased), never a press
-    function onSelect() as Boolean {
+    function select() as Void {
         var st = view.state;
         if (st.equals("amount")) {
             view.toConfirm();
@@ -608,10 +646,10 @@ class LogDelegate extends WatchUi.BehaviorDelegate {
         } else if (st.equals("queued") || st.equals("said")) {
             view.close();
         }
-        return true;
     }
 
     function onKeyPressed(e as WatchUi.KeyEvent) as Boolean {
+        TapDelegate.onKeyPressed(e);
         if (e.getKey() == WatchUi.KEY_ENTER && view.state.equals("confirm")) {
             view.press();
             return true;
@@ -620,6 +658,7 @@ class LogDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function onKeyReleased(e as WatchUi.KeyEvent) as Boolean {
+        TapDelegate.onKeyReleased(e);
         if (e.getKey() == WatchUi.KEY_ENTER && view.state.equals("confirm")) {
             view.release();
             return true;
@@ -631,7 +670,7 @@ class LogDelegate extends WatchUi.BehaviorDelegate {
         if (e.getKey() == WatchUi.KEY_ENTER && view.state.equals("confirm")) {
             return true;
         }
-        return BehaviorDelegate.onKey(e);
+        return TapDelegate.onKey(e);
     }
 
     // touch: on the hold screen a held touch fills the rim

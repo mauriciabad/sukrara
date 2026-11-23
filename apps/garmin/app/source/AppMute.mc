@@ -352,11 +352,11 @@ class MuteView extends WatchUi.View {
     }
 }
 
-class MuteDelegate extends WatchUi.BehaviorDelegate {
+class MuteDelegate extends TapDelegate {
     var view as MuteView;
 
     function initialize(v as MuteView) {
-        BehaviorDelegate.initialize();
+        TapDelegate.initialize();
         view = v;
     }
 
@@ -370,9 +370,8 @@ class MuteDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
-    function onSelect() as Boolean {
+    function select() as Void {
         view.choose(view.sel);
-        return true;
     }
 
     function onBack() as Boolean {

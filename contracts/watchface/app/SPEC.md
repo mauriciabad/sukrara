@@ -55,9 +55,12 @@ docs/47). No input: selecting it opens the app.
 ## 4. The app
 
 UP / DOWN or a swipe between the two pages (dots at the bottom); START opens the one list (§5) from either page.
+On every screen a tap acts on what it lands on (a chip, a row, a button, a chevron), START on the selection (#250: a
+BehaviorDelegate sends a tap to onSelect first, so the app tells START, whose key press comes first, from a tap).
 
 ### 4.1 Page 1: the widget (`S.appA`)
-- Top: the clock (22, soft). The value + arrow (88) between the card's first two places: right = the main metric's ring;
+- Top: the clock (22, soft). The value + arrow (88) between the card's first two places: right = the main metric's ring
+  (never dimmed, on the glance too: the payload's `dim` is for the places after it, as on the phone; #250);
   left = the next in the card's priority: the last treatment (§8, never dimmed) when there is one, else the second metric
   (dimmed). Rings r 25, stroke 6, no period label, number 22.
 - **The chart**: 12 h (the place's `graph.hours`), x −134 … 146, y −22 … 88. Height on **Kovatchev's symmetrised
@@ -74,7 +77,7 @@ UP / DOWN or a swipe between the two pages (dots at the bottom); START opens the
 
 ### 4.2 Page 2: numbers (`S.appNums`)
 The phone's Glucose report card, simplified: period chips 1d · 7d · 14d · 30d (the phone's `report.days` by default;
-tapping one switches it here without saving; buttons: the list's Period), the stacked bar of the bands, *Above range*,
+tapping one switches it here without saving; buttons: MENU steps 1d → 7d → 14d → 30d, hold UP on most watches), the stacked bar of the bands, *Above range*,
 *In range* (with *very good*), *Below range* with their consensus goals as chips (✓ met in green, ✕ not in orange),
 then average, GMI, CV, each with the goal check the phone's report gives it (✓ met / ✕ not: the phone sends whether
 each goal is met, so the watch holds no threshold of its own). Very high / very low rows and the coverage note stay on the phone.
@@ -113,7 +116,9 @@ watch never decides it (payload `log.order`).
 ## 6. Logging
 
 - **Amount** (`S.logAmount`): the kind's name and mark in its colour on top, the amount (128) with its unit, chevrons
-  above / below; UP / DOWN one step per press (0.5 u, 5 g; Garmin keeps holds), touch taps / swipes; the person's three
+  above / below; UP / DOWN one step per press (0.5 u, 5 g); touch: a tap on a chevron one step; a drag or swipe up / down
+  runs through the values in one go, the value following the finger (one step every 14 units, down for more; the same
+  steps and limits; #250, until #249's native picker); the person's three
   usual amounts as chips (the chosen one filled in the kind's colour); *Now* (MENU for earlier); START next.
 - **Hold to log** (`S.logConfirm`): the amount big in the kind's colour with its mark, "rapid insulin · now", the quiet
   line as the phone says it ("Highs quiet for 1 h"); the rim fills from START over about 1 s while START (or a touch) is

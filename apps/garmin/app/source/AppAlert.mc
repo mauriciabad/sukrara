@@ -430,11 +430,11 @@ class AlertView extends WatchUi.View {
     }
 }
 
-class AlertDelegate extends WatchUi.BehaviorDelegate {
+class AlertDelegate extends TapDelegate {
     var view as AlertView;
 
     function initialize(v as AlertView) {
-        BehaviorDelegate.initialize();
+        TapDelegate.initialize();
         view = v;
     }
 
@@ -448,9 +448,8 @@ class AlertDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
-    function onSelect() as Boolean {
+    function select() as Void {
         view.choose(view.sel);
-        return true;
     }
 
     function onBack() as Boolean {

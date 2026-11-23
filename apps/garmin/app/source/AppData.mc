@@ -83,7 +83,7 @@ module AppInput {
         var d = new AppData();
         d.now = now;
         var c = Gregorian.info(new Time.Moment(now), Time.FORMAT_SHORT);
-        d.clock = (c.hour as Number) + ":" + (c.min as Number).format("%02d");
+        d.clock = hm(now);
         d.clockH = (c.hour as Number) + (c.min as Number) / 60.0 + (c.sec as Number) / 3600.0;
         var p = Link.payload();
         var x = Link.inputs(now);
@@ -170,12 +170,13 @@ module AppInput {
         var st = x.status;
         var lf = x.left;
         var left = lf instanceof Number ? Durations.short(lf, " ") : AppWords.muted();
+        var k = low ? "carbs" : "rapid";
         if ("auto".equals(st) && out) {
-            d.pill = low ? ["carbs", AppWords.carbs(), true, "carbs"] : ["rapid", AppWords.insulin(), true, "rapid"];
-        } else if ("quiet".equals(st) && out) {
-            d.pill = [low ? "carbs" : "rapid", left, false, "bellPause"];
+            d.pill = [k, low ? AppWords.carbs() : AppWords.insulin(), true, k];
+        } else if (("quiet".equals(st) || "muted".equals(st)) && out) {
+            d.pill = [k, left, false, "bellPause"];
         } else if ("muted".equals(st)) {
-            d.pill = out ? [low ? "carbs" : "rapid", left, false, "bellPause"] : ["note", left, false, "bellOff"];
+            d.pill = ["note", left, false, "bellOff"];
         }
     }
 
@@ -185,6 +186,9 @@ module AppInput {
         var m = p.get("m");
         var list = m instanceof Array ? m : [] as Array;
         if (list.size() > 0) {
+            // the main metric is never dimmed: the phone's `dim` is for the places after it (#250: the 1-day ring
+            // came grey; on the phone it's in colour)
+            (list[0] as Dictionary).remove("dim");
             d.slots.add(["ring", list[0]]);
         }
         var step = SukraraFace.treatment(p, t);

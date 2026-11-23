@@ -152,13 +152,60 @@ class AppView extends WatchUi.View {
     }
 }
 
+// START and a tap told apart, for every screen of the app. A BehaviorDelegate turns a tap into onSelect too, and
+// onSelect comes first: returning true there swallows the tap, so onTap never ran and a tap did what START does (the
+// numbers' chips, the list's rows, the amount's chevrons and chips: #250). START comes as onKeyPressed(KEY_ENTER),
+// then onSelect; a tap as onSelect alone. So onSelect acts only after START's press and lets a tap through to onTap;
+// a START whose press didn't come first reaches onKey(KEY_ENTER) and acts there.
+class TapDelegate extends WatchUi.BehaviorDelegate {
+    var _start as Boolean = false;
+
+    function initialize() {
+        BehaviorDelegate.initialize();
+    }
+
+    // what START does on this screen
+    function select() as Void {
+    }
+
+    function onSelect() as Boolean {
+        if (_start) {
+            select();
+            return true;
+        }
+        return false;
+    }
+
+    function onKeyPressed(e as WatchUi.KeyEvent) as Boolean {
+        if (e.getKey() == WatchUi.KEY_ENTER) {
+            _start = true;
+        }
+        return false;
+    }
+
+    function onKeyReleased(e as WatchUi.KeyEvent) as Boolean {
+        if (e.getKey() == WatchUi.KEY_ENTER) {
+            _start = false;
+        }
+        return false;
+    }
+
+    function onKey(e as WatchUi.KeyEvent) as Boolean {
+        if (e.getKey() == WatchUi.KEY_ENTER) {
+            select();
+            return true;
+        }
+        return BehaviorDelegate.onKey(e);
+    }
+}
+
 // The pages: UP / DOWN or a swipe between the widget and the numbers, START the one list, BACK leaves; on the
-// numbers a tap on the period chips switches the period.
-class AppDelegate extends WatchUi.BehaviorDelegate {
+// numbers a tap on a period chip switches the period, MENU steps it.
+class AppDelegate extends TapDelegate {
     var view as AppView;
 
     function initialize(v as AppView) {
-        BehaviorDelegate.initialize();
+        TapDelegate.initialize();
         view = v;
     }
 
@@ -181,18 +228,17 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // START: the one list; not set up: Open on phone (nothing could be signed yet)
-    function onSelect() as Boolean {
+    function select() as Void {
         if (view.notSetUp) {
             if (view.opened == null) {
                 view.openSetup();
             }
-            return true;
+            return;
         }
         AppNav.list(WatchUi.SLIDE_LEFT);
-        return true;
     }
 
-    // the numbers' period: MENU steps through 1d · 7d · 14d · 30d (the list's Period)
+    // the numbers' period: MENU steps through 1d · 7d · 14d · 30d
     function onMenu() as Boolean {
         if (view.page != 1 || view.notSetUp) {
             return false;
@@ -204,6 +250,7 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
+    // a tap: not set up, the Open on phone button; on the numbers a period chip; anywhere else what START does
     function onTap(e as WatchUi.ClickEvent) as Boolean {
         var c = e.getCoordinates();
         var s = AppDraw.s;
@@ -215,21 +262,18 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
             }
             return true;
         }
-        if (view.page != 1) {
-            return false;
+        if (view.page == 1) {
+            var L = AppScreens.numsAt();
+            var cw = L[0] as Numeric;
+            var x0 = -(4 * cw + 18) / 2.0;
+            var i = ((x - x0 + 3) / (cw + 6)).toNumber();
+            if (y >= (L[1] as Numeric) - 8 && y <= (L[1] as Numeric) + (L[2] as Numeric) + 8 && x >= x0 - 3 && i <= 3) {
+                view.days = [1, 7, 14, 30][i] as Number;
+                view.refresh();
+                return true;
+            }
         }
-        var L = AppScreens.numsAt();
-        var cw = L[0] as Numeric;
-        var x0 = -(4 * cw + 18) / 2.0;
-        if (y < (L[1] as Numeric) - 8 || y > (L[1] as Numeric) + (L[2] as Numeric) + 8) {
-            return false;
-        }
-        var i = ((x - x0 + 3) / (cw + 6)).toNumber();
-        if (x < x0 - 3 || i > 3) {
-            return false;
-        }
-        view.days = [1, 7, 14, 30][i] as Number;
-        view.refresh();
+        select();
         return true;
     }
 }

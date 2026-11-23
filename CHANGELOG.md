@@ -4,6 +4,11 @@ Sukrara's releases. 0.x versions are previews.
 
 ## Unreleased
 
+- **Sukrara watch app fixes from the first days on a watch** (#250, not released yet): a tap now does what it lands
+  on: page 2's period chips switch the period (MENU steps it too), a row of the list opens that row, an answer of the
+  alert screen is that answer (before, every tap did what START does). On the amount, a drag up or down runs through
+  the values in one go. The main metric's ring is in colour again on page 1 and the glance (it was grey whenever the
+  phone's *Dimmed* was on, which is meant for the rings after it).
 - **Getting Sukrara onto your Garmin watch** (#199, not released yet): setup has a new optional step, *Your Garmin
   watch*, when Garmin Connect is on the phone or a watch already has one of Sukrara's apps: sending on or off, and
   what the Sukrara Aura watch face, the Sukrara watch app and the Sukrara data field each give, with *Get* opening each

@@ -108,11 +108,11 @@ module AppLists {
 }
 
 // UP / DOWN move the selection, START opens it, BACK goes back.
-class ListDelegate extends WatchUi.BehaviorDelegate {
+class ListDelegate extends TapDelegate {
     var view as AppView;
 
     function initialize(v as AppView) {
-        BehaviorDelegate.initialize();
+        TapDelegate.initialize();
         view = v;
     }
 
@@ -132,9 +132,8 @@ class ListDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // START: a kind → its amount (SPEC §6); Mute alerts → the lengths, Muted → Unmute / Change time (§7)
-    function onSelect() as Boolean {
+    function select() as Void {
         open(view.sel);
-        return true;
     }
 
     function open(i as Number) as Void {

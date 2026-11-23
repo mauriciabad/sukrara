@@ -647,7 +647,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -823,7 +822,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -1041,7 +1039,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -3137,7 +3134,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -3822,7 +3818,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -3945,7 +3940,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -4011,7 +4005,7 @@
    }
   },
   "day-appA": {
-   "budget": 4744,
+   "budget": 4862,
    "input": {
     "age": 0.5,
     "bands": [
@@ -4649,7 +4643,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -4792,7 +4785,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -4858,7 +4850,7 @@
    }
   },
   "day-glance": {
-   "budget": 1940,
+   "budget": 2061,
    "input": {
     "age": 0.5,
     "bands": [
@@ -4920,7 +4912,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -4940,7 +4931,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2539,
+   "budget": 2660,
    "input": {
     "age": 0.5,
     "bands": [
@@ -5004,7 +4995,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -5029,7 +5019,7 @@
    }
   },
   "glance-high": {
-   "budget": 2387,
+   "budget": 2508,
    "input": {
     "age": 0.5,
     "bands": [
@@ -5096,7 +5086,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -5116,7 +5105,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 2591,
+   "budget": 2712,
    "input": {
     "age": 0.5,
     "bands": [
@@ -5180,7 +5169,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -5269,7 +5257,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -5405,7 +5392,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -5544,7 +5530,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -5679,7 +5664,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -5813,7 +5797,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -5946,7 +5929,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -6077,7 +6059,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -6208,7 +6189,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -6340,7 +6320,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -6480,7 +6459,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -6575,7 +6553,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -6720,7 +6697,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -6824,7 +6800,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -6983,7 +6958,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -7049,7 +7023,7 @@
    }
   },
   "muted-appA": {
-   "budget": 4794,
+   "budget": 4913,
    "input": {
     "age": 0.5,
     "bands": [
@@ -7692,7 +7666,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -7827,7 +7800,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -8926,7 +8898,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -9029,7 +9000,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -9707,7 +9677,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -10377,7 +10346,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -10471,7 +10439,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -10565,7 +10532,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "v": 39
       }
@@ -11234,7 +11200,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -11410,7 +11375,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -11628,7 +11592,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -13724,7 +13687,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -14409,7 +14371,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -14532,7 +14493,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -14598,7 +14558,7 @@
    }
   },
   "day-appA": {
-   "budget": 3418,
+   "budget": 3603,
    "input": {
     "age": 0.5,
     "bands": [
@@ -15236,7 +15196,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -15379,7 +15338,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -15445,7 +15403,7 @@
    }
   },
   "day-glance": {
-   "budget": 2734,
+   "budget": 2895,
    "input": {
     "age": 0.5,
     "bands": [
@@ -15507,7 +15465,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -15527,7 +15484,7 @@
    }
   },
   "glance-ask": {
-   "budget": 3107,
+   "budget": 3268,
    "input": {
     "age": 0.5,
     "bands": [
@@ -15591,7 +15548,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -15616,7 +15572,7 @@
    }
   },
   "glance-high": {
-   "budget": 3042,
+   "budget": 3203,
    "input": {
     "age": 0.5,
     "bands": [
@@ -15683,7 +15639,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -15703,7 +15658,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 3215,
+   "budget": 3376,
    "input": {
     "age": 0.5,
     "bands": [
@@ -15767,7 +15722,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -15856,7 +15810,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -15992,7 +15945,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -16131,7 +16083,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -16266,7 +16217,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -16400,7 +16350,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -16533,7 +16482,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -16664,7 +16612,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -16795,7 +16742,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -16927,7 +16873,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -17067,7 +17012,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -17162,7 +17106,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -17307,7 +17250,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -17411,7 +17353,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -17570,7 +17511,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -17636,7 +17576,7 @@
    }
   },
   "muted-appA": {
-   "budget": 4357,
+   "budget": 4543,
    "input": {
     "age": 0.5,
     "bands": [
@@ -18279,7 +18219,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -18414,7 +18353,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -19513,7 +19451,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -19616,7 +19553,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -20294,7 +20230,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -20964,7 +20899,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -21058,7 +20992,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -21152,7 +21085,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "v": 39
       }
@@ -74756,7 +74688,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -74932,7 +74863,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -75150,7 +75080,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -77246,7 +77175,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -77931,7 +77859,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -78054,7 +77981,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -78120,7 +78046,7 @@
    }
   },
   "day-appA": {
-   "budget": 2640,
+   "budget": 2653,
    "input": {
     "age": 0.5,
     "bands": [
@@ -78758,7 +78684,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -78901,7 +78826,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -78967,7 +78891,7 @@
    }
   },
   "day-glance": {
-   "budget": 3602,
+   "budget": 3747,
    "input": {
     "age": 0.5,
     "bands": [
@@ -79029,7 +78953,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -79049,7 +78972,7 @@
    }
   },
   "glance-ask": {
-   "budget": 4560,
+   "budget": 4705,
    "input": {
     "age": 0.5,
     "bands": [
@@ -79113,7 +79036,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -79138,7 +79060,7 @@
    }
   },
   "glance-high": {
-   "budget": 4347,
+   "budget": 4492,
    "input": {
     "age": 0.5,
     "bands": [
@@ -79205,7 +79127,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -79225,7 +79146,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 4682,
+   "budget": 4827,
    "input": {
     "age": 0.5,
     "bands": [
@@ -79289,7 +79210,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -79378,7 +79298,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -79514,7 +79433,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -79653,7 +79571,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -79788,7 +79705,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -79922,7 +79838,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -80055,7 +79970,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -80186,7 +80100,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -80317,7 +80230,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -80449,7 +80361,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -80589,7 +80500,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -80684,7 +80594,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -80829,7 +80738,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -80933,7 +80841,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -81092,7 +80999,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -81158,7 +81064,7 @@
    }
   },
   "muted-appA": {
-   "budget": 2880,
+   "budget": 2892,
    "input": {
     "age": 0.5,
     "bands": [
@@ -81801,7 +81707,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -81936,7 +81841,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -83035,7 +82939,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -83138,7 +83041,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -83816,7 +83718,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -84486,7 +84387,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -84580,7 +84480,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -84674,7 +84573,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "v": 39
       }

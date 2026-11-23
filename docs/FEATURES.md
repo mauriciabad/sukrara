@@ -3134,9 +3134,12 @@ both drawn from `app.js` on every screen class, SPEC §14). Every watch with API
   glance (the value, the main metric's ring and the last treatment or second metric, the value shrinking to keep both;
   the reading's time when late, the pill, then the outbox's line: *Waiting for the phone*, *Sent*, *The phone has a
   question* in the high colour), page 1 (the widget: clock, value between its two places, 12 h chart with the %
-  column, the pill or the sensor's days), page 2 (the phone's report card, its periods switchable here, never saved),
+  column, the pill or the sensor's days; the main metric's ring always in colour, the phone's *Dimmed* is for the places
+  after it), page 2 (the phone's report card; a tap on a period chip or MENU switches the period here, never saved),
   the one list (the kinds in the phone's order with their last entry, then *Mute alerts* or *Muted* / *Lows muted*
-  with the time left). Logging: the amount (UP / DOWN a step, the three usual amounts, MENU earlier), hold START (or
+  with the time left). On every screen a tap acts on what it lands on (a chip, a row, a button, a chevron), START on
+  the selection (#250). Logging: the amount (UP / DOWN a step; touch: a chevron a step, a drag or swipe up / down
+  runs through the values in one go, the value following the finger; the three usual amounts, MENU earlier), hold START (or
   a touch) about 1 s to log (the rim fills; the same kind in the last 15 min said first; what it quiets as the phone's
   Add treatment says it, *Highs quiet for 1 h*, from the payload's `log.<kind>.q`), *Sending*, *Logged* with
   *Undo* for 10 s (and the quiet line), or *Saved on the watch* while the phone is away; the phone's pen question.
@@ -3178,7 +3181,8 @@ both drawn from `app.js` on every screen class, SPEC §14). Every watch with API
 
 **States and exits**: a complication is placed and removed in the face's own editor; holding one opens the app. Glance →
 select → the app. *Waiting for your phone* → *Open on phone* (→ *Look at your phone* 5 s → the button again) / the
-first message (→ page 1) / BACK (leaves the app). Page 1 ↔ page 2 (UP / DOWN, swipe); BACK leaves the app. START → the one list → a kind → the amount →
+first message (→ page 1) / BACK (leaves the app). Page 1 ↔ page 2 (UP / DOWN, swipe); page 2's period: a chip or MENU
+(back to the phone's period on the next open); BACK leaves the app. START → the one list → a kind → the amount →
 hold to log (let go: back to the amount; BACK: the list) → *Logged* (*Undo* 10 s) or *Saved on the watch* (phone away);
 the pen question → *Log anyway* / *Cancel*. The list's *Mute alerts* → a length → *Alerts muted* (*Undo* 10 s, else back
 to page 1; BACK: dismiss, kept); BACK on the lengths: the list. *Muted* → *Unmute* (→ *Alerts unmuted*) / *Change time*
