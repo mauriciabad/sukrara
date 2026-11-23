@@ -1078,11 +1078,17 @@ module AppScreens {
         var bh = bb[1];
         var top = AppFontTable.RECT ? -hh() + 20 : -150;
         var ir = 24;
-        var tl = AppDrawApp.wrap(title, ME, 290);
+        // the title in medium on up to two lines, else in small (a wide font: Update Sukrara on your phone)
+        var tf = ME;
+        var tl = AppDrawApp.wrap(title, tf, 290);
+        if (tl.size() > 2) {
+            tf = AppDraw.SM;
+            tl = AppDrawApp.wrap(title, tf, 290);
+        }
         if (tl.size() > 2) {
             tl = tl.slice(0, 2);
         }
-        var mh = AppDraw.lh(ME) * 0.9;
+        var mh = AppDraw.lh(tf) * 0.9;
         var one = given[0];
         for (var k = 1; k < given.size(); k++) {
             one += " " + given[k];
@@ -1102,7 +1108,7 @@ module AppScreens {
             }
         }
         var th = AppDraw.lh(bf) * 0.85;
-        var titleH = AppDraw.capOf(ME) + (tl.size() - 1) * mh;
+        var titleH = AppDraw.capOf(tf) + (tl.size() - 1) * mh;
         var y = by - 12 - (AppDraw.capOf(bf) + (ls.size() - 1) * th) - 12 - titleH;
         // Sukrara for Android's own icon (the disc, the cube, the dot: the phone app that needs to be open), not the
         // watch's launcher icon (the owner, 2026-11-22); its bitmap made at the class's size (tools/fonts.py)
@@ -1113,7 +1119,7 @@ module AppScreens {
         } else if (y - 2 * ir - 10 >= top) {
             g.bmp(Rez.Drawables.PhoneIcon, 0, y - 10 - ir, 2 * ir);
         }
-        lines(g, y + AppDraw.capOf(ME), tl, ME, mh, AppMath.INK);
+        lines(g, y + AppDraw.capOf(tf), tl, tf, mh, AppMath.INK);
         y += titleH + 12;
         lines(g, y + AppDraw.capOf(bf), ls, bf, th, AppMath.SOFT);
         if (opened) {

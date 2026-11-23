@@ -1620,6 +1620,49 @@ null,
 "unit": "mgdl",
 "word": null
 },
+"band-update-phone": {
+"age": 0.5,
+"cls": "r454",
+"deg": null,
+"doubled": false,
+"field": true,
+"form": "band",
+"g": 112,
+"hist": [],
+"kind": null,
+"noPhone": false,
+"readAt": "12:09",
+"screen": "dfSlot",
+"slots": {
+"f": [
+[
+0,
+0,
+454,
+146,
+"LTR"
+],
+[
+0,
+149,
+454,
+157,
+"LR"
+],
+[
+0,
+309,
+454,
+145,
+"LRB"
+]
+],
+"i": 1
+},
+"unit": "mgdl",
+"update": "phone",
+"word": null
+},
 "band-very-low": {
 "age": 0.5,
 "cls": "r454",
@@ -4009,6 +4052,56 @@ null,
 "unit": "mgdl",
 "word": null
 },
+"quarter-update-low": {
+"age": 0.5,
+"cls": "r454",
+"deg": null,
+"doubled": false,
+"field": true,
+"form": "quarter",
+"g": 62,
+"hist": [],
+"kind": null,
+"noPhone": false,
+"readAt": "12:09",
+"screen": "dfSlot",
+"slots": {
+"f": [
+[
+0,
+0,
+454,
+161,
+"LTR"
+],
+[
+228,
+164,
+225,
+135,
+"R"
+],
+[
+0,
+164,
+225,
+135,
+"L"
+],
+[
+0,
+302,
+454,
+152,
+"LRB"
+]
+],
+"i": 2
+},
+"unit": "mgdl",
+"update": "phone",
+"word": null
+},
 "quarter-very-low": {
 "age": 0.5,
 "cls": "r454",
@@ -5035,6 +5128,35 @@ null,
 "i": 0
 },
 "unit": "mgdl",
+"word": null
+},
+"whole-update-field": {
+"age": 0.5,
+"cls": "r454",
+"deg": null,
+"doubled": false,
+"field": true,
+"form": "whole",
+"g": 112,
+"hist": [],
+"kind": null,
+"noPhone": false,
+"readAt": "12:09",
+"screen": "dfSlot",
+"slots": {
+"f": [
+[
+0,
+0,
+454,
+454,
+"LTRB"
+]
+],
+"i": 0
+},
+"unit": "mgdl",
+"update": "app",
 "word": null
 },
 "whole-very-low": {

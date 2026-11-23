@@ -148,7 +148,10 @@
   "alert-extremely-high": 2209,
   "alert-falling-fast": 2338,
   "alert-rising-fast": 3910,
-  "alert-no-data": 3460
+  "alert-no-data": 3460,
+  "whole-update-field": 1489,
+  "band-update-phone": 1935,
+  "quarter-update-low": 1280
  },
  "fenix843mm": {
   "whole-steady": 3089,
@@ -222,7 +225,10 @@
   "alert-extremely-high": 4060,
   "alert-falling-fast": 4367,
   "alert-rising-fast": 4340,
-  "alert-no-data": 4643
+  "alert-no-data": 4643,
+  "whole-update-field": 2069,
+  "band-update-phone": 2654,
+  "quarter-update-low": 1654
  },
  "fenix847mm": {
   "whole-steady": 3103,
@@ -296,7 +302,10 @@
   "alert-extremely-high": 5848,
   "alert-falling-fast": 5330,
   "alert-rising-fast": 5957,
-  "alert-no-data": 5034
+  "alert-no-data": 5034,
+  "whole-update-field": 3195,
+  "band-update-phone": 3570,
+  "quarter-update-low": 1244
  },
  "fenix9pro51mm": {
   "whole-steady": 3074,
@@ -370,7 +379,10 @@
   "alert-extremely-high": 6000,
   "alert-falling-fast": 5268,
   "alert-rising-fast": 6650,
-  "alert-no-data": 5352
+  "alert-no-data": 5352,
+  "whole-update-field": 3280,
+  "band-update-phone": 3405,
+  "quarter-update-low": 1329
  },
  "fr255s": {
   "whole-steady": 1689,
@@ -444,7 +456,10 @@
   "alert-extremely-high": 2337,
   "alert-falling-fast": 2160,
   "alert-rising-fast": 2713,
-  "alert-no-data": 2943
+  "alert-no-data": 2943,
+  "whole-update-field": 1437,
+  "band-update-phone": 1650,
+  "quarter-update-low": 898
  },
  "fr265s": {
   "whole-steady": 2069,
@@ -518,7 +533,10 @@
   "alert-extremely-high": 3089,
   "alert-falling-fast": 3398,
   "alert-rising-fast": 3503,
-  "alert-no-data": 3925
+  "alert-no-data": 3925,
+  "whole-update-field": 1994,
+  "band-update-phone": 1164,
+  "quarter-update-low": 1333
  },
  "venusq2": {
   "whole-steady": 2220,
@@ -592,7 +610,10 @@
   "alert-extremely-high": 5065,
   "alert-falling-fast": 4604,
   "alert-rising-fast": 5059,
-  "alert-no-data": 5189
+  "alert-no-data": 5189,
+  "whole-update-field": 1797,
+  "band-update-phone": 417,
+  "quarter-update-low": 833
  },
  "venux1": {
   "whole-steady": 4785,
@@ -666,6 +687,9 @@
   "alert-extremely-high": 9157,
   "alert-falling-fast": 6830,
   "alert-rising-fast": 7838,
-  "alert-no-data": 5560
+  "alert-no-data": 5560,
+  "whole-update-field": 4652,
+  "band-update-phone": 5048,
+  "quarter-update-low": 2823
  }
 }

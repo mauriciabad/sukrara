@@ -1329,24 +1329,28 @@ var WL = (function () {
   // and Open on phone (Garmin Connect opens the setup link there; Sukrara for Android takes it as an App Link). After
   // the press (c.opened): Look at your phone for 5 s. No dots, no list. Never a phone screen or setting's name.
   S.setup = function (g, d, c) {
-    // the title in medium on up to two lines; the body in tiny wrapped; the button at the bottom (small)
-    // laid out from the button up: the body in tiny on up to two lines (else xtiny), the title in medium on up to two,
+    // laid out from the button up: the body in tiny on up to two lines (else xtiny), the title in medium on up to two
+    // (else small),
     // the phone's icon over them where the room is left (else none)
     var top = KC.rect ? -KC.hh + 20 : -150, ir = 24, by = KC.rect ? KC.hh - 70 : 96, bh = capOf('small') + 22;
-    var tl = wrap(c.title || 'Waiting for your phone', 'medium', 290).slice(0, 2), mh = lh('medium') * 0.9;
+    // the title in medium on up to two lines, else in small (a wide font: Update Sukrara on your phone)
+    var title = c.title || 'Waiting for your phone', tf = 'medium', tl = wrap(title, tf, 290);
+    if (tl.length > 2) { tf = 'small'; tl = wrap(title, tf, 290); }
+    tl = tl.slice(0, 2);
+    var mh = lh(tf) * 0.9;
     var given = c.lines || ['Sukrara for Android sends', 'your glucose here'], bf0 = 'tiny', bw1 = 2 * edgeX(by - 10) - 20, lines;
     for (var k = 0; k < 2; k++) {
       bf0 = ['tiny', 'xtiny'][k];
       lines = given.every(function (t) { return ww(t, bf0) <= bw1; }) ? given : wrap(given.join(' '), bf0, bw1);
       if (lines.length <= 2) break;
     }
-    var th = lh(bf0) * 0.85, bodyH = capOf(bf0) + (lines.length - 1) * th, titleH = capOf('medium') + (tl.length - 1) * mh;
+    var th = lh(bf0) * 0.85, bodyH = capOf(bf0) + (lines.length - 1) * th, titleH = capOf(tf) + (tl.length - 1) * mh;
     var y = by - 12 - bodyH - 12 - titleH;
     // c.value (the update page): the current glucose where the phone's icon goes, ageing (struck when old); from 20 min
     // none (the reading is no longer shown)
     if (c.value) { if (d.g !== null && d.g !== undefined && d.age < 20 && y - 2 * ir - 10 >= top) value(g, d, 0, y - 10 - ir + 58 * 0.668 / 2, 58); }
     else if (y - 2 * ir - 10 >= top) phoneIcon(g, 0, y - 10 - ir, ir);
-    tl.forEach(function (t, i) { g.t(0, y + capOf('medium') + i * mh, t, { f: 'medium', edge: true, fill: PAL.ink }); });
+    tl.forEach(function (t, i) { g.t(0, y + capOf(tf) + i * mh, t, { f: tf, edge: true, fill: PAL.ink }); });
     y += titleH + 12;
     lines.forEach(function (t, i) { g.t(0, y + capOf(bf0) + i * th, t, { f: bf0, edge: true, fill: PAL.soft }); });
     if (c.opened) {

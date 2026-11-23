@@ -15,7 +15,7 @@ S.dfSlot, S.dfAlert), a regression test.
         --update: draws the references from this run's inputs (headless Chrome; set CHROME to its binary), copies them
         to docs/img/field/ref/<device>/ with the inputs, and sets each budget to the run's count + 25 % + 40 px. Look
         at the pairs before committing them.
-        FIELD_CASES=id,id… only those cases.
+        FIELD_CASES=id,id… only those cases (--update then keeps the other cases' references and budgets).
 
 The pictures are compared in sRGB, pixels over 15 % different inside the screen (the circle, or the rectangle's
 rounded corners): the simulator draws the atlas glyphs a pixel apart from the browser's text and its lines without the
@@ -266,17 +266,23 @@ def run(outdir, update):
         if bad:
             fails.append(cid)
     if update:
+        # every case: the references are replaced; FIELD_CASES: only those cases', the others kept
+        subset = bool(os.environ.get("FIELD_CASES"))
         os.makedirs(refdir, exist_ok=True)
-        for f in os.listdir(refdir):
-            os.remove(os.path.join(refdir, f))
+        kept = json.load(open(saved, encoding="utf-8")) if subset and os.path.exists(saved) else {}
+        if not subset:
+            for f in os.listdir(refdir):
+                os.remove(os.path.join(refdir, f))
         for cid in ids:
             src = os.path.join(outdir, "ref", cid + ".png")
             if os.path.exists(src):
                 shutil.copy(src, os.path.join(refdir, cid + ".png"))
+        kept.update({cid: inputs[cid] for cid in ids if cid in inputs})
         with open(saved, "w", encoding="utf-8") as f:
-            json.dump({cid: inputs[cid] for cid in ids if cid in inputs}, f, indent=0, sort_keys=True)
+            json.dump(kept, f, indent=0, sort_keys=True)
             f.write("\n")
-        expect[DEVICE] = {k: budgets[k] for k in ids if k in budgets}
+        if not subset:
+            expect[DEVICE] = {k: budgets[k] for k in ids if k in budgets}
         with open(EXPECT, "w", encoding="utf-8") as f:
             json.dump(dict(sorted(expect.items())), f, indent=1)
             f.write("\n")

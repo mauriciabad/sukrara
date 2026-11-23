@@ -103,7 +103,7 @@ Until the phone's first message reaches this app (a fresh install: up to a minut
 switch off; Garmin Connect not running), every surface says so instead of drawing empty values. **The watch never names
 a phone screen or setting**: the phone's pages change, the watch app in the store doesn't; the phone and the website
 say where.
-- **The app**: one page, no dots, laid out from the button up (title medium on up to two lines, the body tiny on up to
+- **The app**: one page, no dots, laid out from the button up (title medium on up to two lines, else small; the body tiny on up to
   two, else xtiny; the icon where room is left): Sukrara for Android's own icon (the disc, the cube, the dot: the phone app that
   needs to be open, big enough to read; the owner, 2026-11-22), not the watch's cyan launcher icon; *Waiting for your phone*; soft: *Sukrara for Android sends your
   glucose here*; a button **Open on phone** (START or a tap) → `Communications.openWebPage` with the setup link
