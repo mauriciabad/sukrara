@@ -15,6 +15,11 @@ Sukrara's releases. 0.x versions are previews.
   with install steps, versions and known Connect IQ bugs on [its page](docs/GARMIN-FACES.md); its face-only
   functions are annotated `(:sukraraFace)` instead of `(:face)`, so they can't clash with a face's own annotations.
   The privacy policy now covers the Garmin apps.
+- **Garmin alerts sooner and clearer, the glance centred**: when what the wrist should say changes, the phone sends
+  it to the watch app and the data field before the watch faces (Garmin Connect sends one message at a time), and the
+  watch shows Garmin's notification before anything else. The notification now carries the alert's bell in its colour
+  and the trend ("High 207", "Rising · 11:52"); opening it shows Sukrara's alert screen. The glance's numbers are
+  centred again (they sat high since the watch's own fonts).
 - **Sukrara watch app fixes from the first days on a watch** (#250): a tap now does what it lands
   on: page 2's period chips switch the period (MENU steps it too), a row of the list opens that row, an answer of the
   alert screen is that answer (before, every tap did what START does). On the amount, a drag up or down runs through
