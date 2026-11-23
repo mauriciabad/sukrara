@@ -1748,7 +1748,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -2435,7 +2434,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -7931,7 +7929,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -7976,7 +7973,7 @@
    }
   },
   "no-data-appA": {
-   "budget": 2747,
+   "budget": 2759,
    "input": {
     "age": 25.0,
     "bands": [
@@ -8607,7 +8604,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -8707,7 +8703,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -8806,7 +8801,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -9299,7 +9293,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -9389,7 +9382,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -9479,7 +9471,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -9568,7 +9559,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -12301,7 +12291,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -12988,7 +12977,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -18484,7 +18472,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -18529,7 +18516,7 @@
    }
   },
   "no-data-appA": {
-   "budget": 2185,
+   "budget": 2183,
    "input": {
     "age": 25.0,
     "bands": [
@@ -19160,7 +19147,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -19260,7 +19246,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -19359,7 +19344,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -19852,7 +19836,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -19942,7 +19925,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -20032,7 +20014,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -20121,7 +20102,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -21753,7 +21733,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -21929,7 +21908,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -22147,7 +22125,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -22857,7 +22834,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -23544,7 +23520,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -24243,7 +24218,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -24928,7 +24902,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -25051,7 +25024,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -25117,7 +25089,7 @@
    }
   },
   "day-appA": {
-   "budget": 5573,
+   "budget": 5763,
    "input": {
     "age": 0.5,
     "bands": [
@@ -25755,7 +25727,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -25898,7 +25869,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -25964,7 +25934,7 @@
    }
   },
   "day-glance": {
-   "budget": 1925,
+   "budget": 2093,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26026,7 +25996,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -26046,7 +26015,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2314,
+   "budget": 2482,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26110,7 +26079,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -26135,7 +26103,7 @@
    }
   },
   "glance-high": {
-   "budget": 2685,
+   "budget": 2853,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26202,7 +26170,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -26222,7 +26189,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 2673,
+   "budget": 2841,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26286,7 +26253,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -26375,7 +26341,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -26511,7 +26476,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -26650,7 +26614,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -26785,7 +26748,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -26919,7 +26881,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -27052,7 +27013,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -27183,7 +27143,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -27314,7 +27273,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -27446,7 +27404,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -27586,7 +27543,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -27681,7 +27637,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -27826,7 +27781,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -27930,7 +27884,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -28089,7 +28042,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -28155,7 +28107,7 @@
    }
   },
   "muted-appA": {
-   "budget": 5626,
+   "budget": 5816,
    "input": {
     "age": 0.5,
     "bands": [
@@ -28798,7 +28750,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -28933,7 +28884,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -29065,7 +29015,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -29110,7 +29059,7 @@
    }
   },
   "no-data-appA": {
-   "budget": 2905,
+   "budget": 2921,
    "input": {
     "age": 25.0,
     "bands": [
@@ -29741,7 +29690,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -29841,7 +29789,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -29940,7 +29887,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -30032,7 +29978,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -30135,7 +30080,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -30435,7 +30379,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -30525,7 +30468,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -30615,7 +30557,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -30704,7 +30645,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -30813,7 +30753,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -31483,7 +31422,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -31577,7 +31515,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -31671,7 +31608,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "v": 39
       }
@@ -32340,7 +32276,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -32516,7 +32451,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -32734,7 +32668,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -33444,7 +33377,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -34131,7 +34063,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -34830,7 +34761,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -35515,7 +35445,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -35638,7 +35567,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -35704,7 +35632,7 @@
    }
   },
   "day-appA": {
-   "budget": 6526,
+   "budget": 6709,
    "input": {
     "age": 0.5,
     "bands": [
@@ -36342,7 +36270,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -36485,7 +36412,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -36551,7 +36477,7 @@
    }
   },
   "day-glance": {
-   "budget": 2019,
+   "budget": 2207,
    "input": {
     "age": 0.5,
     "bands": [
@@ -36613,7 +36539,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -36633,7 +36558,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2474,
+   "budget": 2661,
    "input": {
     "age": 0.5,
     "bands": [
@@ -36697,7 +36622,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -36722,7 +36646,7 @@
    }
   },
   "glance-high": {
-   "budget": 2761,
+   "budget": 2949,
    "input": {
     "age": 0.5,
     "bands": [
@@ -36789,7 +36713,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -36809,7 +36732,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 2829,
+   "budget": 3016,
    "input": {
     "age": 0.5,
     "bands": [
@@ -36873,7 +36796,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -36962,7 +36884,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -37098,7 +37019,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -37237,7 +37157,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -37372,7 +37291,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -37506,7 +37424,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -37639,7 +37556,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -37770,7 +37686,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -37901,7 +37816,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -38033,7 +37947,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -38173,7 +38086,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -38268,7 +38180,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -38413,7 +38324,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -38517,7 +38427,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -38676,7 +38585,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -38742,7 +38650,7 @@
    }
   },
   "muted-appA": {
-   "budget": 6609,
+   "budget": 6792,
    "input": {
     "age": 0.5,
     "bands": [
@@ -39385,7 +39293,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -39520,7 +39427,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -39652,7 +39558,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -39697,7 +39602,7 @@
    }
   },
   "no-data-appA": {
-   "budget": 3572,
+   "budget": 3582,
    "input": {
     "age": 25.0,
     "bands": [
@@ -40328,7 +40233,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -40428,7 +40332,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -40527,7 +40430,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -40619,7 +40521,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -40722,7 +40623,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -41022,7 +40922,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -41112,7 +41011,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -41202,7 +41100,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -41291,7 +41188,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -41400,7 +41296,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -42070,7 +41965,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -42164,7 +42058,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -42258,7 +42151,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "v": 39
       }
@@ -42927,7 +42819,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -43103,7 +42994,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -43321,7 +43211,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -44031,7 +43920,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -44718,7 +44606,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -45417,7 +45304,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -46102,7 +45988,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -46225,7 +46110,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -46291,7 +46175,7 @@
    }
   },
   "day-appA": {
-   "budget": 6719,
+   "budget": 6887,
    "input": {
     "age": 0.5,
     "bands": [
@@ -46929,7 +46813,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -47072,7 +46955,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -47138,7 +47020,7 @@
    }
   },
   "day-glance": {
-   "budget": 2015,
+   "budget": 2183,
    "input": {
     "age": 0.5,
     "bands": [
@@ -47200,7 +47082,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -47220,7 +47101,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2471,
+   "budget": 2639,
    "input": {
     "age": 0.5,
     "bands": [
@@ -47284,7 +47165,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -47309,7 +47189,7 @@
    }
   },
   "glance-high": {
-   "budget": 2757,
+   "budget": 2924,
    "input": {
     "age": 0.5,
     "bands": [
@@ -47376,7 +47256,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -47396,7 +47275,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 2829,
+   "budget": 2997,
    "input": {
     "age": 0.5,
     "bands": [
@@ -47460,7 +47339,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -47549,7 +47427,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -47685,7 +47562,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -47824,7 +47700,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -47959,7 +47834,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -48093,7 +47967,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -48226,7 +48099,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -48357,7 +48229,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -48488,7 +48359,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -48620,7 +48490,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -48760,7 +48629,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -48855,7 +48723,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -49000,7 +48867,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -49104,7 +48970,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -49263,7 +49128,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -49329,7 +49193,7 @@
    }
   },
   "muted-appA": {
-   "budget": 6784,
+   "budget": 6952,
    "input": {
     "age": 0.5,
     "bands": [
@@ -49972,7 +49836,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -50107,7 +49970,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -50239,7 +50101,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -50284,7 +50145,7 @@
    }
   },
   "no-data-appA": {
-   "budget": 3781,
+   "budget": 3792,
    "input": {
     "age": 25.0,
     "bands": [
@@ -50915,7 +50776,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -51015,7 +50875,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -51114,7 +50973,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -51206,7 +51064,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -51309,7 +51166,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -51609,7 +51465,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -51699,7 +51554,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -51789,7 +51643,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -51878,7 +51731,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -51987,7 +51839,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -52657,7 +52508,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -52751,7 +52601,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -52845,7 +52694,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "v": 39
       }
@@ -53514,7 +53362,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -53690,7 +53537,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -53908,7 +53754,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -54618,7 +54463,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -55305,7 +55149,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -56004,7 +55847,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -56689,7 +56531,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -56812,7 +56653,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -56878,7 +56718,7 @@
    }
   },
   "day-appA": {
-   "budget": 2418,
+   "budget": 2581,
    "input": {
     "age": 0.5,
     "bands": [
@@ -57516,7 +57356,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -57659,7 +57498,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -57725,7 +57563,7 @@
    }
   },
   "day-glance": {
-   "budget": 1267,
+   "budget": 1419,
    "input": {
     "age": 0.5,
     "bands": [
@@ -57787,7 +57625,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -57807,7 +57644,7 @@
    }
   },
   "glance-ask": {
-   "budget": 1273,
+   "budget": 1425,
    "input": {
     "age": 0.5,
     "bands": [
@@ -57871,7 +57708,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -57896,7 +57732,7 @@
    }
   },
   "glance-high": {
-   "budget": 1819,
+   "budget": 1971,
    "input": {
     "age": 0.5,
     "bands": [
@@ -57963,7 +57799,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -57983,7 +57818,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 1858,
+   "budget": 2010,
    "input": {
     "age": 0.5,
     "bands": [
@@ -58047,7 +57882,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -58136,7 +57970,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -58272,7 +58105,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -58411,7 +58243,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -58546,7 +58377,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -58680,7 +58510,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -58813,7 +58642,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -58944,7 +58772,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -59075,7 +58902,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -59207,7 +59033,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -59347,7 +59172,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -59442,7 +59266,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -59587,7 +59410,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -59691,7 +59513,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -59850,7 +59671,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -59916,7 +59736,7 @@
    }
   },
   "muted-appA": {
-   "budget": 3430,
+   "budget": 3593,
    "input": {
     "age": 0.5,
     "bands": [
@@ -60559,7 +60379,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -60694,7 +60513,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -60826,7 +60644,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -60871,7 +60688,7 @@
    }
   },
   "no-data-appA": {
-   "budget": 2207,
+   "budget": 2205,
    "input": {
     "age": 25.0,
     "bands": [
@@ -61502,7 +61319,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -61602,7 +61418,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -61701,7 +61516,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -61793,7 +61607,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -61896,7 +61709,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -62196,7 +62008,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -62286,7 +62097,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -62376,7 +62186,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -62465,7 +62274,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -62574,7 +62382,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -63244,7 +63051,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -63338,7 +63144,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -63432,7 +63237,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "v": 39
       }
@@ -64101,7 +63905,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -64277,7 +64080,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -64495,7 +64297,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -65205,7 +65006,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -65892,7 +65692,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -66591,7 +66390,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -67276,7 +67074,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -67399,7 +67196,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -67465,7 +67261,7 @@
    }
   },
   "day-appA": {
-   "budget": 4536,
+   "budget": 4664,
    "input": {
     "age": 0.5,
     "bands": [
@@ -68103,7 +67899,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -68246,7 +68041,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -68312,7 +68106,7 @@
    }
   },
   "day-glance": {
-   "budget": 1912,
+   "budget": 2054,
    "input": {
     "age": 0.5,
     "bands": [
@@ -68374,7 +68168,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -68394,7 +68187,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2407,
+   "budget": 2548,
    "input": {
     "age": 0.5,
     "bands": [
@@ -68458,7 +68251,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -68483,7 +68275,7 @@
    }
   },
   "glance-high": {
-   "budget": 2418,
+   "budget": 2560,
    "input": {
     "age": 0.5,
     "bands": [
@@ -68550,7 +68342,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -68570,7 +68361,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 2424,
+   "budget": 2566,
    "input": {
     "age": 0.5,
     "bands": [
@@ -68634,7 +68425,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -68723,7 +68513,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -68859,7 +68648,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -68998,7 +68786,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -69133,7 +68920,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -69267,7 +69053,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -69400,7 +69185,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -69531,7 +69315,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -69662,7 +69445,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -69794,7 +69576,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -69934,7 +69715,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -70029,7 +69809,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -70174,7 +69953,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -70278,7 +70056,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -70437,7 +70214,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -70503,7 +70279,7 @@
    }
   },
   "muted-appA": {
-   "budget": 4566,
+   "budget": 4694,
    "input": {
     "age": 0.5,
     "bands": [
@@ -71146,7 +70922,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -71281,7 +71056,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -71413,7 +71187,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -71458,7 +71231,7 @@
    }
   },
   "no-data-appA": {
-   "budget": 2611,
+   "budget": 2621,
    "input": {
     "age": 25.0,
     "bands": [
@@ -72089,7 +71862,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -72189,7 +71961,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -72288,7 +72059,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -72380,7 +72150,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -72483,7 +72252,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -72783,7 +72551,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -72873,7 +72640,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -72963,7 +72729,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -73052,7 +72817,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -73161,7 +72925,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -73831,7 +73594,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -73925,7 +73687,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -74019,7 +73780,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "v": 39
       }
@@ -75789,7 +75549,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -76476,7 +76235,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -81972,7 +81730,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -82648,7 +82405,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -82748,7 +82504,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -82847,7 +82602,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -83340,7 +83094,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -83430,7 +83183,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -83520,7 +83272,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -83609,7 +83360,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -85241,7 +84991,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -85417,7 +85166,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -85635,7 +85383,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -86345,7 +86092,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -87032,7 +86778,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -87731,7 +87476,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -88416,7 +88160,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -88539,7 +88282,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -89243,7 +88985,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -89386,7 +89127,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -89452,7 +89192,7 @@
    }
   },
   "day-glance": {
-   "budget": 6411,
+   "budget": 6585,
    "input": {
     "age": 0.5,
     "bands": [
@@ -89514,7 +89254,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -89534,7 +89273,7 @@
    }
   },
   "glance-ask": {
-   "budget": 6844,
+   "budget": 7017,
    "input": {
     "age": 0.5,
     "bands": [
@@ -89598,7 +89337,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -89623,7 +89361,7 @@
    }
   },
   "glance-high": {
-   "budget": 7125,
+   "budget": 7299,
    "input": {
     "age": 0.5,
     "bands": [
@@ -89690,7 +89428,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -89710,7 +89447,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 7197,
+   "budget": 7370,
    "input": {
     "age": 0.5,
     "bands": [
@@ -89774,7 +89511,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "v": 82
       }
@@ -89863,7 +89599,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -89999,7 +89734,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -90138,7 +89872,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -90273,7 +90006,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -90407,7 +90139,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -90540,7 +90271,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -90671,7 +90401,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -90802,7 +90531,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -90934,7 +90662,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -91074,7 +90801,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -91169,7 +90895,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -91314,7 +91039,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -91418,7 +91142,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -91577,7 +91300,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -92286,7 +92008,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -92421,7 +92142,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -92553,7 +92273,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -93229,7 +92948,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -93329,7 +93047,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -93428,7 +93145,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -93520,7 +93236,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -93623,7 +93338,6 @@
         142,
         15
        ],
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -93923,7 +93637,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -94013,7 +93726,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -94103,7 +93815,6 @@
       "ring",
       {
        "b": null,
-       "dim": true,
        "k": "tir",
        "mark": "none",
        "r": "in",
@@ -94192,7 +93903,6 @@
      [
       "ring",
       {
-       "dim": true,
        "k": "tir"
       }
      ],
@@ -94301,7 +94011,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -94971,7 +94680,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -95065,7 +94773,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "mark": "none",
        "r": "tight",
@@ -95159,7 +94866,6 @@
         215,
         25
        ],
-       "dim": false,
        "k": "tir",
        "v": 39
       }
