@@ -1,16 +1,16 @@
-Sukrara Aura muestra tu glucosa junto a la hora: el valor en el color de su rango, las últimas horas como un minigráfico o la flecha de tendencia, y hace cuánto se leyó. Cada lectura va directa de Sukrara en tu móvil a tu reloj en cuanto llega: no hace falta internet. La esfera, el aura, se concentra en tu nivel y se extiende cuanto más te alejas del rango. Es una esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
+Sukrara Aura es una esfera CGM (MCG) para personas con diabetes: tu glucosa (azúcar en sangre) junto a la hora, en el color de su rango, con las últimas horas como un minigráfico o la flecha de tendencia y hace cuánto se leyó. El fondo, el aura, se concentra en tu nivel y se extiende cuanto más te alejas del rango. Cada lectura va directa de Sukrara en tu móvil a tu reloj en cuanto llega: no hace falta internet. Sukrara es una app Android libre y gratuita que lee tu monitor continuo de glucosa: FreeStyle Libre 3 directamente; FreeStyle Libre 2, Dexcom G7 y otros sensores a través de Juggluco; o Nightscout.
 
 Qué necesitas
-• La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil. Sukrara envía cada lectura a la esfera a través de Garmin Connect.
+• La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil, por el que Sukrara envía cada lectura.
 • No funciona con iPhone.
-• Sin Sukrara en el móvil, la esfera muestra la hora, los datos del propio reloj y «Sin lecturas».
+• Sin Sukrara en el móvil, la esfera muestra la hora, los datos del reloj y «Sin lecturas».
 
 En la esfera
 • Tu glucosa en los colores de tu rango, con las últimas horas como un minigráfico a escala fija, o la flecha de tendencia de Sukrara.
 • Una barra de glucosa con tus propios límites marcados y los últimos 30 minutos como un rastro que se desvanece.
-• Un valor antiguo nunca parece actual: una lectura que llega tarde muestra su hora, luego se tacha y se vuelve gris, y luego «Sin lecturas desde» y la hora; lo cuenta el propio reloj, aunque el móvil esté lejos.
+• Un valor antiguo nunca parece actual: una lectura tardía muestra su hora, luego se tacha en gris, luego «Sin lecturas desde» y la hora; lo cuenta el reloj, aunque el móvil esté lejos.
 • El estado de las alertas de Sukrara en tu móvil (te necesita, atendida, silenciada y hasta cuándo) y el de tu sensor (calentando, acabándose, terminado).
-• Siete esferas: grano, curvas, línea de agua, láseres, brillo, un mapa o negro.
+• Siete fondos: grano, curvas, línea de agua, láseres, brillo, un mapa o negro.
 • Modos siempre encendido y noche que se mantienen tenues, y Privado, que oculta el número hasta que mantienes pulsada la pantalla.
 
 Tus datos
@@ -18,18 +18,18 @@ Tus datos
 • Los lados: la barra de glucosa, la batería del reloj (días, porcentaje o ambos), los días que le quedan al sensor, o nada.
 
 Ajustes
-En la app Connect IQ del móvil, o en el reloj: esfera, halo, tendencia, barrido de segundos, verde en rango, los cuatro datos, los dos lados, texto de batería, privado y segunda zona horaria. Unidades, límites y alertas siguen a Sukrara en tu móvil.
+En la app Connect IQ del móvil, o en el reloj: fondo, halo, tendencia, barrido de segundos, verde en rango, los cuatro datos, los dos lados, texto de batería, privado y segunda zona horaria. Unidades, límites y alertas siguen a Sukrara en tu móvil.
 
 Relojes
 AMOLED redonda de 390 × 390: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) y MARQ Aviator, Approach S70 42 mm.
 
 Permisos y privacidad
-La esfera solo habla con Sukrara en tu móvil: las lecturas llegan a través de Garmin Connect, y cada 5 minutos la esfera pide la última a Sukrara en el mismo móvil. Ese es el permiso de Comunicaciones, en segundo plano: nada sale a internet. Lee los datos de tu reloj para los campos (complicaciones) y tus horas de dormir y despertar para el modo noche (tu perfil); esos datos se quedan en el reloj. Sin cuenta, sin analíticas, sin anuncios. Política de privacidad: https://sukrara.mauri.app/es/privacy/
+La esfera solo habla con Sukrara en tu móvil: las lecturas llegan por Garmin Connect, y cada 5 minutos pide la última a Sukrara. Ese es el permiso de Comunicaciones, en segundo plano: nada sale a internet. Lee los datos de tu reloj para los campos (complicaciones) y tus horas de dormir y despertar para el modo noche (tu perfil); esos datos se quedan en el reloj. Sin cuenta ni analíticas. Política de privacidad: https://sukrara.mauri.app/es/privacy/
 
 Gratis, sin compras ni anuncios, y de código abierto (GPL-3.0): https://github.com/mauriciabad/sukrara
 En inglés y español. Ayuda y preguntas: https://sukrara.mauri.app/es/garmin/ o un issue en GitHub; respondo cuando puedo.
 
 Importante
-Sukrara Aura no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad; es solo informativa. Los valores pueden ser erróneos, llegar tarde o faltar, y la esfera no hace sonar alertas. No tomes decisiones de tratamiento basándote en ella: comprueba la app de tu sensor o un glucómetro, y pide consejo médico a tu médico o a tu equipo de diabetes. Hice Sukrara para mí y la comparto con todo el mundo; úsala bajo tu propia responsabilidad.
+Sukrara Aura no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad; es solo informativa. Los valores pueden ser erróneos, llegar tarde o faltar, y la esfera no hace sonar alertas. No tomes decisiones de tratamiento basándote en ella: comprueba la app de tu sensor o un glucómetro, y pide consejo a tu médico o a tu equipo de diabetes. Hice Sukrara para mí y la comparto con todo el mundo; úsala bajo tu propia responsabilidad.
 
-Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
+FreeStyle Libre y Dexcom son marcas de sus dueños. Sukrara no está afiliada a Garmin, Abbott, Dexcom ni a ningún otro fabricante de sensores.

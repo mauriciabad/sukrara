@@ -1,6 +1,7 @@
 {
   "about": "Sukrara Aura's Connect IQ store listing (docs/20-publishing.md › Connect IQ store: the listings). The texts are description-<lang>.txt (plain text, at most 4000 characters; tools/release/test_release.py counts them in UTF-8 bytes); the images are made by assets/brand/sukrara/connectiq/render.mjs into `images`: icon-500.png, hero-<lang>.png (`kind`, the kind of app in the store's words, the title and `tagline`), screen-<id>.png for each of `screenshots`, in this order. release.py's garmin step prints it for the upload.",
-  "title": { "en": "Sukrara Aura", "es": "Sukrara Aura" },
+  "title": { "en": "Sukrara Aura – CGM Glucose Watch Face", "es": "Sukrara Aura – Esfera de glucosa CGM" },
+  "heroTitle": { "en": "Sukrara Aura", "es": "Sukrara Aura" },
   "kind": { "en": "Watch face", "es": "Pantalla de reloj" },
   "tagline": {
     "en": ["Your glucose on your wrist"],

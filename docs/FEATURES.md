@@ -3052,8 +3052,10 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   name says what kind of app it is: *Sukrara Aura watch face* (es *Esfera Sukrara Aura*), *Sukrara watch app* (es *App
   de reloj Sukrara*; Garmin calls the type a device app), *Sukrara data field* (es *Campo de datos Sukrara*). The
   apps' own names on the watch are *Sukrara Aura*, *Sukrara* and *Sukrara Glucose* (es *Sukrara Glucosa*: the data
-  field as the activity's Data Screens › Connect IQ list shows it; the owner, 2026-11-23), and in the store *Sukrara
-  Aura*, *Sukrara* and *Sukrara Glucose Data Field* (es *Sukrara Glucosa: campo de datos*). Each row that
+  field as the activity's Data Screens › Connect IQ list shows it; the owner, 2026-11-23), and in the store, titled for
+  its search, *Sukrara Aura – CGM Glucose Watch Face*, *Sukrara – CGM Glucose Glance & Insulin Log* and *Sukrara
+  Glucose – CGM Blood Sugar Data Field* (es *Sukrara Aura – Esfera de glucosa CGM*, *Sukrara – Glucosa CGM: vistazo,
+  alertas e insulina*, *Sukrara Glucosa – Campo de datos CGM*; docs/20-publishing.md › Connect IQ store). Each row that
   names one has its kind's icon, Connect IQ's own symbols for its lists redrawn as the designsystem's
   `ds_ic_watch_face` (a dial with ticks and two hands at 10:10), `ds_ic_device_app` (a 2 × 2 grid, three squares filled, one
   outlined) and `ds_ic_data_field` (a dial with a band across it split in two from edge to edge), 24 dp, 2 dp strokes as Material Symbols, in the

@@ -1,6 +1,6 @@
 {
   "about": "Sukrara data field's Connect IQ store listing (docs/20-publishing.md › Connect IQ store: the listings). The texts are description-<lang>.txt (plain text, at most 4000 characters; tools/release/test_release.py counts them in UTF-8 bytes); the images are made by assets/brand/sukrara/connectiq/render.mjs into `images`: icon-500.png, hero-<lang>.png (`kind`, the kind of app in the store's words, the title and `tagline`), screen-<id>.png for each of `screenshots`, in this order. release.py's garmin step prints it for the upload.",
-  "title": { "en": "Sukrara Glucose Data Field", "es": "Sukrara Glucosa: campo de datos" },
+  "title": { "en": "Sukrara Glucose – CGM Blood Sugar Data Field", "es": "Sukrara Glucosa – Campo de datos CGM" },
   "heroTitle": { "en": "Sukrara Glucose", "es": "Sukrara Glucosa" },
   "kind": { "en": "Data field", "es": "Campo de datos" },
   "tagline": {

@@ -1,38 +1,38 @@
-Sukrara puts your glucose in your watch's glance list and on watch faces, with its chart and your numbers a press away, and lets you log insulin and carbs from the wrist. Each reading goes straight from Sukrara on your phone to your watch as it arrives: no internet needed. It is the watch app of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+Sukrara puts your CGM glucose (blood sugar) on your watch: a glance (widget), complications for any watch face, a chart and your numbers, your phone's alerts, and insulin and carb logging from the wrist. Each reading goes straight from Sukrara on your phone to your watch as it arrives: no internet needed. It is the watch app of Sukrara, a free, open-source Android app for people with diabetes that reads your continuous glucose monitor: FreeStyle Libre 3 directly; FreeStyle Libre 2, Dexcom G7 and other sensors through Juggluco; or Nightscout.
 
 What you need
 • The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone.
 • iPhone is not supported.
 
 Glance
-• The value and its trend arrow, your main ring (time in range, or what you chose in Sukrara) and your last treatment.
+• The value and its trend arrow, your main ring (time in range, or your pick) and your last treatment.
 
 App
 • Your glucose, your rings and a chart of the last hours with your ranges and treatments.
 • Your numbers: time in ranges, average, GMI and variability over 1, 7, 14 or 30 days.
-• An old value never looks current: a late reading shows its time, then it is struck through, then "No reading since" and the time.
+• An old value never looks current: late, it shows its time; old, it is struck through; then "No reading since".
 
 Log from your wrist
-• Rapid insulin, long-acting insulin or carbs: pick the amount, or one of your usual amounts, and hold to log. Undo for 10 seconds. It goes to Sukrara's log on your phone.
+• Rapid or long-acting insulin, or carbs: pick the amount, or a usual one, and hold to log; Undo for 10 seconds. It goes to your phone's log.
 • If you logged the same kind in the last 15 minutes, it says so first.
-• With the phone out of reach the watch keeps the entry and sends it, with its own time, when the phone is back.
+• With the phone away, the watch keeps the entry and sends it, with its time, when the phone is back.
 • It records what you enter; it gives no dosing advice.
 
 Alerts and mute
-• When Sukrara's alert rings on your phone while the phone is locked, the watch shows it as a notification: the bell in the alert's colour, the value, the trend and the time, with the phone's actions (log a treatment, remind less, mute). Open it for Sukrara's alert screen. With the phone in your hand only the phone alerts. The watch does not replace the phone's alerts: keep them on. Needs Connect IQ 5.1 or newer (not the Venu 2 family, Venu Sq 2 and D2 Air X10).
+• When Sukrara's alert rings on your locked phone, the watch shows it as a notification (the coloured bell, the value, the trend and the time) with the phone's actions: log a treatment, remind less, mute. Open it for Sukrara's alert screen. With the phone in your hand only the phone alerts. The watch doesn't replace the phone's alerts: keep them on. Needs Connect IQ 5.1 or newer (not the Venu 2 family, Venu Sq 2, D2 Air X10).
 • Mute Sukrara's alerts for 15 minutes to 2 hours, or until you unmute, with Undo.
 
 Complications
-• For watch faces that take complications: glucose, glucose with its trend and limits, the last 24 hours, and Log (the time since your last treatment; on a touch screen it opens logging).
+• For any watch face that takes them: glucose, glucose with trend and limits, the last 24 hours, and Log (the time since your last treatment; a tap opens logging on touch screens).
 
 Settings
-It looks the way your phone does; each watch can have its own look in Sukrara on the phone. In the Connect IQ app: the sparkline on alerts and what the Log complication shows.
+It looks the way your phone does; each watch can have its own look. In the Connect IQ app: the sparkline on alerts and what Log shows.
 
 Watches
 Every watch with Connect IQ 5 or newer that this page lists: fēnix, epix, enduro, Forerunner, Venu, vívoactive, Instinct AMOLED, MARQ, Descent, Approach and D2 models.
 
 Permissions and privacy
-The app talks only to Sukrara on your phone: readings arrive through Garmin Connect, every 5 minutes it asks Sukrara for the latest one, and what you log or mute goes back to Sukrara, signed with a key only Sukrara gives the watch. That is the Communications permission: nothing goes to the internet. Background keeps the glance and complications current while the app is closed, Notifications shows the alerts, and the complications permission offers them to watch faces. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy/
+The app talks only to Sukrara on your phone: readings arrive through Garmin Connect, every 5 minutes it asks Sukrara for the latest one, and what you log or mute goes back to Sukrara, signed with a key from Sukrara. That is the Communications permission: nothing goes to the internet. Background keeps the glance and complications current while the app is closed, Notifications shows the alerts, and the complications permission offers them to watch faces. No account, no analytics. Privacy policy: https://sukrara.mauri.app/privacy/
 
 Free, with no purchases and no ads, and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
 In English and Spanish. Help and questions: https://sukrara.mauri.app/garmin/ or an issue on GitHub; I answer as time allows.
@@ -40,4 +40,4 @@ In English and Spanish. Help and questions: https://sukrara.mauri.app/garmin/ or
 Important
 Sukrara is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and an alert on the watch can be late or not arrive. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
 
-Sukrara is not affiliated with Garmin or with any sensor maker.
+FreeStyle Libre and Dexcom are their owners' trademarks. Sukrara is not affiliated with Garmin, Abbott, Dexcom or any other sensor maker.

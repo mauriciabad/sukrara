@@ -1,4 +1,4 @@
-Sukrara Aura shows your glucose next to the time: the value in its range colour, the last hours as a sparkline or the trend arrow, and how long ago it was read. Each reading goes straight from Sukrara on your phone to your watch as it arrives: no internet needed. The dial, the aura, gathers at your level and spreads the further out of range you are. It is a watch face of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+Sukrara Aura is a CGM watch face for people with diabetes: your glucose (blood sugar) next to the time, in its range colour, with the last hours as a sparkline or the trend arrow and how long ago it was read. The dial, the aura, gathers at your level and spreads the further out of range you are. Each reading goes straight from Sukrara on your phone to your watch as it arrives: no internet needed. Sukrara is a free, open-source Android app that reads your continuous glucose monitor: FreeStyle Libre 3 directly; FreeStyle Libre 2, Dexcom G7 and other sensors through Juggluco; or Nightscout.
 
 What you need
 • The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone. Sukrara sends each reading to the watch face through Garmin Connect.
@@ -24,7 +24,7 @@ Watches
 Round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm.
 
 Permissions and privacy
-The face talks only to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes the face asks Sukrara on the same phone for the latest one. That is the Communications permission, used in the background: nothing goes to the internet. It reads your watch's data for the fields (complications), and your sleep and wake times for night mode (your profile); that data stays on the watch. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy/
+The face talks only to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes the face asks Sukrara on the same phone for the latest one. That is the Communications permission, used in the background: nothing goes to the internet. It reads your watch's data for the fields (complications), and your sleep and wake times for night mode (your profile); that data stays on the watch. No account, no analytics. Privacy policy: https://sukrara.mauri.app/privacy/
 
 Free, with no purchases and no ads, and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
 In English and Spanish. Help and questions: https://sukrara.mauri.app/garmin/ or an issue on GitHub; I answer as time allows.
@@ -32,4 +32,4 @@ In English and Spanish. Help and questions: https://sukrara.mauri.app/garmin/ or
 Important
 Sukrara Aura is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and the watch face sounds no alerts. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
 
-Sukrara is not affiliated with Garmin or with any sensor maker.
+FreeStyle Libre and Dexcom are their owners' trademarks. Sukrara is not affiliated with Garmin, Abbott, Dexcom or any other sensor maker.
