@@ -161,6 +161,28 @@ const GROUPS: Group[] = [
 		],
 	},
 	{
+		id: 'update',
+		title: L('When versions differ', 'Cuando las versiones no coinciden'),
+		lead: L(
+			'If the phone sends what the face can’t read yet, or the other way round, the face keeps your glucose and says which app to update.',
+			'Si el móvil envía algo que la esfera aún no sabe leer, o al revés, la esfera mantiene tu glucosa y dice qué app actualizar.',
+		),
+		examples: [
+			{
+				case: 'update-phone',
+				title: L('Update Sukrara on phone', 'Actualiza Sukrara en el móvil'),
+				note: L('The phone’s Sukrara is older: update it from its store or its About page.', 'Sukrara en el móvil es más antigua: actualízala desde su tienda o su página Acerca de.'),
+			},
+			{
+				id: 'update-face',
+				case: 'update-phone',
+				cfg: { update: 'face', glucose: 196, age: 3, spark: [196] },
+				title: L('Update face in Connect IQ', 'Actualiza la esfera en Connect IQ'),
+				note: L('The face is older: Connect IQ on the phone › Updates › Update All, then sync the watch.', 'La esfera es más antigua: en Connect IQ del móvil › Actualizaciones › Actualizar todo, y sincroniza el reloj.'),
+			},
+		],
+	},
+	{
 		id: 'screen',
 		title: L('Always-on, night and private', 'Siempre activa, noche y privado'),
 		lead: L(

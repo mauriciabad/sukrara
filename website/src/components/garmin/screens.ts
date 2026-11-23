@@ -103,6 +103,16 @@ export const SCREENS = {
 		title: L('First start', 'Primer inicio'),
 		note: L('Says what it’s waiting for and opens it on the phone.', 'Dice qué espera y lo abre en el móvil.'),
 	},
+	updatePhone: {
+		cfg: { screen: 'update', update: 'phone' },
+		title: L('Update Sukrara on your phone', 'Actualiza Sukrara en tu móvil'),
+		note: L('Your glucose stays; Open on phone takes you to the update.', 'Tu glucosa se queda; Abrir en el móvil te lleva a la actualización.'),
+	},
+	updateApp: {
+		cfg: { screen: 'update', update: 'app' },
+		title: L('Update this app', 'Actualiza esta app'),
+		note: L('Opens its Connect IQ listing on the phone.', 'Abre su página de Connect IQ en el móvil.'),
+	},
 	// The data field
 	fieldBand: {
 		cfg: { screen: 'dfSlot', form: 'band' },
@@ -118,6 +128,11 @@ export const SCREENS = {
 		cfg: { screen: 'dfAlert', scenario: 'low' },
 		title: L('Alert mid-run', 'Alerta en plena actividad'),
 		note: L('Full screen when Sukrara’s alert rings.', 'A pantalla completa cuando suena la alerta de Sukrara.'),
+	},
+	fieldUpdate: {
+		cfg: { screen: 'dfSlot', form: 'band', update: 'phone' },
+		title: L('Update the phone', 'Actualiza el móvil'),
+		note: L('Your glucose stays; the label says what to update.', 'Tu glucosa se queda; la etiqueta dice qué actualizar.'),
 	},
 	fieldMip: {
 		cfg: { cls: 'm260', screen: 'dfSlot', form: 'quarter' },

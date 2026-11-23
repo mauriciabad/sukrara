@@ -62,6 +62,11 @@ Con el móvil en la mano, solo avisa el móvil: nada de alertas dobles, tampoco 
 
 <WatchScreens ids={['old', 'warmup', 'queued', 'setup']} />
 
+**Cuando las versiones no coinciden.** Si Sukrara en el móvil y una app del reloj no leen la misma versión, el reloj
+mantiene tu glucosa y dice cuál actualizar, con *Abrir en el móvil* para hacerlo. [Cómo actualizar cada una](#cuando-las-versiones-no-coinciden)
+
+<WatchScreens ids={['updatePhone', 'updateApp']} />
+
 Se ve como tu móvil; cada reloj puede tener sus propios ajustes en **Ajustes › Compartir con apps › Garmin**.
 
 ## El campo de datos Sukrara
@@ -73,6 +78,27 @@ Garmin Connect la dibuja junto a tu pulso y tu ritmo.
 
 Añádelo en los ajustes de la actividad › Pantallas de datos, donde es *Sukrara Glucosa* en la lista Connect IQ, y
 activa su alerta a pantalla completa en › Alertas › Connect IQ.
+
+Si Sukrara en el móvil y el campo no leen la misma versión, su etiqueta dice cuál actualizar, sobre tu glucosa.
+[Cómo actualizar cada una](#cuando-las-versiones-no-coinciden)
+
+<WatchScreens ids={['fieldUpdate']} />
+
+## Cuando las versiones no coinciden
+
+Cuando el reloj dice *Actualiza Sukrara en el móvil* o *Actualiza la esfera en Connect IQ*, el móvil y el reloj leen versiones distintas de lo que se envían. Puede pasar durante un día o así tras una nueva
+versión, mientras una tienda se pone al día, o si las actualizaciones automáticas de Connect IQ están desactivadas.
+Mientras tanto, tu glucosa sigue en el reloj; la línea dice qué app actualizar:
+
+- **Actualiza Sukrara en el móvil** (*ACTUALIZA MÓVIL* en el campo de datos): actualiza
+  [Sukrara para Android](/es/android/#versiones), desde Google Play o, en la versión de GitHub, con su propio
+  actualizador en Ajustes › Acerca de.
+- **Actualiza la esfera en Connect IQ**, **Actualiza esta app** o *ACTUALIZA CAMPO*: en la app Connect IQ del móvil,
+  abre tu reloj › Actualizaciones › Actualizar todo, y sincroniza el reloj. *Abrir en el móvil* de la app del reloj abre
+  allí su página.
+
+El móvil también lo dice, con un botón **Actualizar**: en la pantalla principal y en Ajustes › Compartir con apps ›
+Garmin. Todo vuelve a la normalidad solo en cuanto coinciden.
 
 ## Requisitos
 

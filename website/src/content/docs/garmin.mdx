@@ -61,6 +61,11 @@ in your hand, only the phone alerts: no double alert, also once you lock it agai
 
 <WatchScreens ids={['old', 'warmup', 'queued', 'setup']} />
 
+**When versions differ.** If the phone's Sukrara and a watch app don't read the same version, the watch keeps your
+glucose and says which one to update, with *Open on phone* to that update. [How to update each one](#when-versions-differ)
+
+<WatchScreens ids={['updatePhone', 'updateApp']} />
+
 It looks the way your phone does; each watch can have its own settings in **Settings › Share with apps › Garmin**.
 
 ## The Sukrara data field
@@ -72,6 +77,25 @@ it beside your heart rate and pace.
 
 Add it in the activity's settings › Data Screens, where it's *Sukrara Glucose* in the Connect IQ list, and turn its
 full-screen alert on in › Alerts › Connect IQ.
+
+If the phone's Sukrara and the field don't read the same version, its label says which to update, over your glucose.
+[How to update each one](#when-versions-differ)
+
+<WatchScreens ids={['fieldUpdate']} />
+
+## When versions differ
+
+When the watch says *Update Sukrara on phone* or *Update face in Connect IQ*, the phone and the watch read different versions of what they send each other. It can happen for a day or so after a
+release, while one store catches up, or when Connect IQ's automatic updates are off. Your glucose stays on the watch
+meanwhile; the line names the app to update:
+
+- **Update Sukrara on phone** (*UPDATE PHONE* on the data field): update [Sukrara for Android](/android/#versions), from
+  Google Play or, for the GitHub version, its own updater in Settings › About.
+- **Update face in Connect IQ**, **Update this app** or *UPDATE FIELD*: in the Connect IQ app on the phone, open your
+  watch › Updates › Update All, then sync the watch. The watch app's *Open on phone* opens its listing there.
+
+The phone says it too, with an **Update** button: on home and in Settings › Share with apps › Garmin. Everything goes
+back to normal by itself once both match.
 
 ## Requirements
 
