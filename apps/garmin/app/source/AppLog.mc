@@ -237,9 +237,17 @@ module AppLog {
     // ---- the pen question (the phone's "Already logged by your pen?"): [pen] "4.5u at 20:31"; [sel] 0 Cancel, 1 Log anyway
     function pen(g as AppG, k as String, pen as String, sel as Number) as Void {
         var col = AppMath.pal(k);
-        g.icon("pen", 0, -118, 30, col);
-        AppScreens.fitW(g, -70, AppWords.s(Rez.Strings.PenAsk), AppDraw.ME, AppMath.INK);
-        AppScreens.fitW(g, -62 + AppDraw.capOf(AppDraw.TI) + 6, pen, AppDraw.TI, AppMath.SOFT);
+        // the question on one line under the pen (clear of the button hint at the edge), else on two in xtiny without
+        // the pen (the room it takes)
+        var t = AppWords.s(Rez.Strings.PenAsk);
+        var yb = -70.0;
+        if (AppDraw.ww(t, AppDraw.XT) <= AppScreens.lineW(-70, AppDraw.XT) - 30) {
+            g.icon("pen", 0, -118, 30, col);
+            AppScreens.fitW(g, -70, t, AppDraw.ME, AppMath.INK);
+        } else {
+            yb = AppScreens.para(g, -96, t, AppDraw.XT, AppMath.INK);
+        }
+        AppScreens.fitW(g, yb + 14 + AppDraw.capOf(AppDraw.TI), pen, AppDraw.TI, AppMath.SOFT);
         var items = [AppWords.s(Rez.Strings.Cancel), AppWords.s(Rez.Strings.LogAnyway)];
         var ys = [10, 70];
         for (var i = 0; i < 2; i++) {
@@ -252,7 +260,7 @@ module AppLog {
 
     // ---- a short word that closes by itself (Not logged: too old, Undone …) ------------------------------------
     function said(g as AppG, text as String) as Void {
-        AppScreens.fitW(g, 8, text, AppDraw.ME, AppMath.INK);
+        AppScreens.para(g, 8, text, AppDraw.ME, AppMath.INK);
     }
 }
 

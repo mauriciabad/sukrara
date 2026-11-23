@@ -79,10 +79,12 @@ module AppAlert {
         var w = word(k);
         // the alert's word: medium, or the largest role that fits the width at its height beside the bell
         var wy = -124;
-        var wf = AppDrawApp.fitRole(w, AppDraw.ME, 2 * AppScreens.edgeX(wy - AppDraw.capOf(AppDraw.ME)) - 34);
-        var wd = AppDraw.ww(w, wf) + 28;
-        g.icon("bell", -wd / 2 + 10, wy - AppDraw.capOf(wf) / 2, 20, ink);
-        g.w(-wd / 2 + 28, wy, w, wf, ink, START);
+        // the bell's box 1.2 × the word's capitals (its drawing about as tall as them), 4 units before it
+        var wf = AppDrawApp.fitRole(w, AppDraw.ME, 2 * AppScreens.edgeX(wy - AppDraw.capOf(AppDraw.ME)) - AppDraw.capOf(AppDraw.ME) * 1.2 - 10);
+        var bs = AppDraw.capOf(wf) * 1.2;
+        var wd = AppDraw.ww(w, wf) + bs + 4;
+        g.icon("bell", -wd / 2 + bs / 2, wy - AppDraw.capOf(wf) / 2, bs, ink);
+        g.w(-wd / 2 + bs + 4, wy, w, wf, ink, START);
         var vc = v ? w0 : null;
         if (d.noValue()) {
             AppScreens.noValue(g, d, -66);
@@ -141,13 +143,16 @@ module AppAlert {
             } else {
                 g.r(-bw / 2, y - 23, bw, 46, 23, fill, on || !v ? 1.0 : 0.28, 0);
             }
-            var bf = AppDrawApp.fitRole(label, AppDraw.SM, bw - 36 - (icon != null ? 26 : 0));
-            var tw0 = AppDraw.ww(label, bf) + (icon != null ? 26 : 0);
+            // the icon's box 1.1 × the label's capitals (its drawing about as tall as them), 4 units before it
+            var isz = AppDraw.capOf(AppDraw.SM) * 1.1;
+            var ip = icon != null ? isz + 4 : 0;
+            var bf = AppDrawApp.fitRole(label, AppDraw.SM, bw - 36 - ip);
+            var tw0 = AppDraw.ww(label, bf) + ip;
             var tx = -tw0 / 2;
             if (icon != null) {
-                g.icon(icon as String, tx + 9, y, 18, ic);
+                g.icon(icon as String, tx + isz / 2, y, isz, ic);
             }
-            g.w(tx + (icon != null ? 26 : 0), y + AppDraw.capOf(bf) / 2, label, bf, fg, START);
+            g.w(tx + ip, y + AppDraw.capOf(bf) / 2, label, bf, fg, START);
         }
         AppScreens.btnHint(g, 60, v ? w0 : tk != null ? AppMath.pal(tk) : AppMath.INK);
     }

@@ -869,7 +869,10 @@ var WL = (function () {
   // the numbers: the phone's Glucose report, simplified (one period, the three shares with their goals, average, GMI, CV)
   S.appNums = function (g, d, c) {
     var per = c.period || '14d', pers = ['1d', '7d', '14d', '30d'];
-    var cw = 50, gp = 6, x0 = -(pers.length * cw + (pers.length - 1) * gp) / 2, ch = capOf('xtiny') + 14;
+    // the chips as wide as their words need (11 units each side: clear of the round ends), never under 50, the four
+    // inside the screen's width at their top
+    var gp = 6, cw = Math.max(50, Math.min((2 * edgeX(-152) - 3 * gp) / 4, Math.max.apply(null, pers.map(function (p) { return ww(p, 'xtiny'); })) + 22));
+    var x0 = -(pers.length * cw + (pers.length - 1) * gp) / 2, ch = capOf('xtiny') + 14;
     pers.forEach(function (p, i) {
       var on = p === per, x = x0 + i * (cw + gp);
       g.r(x, -152, cw, ch, ch / 2, { fill: on ? PAL.card2 : 'none', stroke: on ? PAL.soft : PAL.faint, sw: 1.5 });
@@ -1216,9 +1219,10 @@ var WL = (function () {
     else rim(g, col, 10, 1);
     // on the block: white (MIP: white or black, whichever reads better on the 64-colour block, inkOn)
     var W0 = inkOn(col), ink = very ? W0 : col;
-    var wy = -124, wf = fitRole(word, 'medium', 2 * edgeX(wy - capOf('medium')) - 34), wd = ww(word, wf) + 28;
-    g.icon('bell', -wd / 2 + 10, wy - capOf(wf) / 2, 20, ink);
-    g.t(-wd / 2 + 28, wy, word, { f: wf, fill: ink, anchor: 'start' });
+    // the bell's box 1.2 × the word's capitals (its drawing about as tall as them), 4 units before it
+    var wy = -124, bs0 = capOf('medium') * 1.2, wf = fitRole(word, 'medium', 2 * edgeX(wy - capOf('medium')) - bs0 - 10), bs = capOf(wf) * 1.2, wd = ww(word, wf) + bs + 4;
+    g.icon('bell', -wd / 2 + bs / 2, wy - capOf(wf) / 2, bs, ink);
+    g.t(-wd / 2 + bs + 4, wy, word, { f: wf, fill: ink, anchor: 'start' });
     var spark = c.spark !== false;
     if (c.noValue) noValue(g, d, -66);
     else if (spark) {
@@ -1256,9 +1260,11 @@ var WL = (function () {
     rows.forEach(function (r, i) {
       var y = ys[i], w = ws[i];
       g.r(-w / 2, y - 23, w, 46, 23, { fill: r.fill, stroke: r.line ? W0 : 'none', sw: 2 });
-      var bf = fitRole(r.t, 'small', w - 36 - (r.icon ? 26 : 0)), tw0 = ww(r.t, bf) + (r.icon ? 26 : 0), x0 = -tw0 / 2;
-      if (r.icon) g.icon(r.icon, x0 + 9, y, 18, r.iconCol || r.fg);
-      g.t(x0 + (r.icon ? 26 : 0), y + capOf(bf) / 2, r.t, { f: bf, fill: r.fg, anchor: 'start' });
+      // the icon's box 1.1 × the label's capitals (its drawing about as tall as them), 4 units before it
+      var isz = capOf('small') * 1.1, ip = r.icon ? isz + 4 : 0;
+      var bf = fitRole(r.t, 'small', w - 36 - ip), tw0 = ww(r.t, bf) + ip, x0 = -tw0 / 2;
+      if (r.icon) g.icon(r.icon, x0 + isz / 2, y, isz, r.iconCol || r.fg);
+      g.t(x0 + ip, y + capOf(bf) / 2, r.t, { f: bf, fill: r.fg, anchor: 'start' });
     });
     // the relaxed interval under the buttons, where it fits inside the rim (else the button's words say it: SPEC §14.1)
     var rw = ww('Reminders every 30 min', 'xtiny'), ry = 132 + capOf('xtiny') + 4;

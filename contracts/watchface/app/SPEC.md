@@ -305,7 +305,8 @@ button angles); `tools/watchface/app-build.mjs` renders every screen of §1 on e
   | medium | `FONT_MEDIUM` | titles: the done screens, the alert's word, *Waiting for your phone* |
   | glance | `FONT_GLANCE` (`FONT_XTINY` where a watch lacks it) | every word of the glance |
 
-  A text that doesn't fit its width takes the next smaller role, down to xtiny and never below (`fitRole`); paragraphs
+  An icon beside a word (the alert's bell, the answers' marks) is drawn about as tall as the word's capitals (its box
+  1.1 – 1.2 × them); a pill or chip is as wide as its word needs. A text that doesn't fit its width takes the next smaller role, down to xtiny and never below (`fitRole`); paragraphs
   wrap to the fewest lines, as even as they come (`wrap`; the watch the same, measuring its own fonts). **Atkinson** (the `n` atlases, digits and `.:-LOHIug`) stays
   only for the big numbers: the value, the amount and its unit, the alert / done values, the ring numbers, the
   no-reading time; they snap to the class's atlas set (`ATLAS`, `snapFont`: AMOLED 14, 16 … 32 (every 2), 36, 40 … 64

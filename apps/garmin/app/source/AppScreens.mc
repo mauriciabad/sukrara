@@ -784,6 +784,36 @@ module AppScreens {
         g.w(0, y, s, AppDrawApp.fitRole(s, role, 2 * (a < b ? a : b) - 4), col, MIDDLE);
     }
 
+    // the screen's width for a centred line of [role] at baseline [y] (fitW)
+    function lineW(y as Numeric, role as Number) as Float {
+        var c = AppDraw.capOf(role);
+        var a = edgeX(y - c);
+        var b = edgeX(y + c * 0.3);
+        return 2 * (a < b ? a : b) - 4;
+    }
+
+    // a sentence centred on baseline [y], in the largest role from [role] down to xtiny that holds it on one line, else
+    // on two lines centred on [y] (xtiny: as many as it takes); never cut by the screen. Returns the last line's
+    // baseline
+    function para(g as AppG, y as Numeric, s as String, role as Number, col as Number) as Float {
+        for (var r = role; r >= AppDraw.XT; r--) {
+            if (AppDraw.ww(s, r) <= lineW(y, r)) {
+                g.w(0, y, s, r, col, MIDDLE);
+                return y.toFloat();
+            }
+            var lh = AppDraw.lh(r);
+            var y0 = y - lh / 2;
+            var a = lineW(y0, r);
+            var b = lineW(y0 + lh, r);
+            var ls = AppDrawApp.wrap(s, r, a < b ? a : b);
+            if (ls.size() <= 2 || r == AppDraw.XT) {
+                lines(g, y - (ls.size() - 1) * lh / 2, ls, r, lh, col);
+                return (y + (ls.size() - 1) * lh / 2).toFloat();
+            }
+        }
+        return y.toFloat();
+    }
+
     // lines of [role] centred from baseline [y], [pitch] apart, each fitted to the screen (fitW)
     function lines(g as AppG, y as Numeric, ls as Array<String>, role as Number, pitch as Numeric, col as Number) as Void {
         for (var i = 0; i < ls.size(); i++) {
@@ -813,7 +843,17 @@ module AppScreens {
     function numsAt() as Array {
         var ch = AppDraw.capOf(AppDraw.XT) + 14;
         if (!AppFontTable.RECT) {
-            return [50, -152, ch];
+            // the chips as wide as their words need (11 units each side: clear of the round ends), never under 50, the
+            // four inside the screen's width at their top (app.js)
+            var cw = 0.0;
+            var ps = ["1d", "7d", "14d", "30d"];
+            for (var i = 0; i < 4; i++) {
+                var w = AppDraw.ww(ps[i], AppDraw.XT) + 22;
+                cw = w > cw ? w : cw;
+            }
+            var mx = (2 * edgeX(-152) - 18) / 4;
+            cw = cw < mx ? cw : mx;
+            return [cw > 50 ? cw : 50.0, -152, ch];
         }
         var cw = (2 * hw() - 50) / 4;
         return [cw < 64 ? cw : 64, -hh() + 12, ch];
