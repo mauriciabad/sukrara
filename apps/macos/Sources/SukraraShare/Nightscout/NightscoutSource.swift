@@ -124,6 +124,10 @@ public actor NightscoutSource: NightscoutSourcing {
     private var jwt: (token: String, exp: TimeInterval)?
     /// The site refused a treatment write with this config: pulling goes on, pushing stops until the token changes.
     private var readOnly = false
+    /// The site's log as last saved (`state.json`, read once): a change reads it and sets it with no wait in between,
+    /// so a treatment written here while a round talks to the site is never overwritten by the round's older copy
+    /// (reading the file again was a wait: a round's save could land after Add Treatment's and drop it).
+    private var cached: NightscoutState?
     /// When the site's sensor events were last asked for (every `sensorEvery`; nil = not yet with this config).
     private var sensorChecked: Date?
     /// How often the newest Sensor Start / Sensor Change is asked for (the 24-hour window is read more often).
@@ -215,7 +219,7 @@ public actor NightscoutSource: NightscoutSourcing {
         var t = treatment
         t.o = .mac
         s.entries[t.id] = t
-        try? await state.save(s)
+        await save(s)
         await publishLog(s)
         if config.treatments && !readOnly { await retry() }  // up now, not at the next reading
         return true
@@ -242,8 +246,14 @@ public actor NightscoutSource: NightscoutSourcing {
     /// (`KeptHistory`, per site), and this site's taken back when kept, else started new.
     private func log(for config: NightscoutConfig) async -> NightscoutState {
         let root = NightscoutSite.parse(config.site).root
+        if let cached, cached.site == root { return cached }
         let old = await state.load()
-        if let old, old.site == root { return old }
+        // another call may have read or started it meanwhile
+        if let cached, cached.site == root { return cached }
+        if let old, old.site == root {
+            cached = old
+            return old
+        }
         if let old { await shelve(old) }
         var fresh = NightscoutState(site: root, device: old?.device ?? NightscoutTreatments.newDevice())
         if let kept,
@@ -254,8 +264,15 @@ public actor NightscoutSource: NightscoutSourcing {
             back.device = fresh.device
             fresh = back
         }
-        try? await state.save(fresh)
+        if let cached, cached.site == root { return cached }
+        await save(fresh)
         return fresh
+    }
+
+    /// `s` as the log: in memory at once (every read after this sees it), then in `state.json`.
+    private func save(_ s: NightscoutState?) async {
+        cached = s
+        try? await state.save(s)
     }
 
     /// `old`'s site (its readings and log) kept aside; without a kept folder, deleted.
@@ -275,9 +292,14 @@ public actor NightscoutSource: NightscoutSourcing {
     /// Settings › Source's *Forget* (Nightscout not the source): the site's readings and log are kept aside as a kept
     /// history (listed, with *Delete*); the address and token go with the app's settings.
     public func forget() async {
-        guard config == nil, let old = await state.load() else { return }
+        guard config == nil, let old = await cachedOrLoaded() else { return }
         await shelve(old)
-        try? await state.save(nil)
+        await save(nil)
+    }
+
+    private func cachedOrLoaded() async -> NightscoutState? {
+        if let cached { return cached }
+        return await state.load()
     }
 
     private func run(_ config: NightscoutConfig, gen: Int) async {
@@ -357,8 +379,7 @@ public actor NightscoutSource: NightscoutSourcing {
     /// treatments. Kept in `state.json`. A failure keeps the last one known.
     private func readSensor(_ root: URL, window: [[String: Any]]?, config: NightscoutConfig, gen: Int) async {
         let now = clock.now
-        var s = await log(for: config)
-        var life = s.sensor
+        var life = await log(for: config).sensor
         if sensorChecked.map({ now.timeIntervalSince($0) >= Self.sensorEvery }) ?? true {
             var docs = window ?? []
             for event in ["Sensor Start", "Sensor Change"] {
@@ -375,9 +396,11 @@ public actor NightscoutSource: NightscoutSourcing {
         {
             life = newer
         }
+        // the log as it is now: what was written while the site answered stays
+        var s = await log(for: config)
         if life != s.sensor {
             s.sensor = life
-            try? await state.save(s)
+            await save(s)
         }
         guard current.sensor != life?.sensor else { return }
         var snap = current
@@ -422,7 +445,7 @@ public actor NightscoutSource: NightscoutSourcing {
             s.entries[id]?.u = ms
             s.ledger.pushed[id] = nil
         }
-        try? await state.save(s)
+        await save(s)
         await publishLog(s)
         guard !readOnly, !(plan.push.isEmpty && plan.remove.isEmpty) else { return docs }
         // what went up, recorded into the log as it is then: an entry written here meanwhile (Add Treatment while this
@@ -449,7 +472,7 @@ public actor NightscoutSource: NightscoutSourcing {
         }
         var latest = await log(for: config)
         for (id, u) in sent { latest.ledger.pushed[id] = u }
-        try? await state.save(latest)
+        await save(latest)
         await publishLog(latest)
         return docs
     }

@@ -255,6 +255,29 @@ import Testing
         await r.source.set(nil)
     }
 
+    /// Add Treatment while rounds talk to the site: every entry stays (a round used to save the log it had read before
+    /// the write, which dropped it: the flaky read-only wait above, CI 2026-11-23).
+    @Test func treatmentsWrittenDuringRoundsAreKept() async throws {
+        let site = Site()
+        site.entries = [entry(60, 120)]
+        let r = rig(site)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        await r.source.set(NightscoutConfig(site: Self.site, secret: Self.token))
+        _ = try #require(await wait(r.source) { $0.outcome == .ok })
+        let at = Int64(clock.now.timeIntervalSince1970) - 600
+        let notes = (0..<30).map { Treatment(k: .note, a: 0, t: at + Int64($0), n: "n\($0)", u: 1, o: .mac) }
+        await withTaskGroup(of: Void.self) { group in
+            for note in notes {
+                group.addTask { _ = await r.source.write(note) }
+                group.addTask { await r.source.retry() }
+            }
+        }
+        let ids = Set(notes.map(\.id))
+        let s = await wait(r.source) { ids.isSubset(of: Set($0.treatments.map(\.id))) }
+        #expect(s != nil)
+        await r.source.set(nil)
+    }
+
     /// Another site starts a new log and history; the earlier site's are kept apart and come back with it; *Forget*
     /// keeps the forgotten site's apart too.
     @Test func anotherSiteIsKeptApartAndComesBack() async throws {

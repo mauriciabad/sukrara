@@ -149,6 +149,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
     private let live: any ReadingsStoring
     private let graph: any ReadingsStoring
     private let state: JSONFileStore<LibreLinkUpState>
+    /// The log as last saved (`log()`).
+    private var cached: LibreLinkUpState?
     private let secrets: any SecretStoring
     /// Where the people it doesn't read now are kept (`SukraraPaths.kept`; nil = nowhere: they are deleted).
     private let kept: URL?
@@ -325,7 +327,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
             snap.readings = []
             current = snap
         }
-        try? await state.save(s)
+        await save(s)
         // off until a new sign-in picks whom to read (the app clears the pick too)
         config = nil
         var snap = current
@@ -370,7 +372,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         var t = treatment
         t.o = .mac
         s.entries[t.id] = t
-        try? await state.save(s)
+        await save(s)
         var snap = current
         snap.treatments = s.live
         publish(snap)
@@ -419,7 +421,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         if s.patient != patient {
             await shelve(s)
             s = await unshelve(patient, people: s.people)
-            try? await state.save(s)
+            await save(s)
         }
         var snap = current
         snap.patient = patient
@@ -436,7 +438,22 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         publish(snap)
     }
 
-    private func log() async -> LibreLinkUpState { await state.load() ?? LibreLinkUpState() }
+    /// The log (`state.json`, read once): every change reads it and saves it with no wait in between, so a treatment
+    /// written here while a round talks to LibreLinkUp is never overwritten by the round's older copy (as Nightscout's).
+    private func log() async -> LibreLinkUpState {
+        if let cached { return cached }
+        let s = await state.load() ?? LibreLinkUpState()
+        // another call may have read it meanwhile
+        if let cached { return cached }
+        cached = s
+        return s
+    }
+
+    /// `s` as the log: in memory at once (every read after this sees it), then in `state.json`.
+    private func save(_ s: LibreLinkUpState) async {
+        cached = s
+        try? await state.save(s)
+    }
 
     /// The readings stores as kept (`KeptHistory.Shelf`): the live ones in the folder, the graph's in `graph/`.
     private var shelves: [KeptHistory.Shelf] { [("", live), (KeptHistory.graphFolder, graph)] }
@@ -598,7 +615,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         var s = await log()
         if !g.name.isEmpty { s.name = g.name }
         if let sensor = g.sensor { s.sensor = sensor }
-        try? await state.save(s)
+        await save(s)
         var snap = current
         snap.readings = await day()
         snap.name = s.name
@@ -624,7 +641,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         peopleChecked = now
         var s = await log()
         s.people = people
-        try? await state.save(s)
+        await save(s)
         if current.people != people {
             var snap = current
             snap.people = people
@@ -682,7 +699,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         peopleChecked = clock.now
         var s = await log()
         s.people = people
-        try? await state.save(s)
+        await save(s)
         var snap = current
         snap.people = people
         publish(snap)

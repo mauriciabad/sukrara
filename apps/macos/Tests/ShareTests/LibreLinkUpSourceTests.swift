@@ -466,7 +466,9 @@ import Testing
         try await Task.sleep(for: .milliseconds(200))
         #expect(graphs(r).count == 2)
         #expect(r.http.requests.dropFirst(before).filter { $0.path == "/llu/connections" }.count == 1)
-        // a sign-in, then another person picked (the account itself): nothing for Ana, the new pick's one call
+        // a sign-in, then another person picked (the account itself): the new pick's one call. The sign-in reads Ana on
+        // at once (she is still the pick), so her one call goes out when its loop runs before the pick arrives: a race
+        // the test can't order (this expected none, and failed now and then)
         before = graphs(r).count
         #expect(
             await r.source.connect(email: Self.email, password: Self.password)
@@ -476,13 +478,42 @@ import Testing
         await r.source.set(LibreLinkUpConfig(patient: Self.account))
         _ = try #require(await wait(r.source) { $0.patient == Self.account && $0.monitoring })
         try await Task.sleep(for: .milliseconds(200))
-        #expect(graphs(r).dropFirst(before).map { $0.path } == [LibreLinkUp.graphPath(Self.account)])
+        let picked = graphs(r).dropFirst(before).map(\.path)
+        #expect(picked.filter { $0 == LibreLinkUp.graphPath(Self.account) }.count == 1)
+        #expect(
+            picked.allSatisfy { [LibreLinkUp.graphPath(Self.account), LibreLinkUp.graphPath(Self.ana)].contains($0) })
+        #expect(picked.filter { $0 == LibreLinkUp.graphPath(Self.ana) }.count <= 1)
         // Try Again whose people call fails: no graph call after it
         s.connectionsStatus.withLock { $0 = 503 }
         before = graphs(r).count
         #expect(await r.source.recheck(saved: Self.account) == .unreachable)
         try await Task.sleep(for: .milliseconds(200))
         #expect(graphs(r).count == before)
+        await r.source.set(nil)
+    }
+
+    /// Add Treatment while rounds read LibreLinkUp: every entry stays (a round used to save the log it had read before
+    /// the write, which dropped it).
+    @Test func treatmentsWrittenDuringRoundsAreKept() async throws {
+        let s = server()
+        s.people.withLock { $0 = [(Self.ana, "Ana")] }
+        let r = rig(s)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        _ = await r.source.connect(email: Self.email, password: Self.password)
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        _ = try #require(await wait(r.source) { $0.monitoring })
+        let at = Int64(clock.now.timeIntervalSince1970) - 600
+        let notes = (0..<30).map {
+            Treatment(id: UUID().uuidString.lowercased(), k: .note, a: 0, t: at + Int64($0), n: "n\($0)", u: 1, o: .mac)
+        }
+        await withTaskGroup(of: Void.self) { group in
+            for note in notes {
+                group.addTask { _ = await r.source.write(note) }
+                group.addTask { await r.source.retry() }
+            }
+        }
+        let ids = Set(notes.map(\.id))
+        #expect(await wait(r.source) { ids.isSubset(of: Set($0.treatments.map(\.id))) } != nil)
         await r.source.set(nil)
     }
 
