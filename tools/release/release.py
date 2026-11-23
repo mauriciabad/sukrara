@@ -15,19 +15,23 @@ left (resume with --from <step>; every step can run again):
                  commit's run covers it; a failed one stops), the new version above VERSION, CHANGELOG.md's Unreleased section, the Play notes
                  (apps/android/fastlane/metadata/android/<en-US|es-ES>/changelogs/<versionCode>.txt, at most 500
                  characters) and the App Store notes (apps/macos/AppStore/whats-new/…, see appstore), no tag yet,
-                 the keys and gh
+                 the keys and gh; once the Garmin apps are released (tools/release/garmin-key.sha256): the store key
+                 and each app's Connect IQ listing (apps/garmin/<app>/store: listing_problems)
   version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md) and the Garmin apps' manifests,
                  CHANGELOG's Unreleased → the version's entry; commit, push to next (fast-forward; its Checks run is
                  awaited before github)
   gate           android-release.sh (verify-apk.sh inside), android-smoke.sh --final --no-build on the emulator,
                  play-bundle.sh, mac-release.sh (notarized, Sparkle-signed, verify-app.sh --notarized inside, writes
-                 website/public/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate), garmin-release.sh aura (the
-                 face's .iq and .prg, store key checked; once the face is released: tools/release/garmin-key.sha256). ./gradlew check and swift test
+                 website/public/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate), garmin-release.sh for
+                 every app of contracts/watchface/payload/apps.json (Sukrara Aura, the watch app, the data field: each
+                 one's .iq and sideload zip, verified, signed with the pinned store key) and garmin-release.sh sdk (the
+                 SukraraFace barrel for other developers' faces). ./gradlew check and swift test
                  aren't repeated: the release commit's green Checks run ran them (the Mac job on the newest green
                  commit with the same Mac sources: VERSION reaches only the bundle, which this gate builds and smokes).
   github         the release commit's Checks run green (its push or one started by hand, any branch; the one wait for
                  CI); main fast-forwarded, tag v<version>, the GitHub release (a normal one, Latest) with the APK, the
-                 Android mapping, the dmg and the zip (and the Garmin face's .iq and .prg), notes from the CHANGELOG
+                 Android mapping, the dmg and the zip (and each Garmin app's .iq and sideload zip, and the SukraraFace barrel as
+                 SukraraFace-<its version>.barrel and SukraraFace.barrel: BARREL_LATEST_URL), notes from the CHANGELOG
                  entry. main's own run isn't awaited:
                  the commit's green run is what it finds (tools/ci/changes.py)
   sparkle        website/public/appcast.xml committed to main and next once the release's dmg is there, Pages deployed, the feed
@@ -42,8 +46,10 @@ left (resume with --from <step>; every step can run again):
                  apps/macos/AppStore/whats-new/<en-US|es-ES>/<versionCode>.txt (at most 4000 characters), released
                  after approval, submitted for App Review (needs the App Manager key); while another version is in
                  review it waits on TestFlight, and a later release submits the newest
-  garmin         the Connect IQ store has no upload API: the release's .iq (built and signed with the store key in the
-                 gate, on the GitHub release) and what to type, for the owner's upload at the developer dashboard
+  garmin         the Connect IQ store has no upload API: per app, the release's .iq (built and signed with the store key
+                 in the gate, on the GitHub release) and what to enter at the developer dashboard, for the owner's
+                 upload: the listing for an app Garmin hasn't published yet (no store id in apps.json), else the new
+                 version with its What's new
   summary        every channel's state
 
 --dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
@@ -81,14 +87,26 @@ ASC_NOTES = "apps/macos/AppStore/whats-new/%s/%d.txt"
 DIST = "apps/android/app/build/dist"
 MAC_BUILD = "apps/macos/build"
 DOCS_WITH_VERSION = ["docs/DEVELOPMENT.md", "docs/QA.md", "docs/FEATURES.md"]
-# The Garmin face (apps/garmin/aura): released once its store key's public SHA-256 is committed (GARMIN_KEY_PIN, the
-# switch; docs/20-publishing.md › Garmin). Every Garmin app's manifest version follows VERSION either way (the watch app
-# and the data field have no store listing yet: docs/47).
-GARMIN_MANIFEST = "apps/garmin/aura/manifest.xml"
-GARMIN_MANIFESTS = [GARMIN_MANIFEST, "apps/garmin/app/manifest.xml", "apps/garmin/field/manifest.xml"]
+# The Garmin apps (Sukrara Aura, the watch app, the data field: contracts/watchface/payload/apps.json): released once
+# the store key's public SHA-256 is committed (GARMIN_KEY_PIN, the switch; docs/20-publishing.md › Garmin). Every
+# Garmin app's manifest version follows VERSION either way.
+GARMIN_REGISTRY = "contracts/watchface/payload/apps.json"
+GARMIN_MANIFESTS = ["apps/garmin/aura/manifest.xml", "apps/garmin/app/manifest.xml", "apps/garmin/field/manifest.xml"]
+GARMIN_FILES = {"aura": "SukraraAura", "app": "Sukrara", "field": "SukraraField"}  # garmin-release.sh's <Name>
+GARMIN_KINDS = {"watchface": "watch face", "watch-app": "watch app", "datafield": "data field"}
 GARMIN_KEY_PIN = "tools/release/garmin-key.sha256"
 GARMIN_DIST = "apps/garmin/bin/dist"
 GARMIN_DASHBOARD = "https://apps-developer.garmin.com/developer/dashboard"
+BARREL_MANIFEST = "apps/garmin/sdk/manifest.xml"
+BARREL_LATEST_URL = REPO_URL + "/releases/latest/download/SukraraFace.barrel"
+# the listing's rules (docs/20-publishing.md › Connect IQ store: what it asks and checks)
+GARMIN_LANGS = ["en", "es"]
+GARMIN_DESCRIPTION_MAX = 4000
+GARMIN_ICON_MAX, GARMIN_HERO_MAX, GARMIN_SCREEN_MAX = 300 * 1024, 2 * 1024 * 1024, 150 * 1024
+GARMIN_MUST_SAY = {"en": ["not a medical device", "Android", "Garmin Connect", "iPhone is not supported",
+                          "not affiliated with Garmin"],
+                   "es": ["no es un producto sanitario", "Android", "Garmin Connect", "No funciona con iPhone",
+                          "no está afiliada a Garmin"]}
 
 
 # --- pure parts (tools/release/test_release.py) ----------------------------------------------------------------------
@@ -168,9 +186,9 @@ def absolute_links(md, version):
                   lambda m: "](%s/blob/v%s/%s)" % (REPO_URL, version, m.group(1).lstrip("./")), md)
 
 
-def github_notes(changelog, version, cert_sha256, garmin_devices=()):
-    """The GitHub release notes: the medical disclaimer, the CHANGELOG entry and the files (the Garmin face's once it
-    is released: garmin_devices)."""
+def github_notes(changelog, version, cert_sha256, garmin=(), barrel=None):
+    """The GitHub release notes: the medical disclaimer, the CHANGELOG entry and the files (the Garmin apps' and the
+    SukraraFace barrel's once they are released: garmin, garmin_apps()'s list; barrel, its version)."""
     entry = changelog_entry(changelog, version)
     if not entry:
         raise ValueError("CHANGELOG.md has no %s entry" % version)
@@ -186,11 +204,14 @@ def github_notes(changelog, version, cert_sha256, garmin_devices=()):
         "Homebrew Mac app updates itself (Sparkle)." % (v, v),
         "- `Sukrara-%s-android-mapping.txt.gz`: the R8 mapping that makes an Android crash trace readable (for bug "
         "reports; not something to install)." % v,
-    ] + (["- `SukraraAura-%s-<watch>.prg`: the Sukrara Aura watch face, one per Garmin watch (%s), to copy into the "
-          "watch's `GARMIN/APPS` folder (the Connect IQ store has the same face)."
-          % (v, ", ".join("`%s`" % d for d in garmin_devices))] if garmin_devices else []) + (
-        ["- `SukraraAura-%s.iq`: the Connect IQ store package (every device; the store installs it, not by hand)." % v]
-        if garmin_devices else []))
+    ] + ["- `%s-%s.iq` and `%s-%s-sideload.zip`: %s, the Garmin %s. The `.iq` is the Connect IQ store package (the "
+         "store installs it, not by hand); the zip has one `%s-<watch>.prg` per watch model, to copy into the watch's "
+         "`GARMIN/APPS` folder over USB without the store." % (a["file"], v, a["file"], v, a["name"], a["kind"], a["file"])
+         for a in garmin] + ([
+        "- `SukraraFace-%s.barrel` (the same file as `SukraraFace.barrel`, whose link %s always gets the latest): "
+        "SukraraFace %s, the Monkey Barrel a Connect IQ watch face reads Sukrara's glucose with, for developers (0BSD; "
+        "[docs/GARMIN-FACES.md](%s/blob/v%s/docs/GARMIN-FACES.md))." % (barrel, BARREL_LATEST_URL, barrel, REPO_URL, v)]
+        if barrel else []))
     return head + "\n\n" + absolute_links(unwrap(entry[1]), v).strip() + "\n\n" + files + "\n"
 
 
@@ -253,11 +274,6 @@ def artifacts(version):
     }
 
 
-def manifest_devices(manifest):
-    """The Connect IQ manifest's products, in order."""
-    return re.findall(r'<iq:product[^>]*\bid="([^"]+)"', manifest)
-
-
 def manifest_with_version(manifest, version):
     """The Connect IQ manifest with <iq:application version="…"> set to the version (the store shows it). Refuses a
     manifest whose application has no version attribute."""
@@ -267,26 +283,152 @@ def manifest_with_version(manifest, version):
     return new
 
 
-def garmin_artifacts(version, devices):
-    """garmin-release.sh's files: the store package and one sideload .prg per device."""
-    out = {"iq": "%s/SukraraAura-%s.iq" % (GARMIN_DIST, version)}
-    for d in devices:
-        out["prg-" + d] = "%s/SukraraAura-%s-%s.prg" % (GARMIN_DIST, version, d)
+def garmin_apps(registry):
+    """Sukrara's Garmin apps from the registry (contracts/watchface/payload/apps.json, its text), in its order: app (the
+    folder under apps/garmin), name, kind, file (garmin-release.sh's <Name>), manifest, store (the listing's id, None
+    until Garmin publishes it)."""
+    out = []
+    for a in json.loads(registry)["apps"]:
+        if a["app"] not in GARMIN_FILES:
+            raise ValueError("apps.json: release.py doesn't know the Garmin app %r (GARMIN_FILES)" % a["app"])
+        out.append({"app": a["app"], "name": a["name"], "kind": GARMIN_KINDS[a["type"]], "file": GARMIN_FILES[a["app"]],
+                    "manifest": a["manifest"], "store": a.get("store")})
     return out
 
 
-def garmin_upload_kit(version, iq, changelog):
-    """What the owner types at the Connect IQ developer dashboard (no upload API): the lines release.py prints."""
+def garmin_artifacts(version, apps):
+    """garmin-release.sh's files per app: the store package and the zip of sideload .prgs."""
+    out = {}
+    for a in apps:
+        out[a["app"] + "-iq"] = "%s/%s-%s.iq" % (GARMIN_DIST, a["file"], version)
+        out[a["app"] + "-sideload"] = "%s/%s-%s-sideload.zip" % (GARMIN_DIST, a["file"], version)
+    return out
+
+
+def barrel_version(manifest):
+    """SukraraFace's own version (apps/garmin/sdk/manifest.xml's <iq:barrel version>): the payload's major."""
+    m = re.search(r'<iq:barrel\b[^>]*\smodule="SukraraFace"[^>]*\sversion="([0-9]+\.[0-9]+\.[0-9]+)"', manifest)
+    if not m:
+        raise ValueError("apps/garmin/sdk/manifest.xml has no SukraraFace barrel version")
+    return m.group(1)
+
+
+def barrel_artifacts(version):
+    """garmin-release.sh sdk's files: the barrel under its version, and under the one name the latest release's stable
+    URL (BARREL_LATEST_URL) needs."""
+    return {"sdk": "%s/SukraraFace-%s.barrel" % (GARMIN_DIST, version), "sdk-latest": "%s/SukraraFace.barrel" % GARMIN_DIST}
+
+
+def png_size(data):
+    """(width, height) of a PNG's bytes, or None."""
+    if data[:8] != b"\x89PNG\r\n\x1a\n" or data[12:16] != b"IHDR":
+        return None
+    return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
+
+
+def listing_files(app, listing):
+    """The listing's images, apps/garmin/<app>/store/listing.json's: [(what, path, (w, h) or None, max bytes)]."""
+    d = listing["images"]
+    out = [("icon", d + "/icon-500.png", (500, 500), GARMIN_ICON_MAX)]
+    out += [("hero " + lang, "%s/hero-%s.png" % (d, lang), (1440, 720), GARMIN_HERO_MAX) for lang in GARMIN_LANGS]
+    out += [("screenshot " + s, "%s/screen-%s.png" % (d, s), None, GARMIN_SCREEN_MAX) for s in listing["screenshots"]]
+    return out
+
+
+def listing_problems(root, app):
+    """What keeps an app's Connect IQ listing (apps/garmin/<app>/store) from the store's rules (docs/20-publishing.md ›
+    Connect IQ store: what it asks and checks): every field, each language's description in plain text within 4000
+    (counted in UTF-8 bytes: the store's count is undocumented), the not-a-medical-device paragraph, the requirements,
+    no Garmin in the title, and every image at its size and weight."""
+    base = os.path.join(root, "apps/garmin", app, "store")
+    try:
+        with open(os.path.join(base, "listing.json"), encoding="utf-8") as f:
+            listing = json.load(f)
+    except (OSError, ValueError) as e:
+        return ["%s: no listing (%s)" % (app, e)]
+    problems = []
+    for key in ("title", "tagline", "category", "images", "screenshots", "privacy", "support", "price"):
+        if not listing.get(key):
+            problems.append("%s: listing.json has no %s" % (app, key))
+    if problems:
+        return problems
+    for lang in GARMIN_LANGS:
+        if "garmin" in listing["title"].get(lang, "garmin").lower():
+            problems.append("%s: the %s title is missing or names Garmin" % (app, lang))
+        path = os.path.join(base, "description-%s.txt" % lang)
+        if not os.path.exists(path):
+            problems.append("%s: no %s" % (app, os.path.relpath(path, root)))
+            continue
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+        n = len(text.strip().encode("utf-8"))
+        if n > GARMIN_DESCRIPTION_MAX:
+            problems.append("%s: description-%s.txt is %d bytes (at most %d)" % (app, lang, n, GARMIN_DESCRIPTION_MAX))
+        for must in GARMIN_MUST_SAY[lang] + [listing["privacy"][lang]]:
+            if must not in text:
+                problems.append("%s: description-%s.txt doesn't say %r" % (app, lang, must))
+        if re.search(r"^\s*(#|[-*] |\d+\. )|\*\*|\]\(", text, re.M):
+            problems.append("%s: description-%s.txt has Markdown (the store shows plain text)" % (app, lang))
+    for what, rel, size, limit in listing_files(app, listing):
+        try:
+            with open(os.path.join(root, rel), "rb") as f:
+                data = f.read()
+        except OSError:
+            problems.append("%s: no %s (%s; node assets/brand/sukrara/connectiq/render.mjs)" % (app, what, rel))
+            continue
+        got = png_size(data)
+        if got is None or (size and got != size):
+            problems.append("%s: %s isn't a %s PNG (%s)" % (app, rel, "%d × %d" % size if size else "", got))
+        if len(data) > limit:
+            problems.append("%s: %s is %d KB (at most %d)" % (app, rel, len(data) // 1024, limit // 1024))
+    return problems
+
+
+def garmin_whats_new(changelog, version, app):
+    """The CHANGELOG entry's bullets about Garmin or the app, unwrapped: the What's new of a later version."""
     entry = changelog_entry(changelog, version)
-    notes = unwrap(entry[1]).strip() if entry else "(no CHANGELOG entry for %s)" % version
+    if not entry:
+        return ["(no CHANGELOG entry for %s)" % version]
+    bullets = re.split(r"\n(?=- )", unwrap(entry[1]).strip())
+    return [b for b in bullets if b.startswith("- ") and ("Garmin" in b or app["name"] in b)]
+
+
+def garmin_upload_kit(version, app, iq, listing, changelog):
+    """What the owner does at the Connect IQ developer dashboard (no upload API) for one app: the lines release.py
+    prints. Before Garmin has published the app (no store id in apps.json): Upload an App with the listing; after:
+    Upload a new version with the What's new."""
+    head = "%s (%s), Connect IQ store, by hand at %s (sign in as the developer account):" % (
+        app["name"], app["kind"], GARMIN_DASHBOARD)
+    if app["store"]:
+        notes = garmin_whats_new(changelog, version, app) or ["(no Garmin lines in the CHANGELOG entry: say what changed)"]
+        return "\n".join([
+            head,
+            "  1. %s → Upload a new version" % app["name"],
+            "  2. File: %s" % iq,
+            "  3. App Version: %s" % version,
+            "  4. What's new (the CHANGELOG entry's Garmin lines; trim to what changed on the watch):",
+        ] + ["       " + line for line in "\n".join(notes).splitlines()] + [
+            "  5. Submit. Garmin reviews it; the new version stays off the store until it is approved (e-mail).",
+        ])
+    d = "apps/garmin/%s/store" % app["app"]
+    shots = [rel for what, rel, _, _ in listing_files(app["app"], listing) if what.startswith("screenshot")]
     return "\n".join([
-        "Connect IQ store (no upload API: by hand, about two minutes):",
-        "  1. %s → Sukrara Aura → Upload a new version (sign in as the developer account)" % GARMIN_DASHBOARD,
+        head,
+        "  1. Upload an App (the first upload of %s; Beta App unticked)" % app["name"],
         "  2. File: %s" % iq,
-        "  3. Version: %s" % version,
-        "  4. What's new (the CHANGELOG entry; keep the Garmin lines):",
-    ] + ["       " + line for line in notes.splitlines()] + [
-        "  5. Submit. Garmin reviews it; the new version stays off the store until it is approved (e-mail).",
+        "  3. App Version: %s. Continue (accepts the Developer License Agreement)" % version,
+        "  4. The listing (%s/listing.json), per language where the form has languages:" % d,
+        "       Title: %s" % " / ".join("%s %s" % (lang, listing["title"][lang]) for lang in GARMIN_LANGS),
+        "       Description: %s" % ", ".join("%s/description-%s.txt" % (d, lang) for lang in GARMIN_LANGS),
+        "       Category: %s" % listing["category"],
+        "       Icon: %s/icon-500.png" % listing["images"],
+        "       Hero: %s" % ", ".join("%s/hero-%s.png" % (listing["images"], lang) for lang in GARMIN_LANGS),
+        "       Screenshots, in order: %s" % ", ".join(os.path.basename(s) for s in shots) + " (in %s)" % listing["images"],
+        "       Privacy policy: %s" % " / ".join(listing["privacy"][lang] for lang in GARMIN_LANGS),
+        "       Support: %s" % " / ".join(listing["support"][lang] for lang in GARMIN_LANGS),
+        "       Price: %s" % listing["price"],
+        "  5. Submit. Garmin reviews it (7–14 days lately) and e-mails on approval; then the listing's id (the last part",
+        "     of its apps.garmin.com link) goes into contracts/watchface/payload/apps.json `store` (#247).",
     ])
 
 
@@ -481,11 +623,22 @@ class Release:
         return self.changelog if self.changelog is not None else self.read("CHANGELOG.md")
 
     def garmin_on(self):
-        """The face is released once its store key is pinned (GARMIN_KEY_PIN) and its project exists."""
-        return os.path.exists(self.path(GARMIN_KEY_PIN)) and os.path.exists(self.path(GARMIN_MANIFEST))
+        """The Garmin apps are released once the store key is pinned (GARMIN_KEY_PIN)."""
+        return os.path.exists(self.path(GARMIN_KEY_PIN))
+
+    def garmin_apps(self):
+        return garmin_apps(self.read(GARMIN_REGISTRY)) if self.garmin_on() else []
+
+    def barrel(self):
+        """SukraraFace's version once the Garmin apps are released (it goes with them), else None."""
+        return barrel_version(self.read(BARREL_MANIFEST)) if self.garmin_on() else None
 
     def garmin_files(self):
-        return garmin_artifacts(self.v, manifest_devices(self.read(GARMIN_MANIFEST))) if self.garmin_on() else {}
+        """Every Garmin file the gate leaves and the release attaches: the apps' and the barrel's."""
+        files = garmin_artifacts(self.v, self.garmin_apps())
+        if self.garmin_on():
+            files.update(barrel_artifacts(self.barrel()))
+        return files
 
     # steps
     def preconditions(self):
@@ -519,6 +672,9 @@ class Release:
                 self.sh(["tools/release/garmin-release.sh", "--key-check"], mutate=False)
             except Stop as e:
                 self.ok(False, str(e))
+            for a in self.garmin_apps():
+                for problem in listing_problems(ROOT, a["app"]):
+                    self.ok(False, "Connect IQ listing: " + problem)
         self.sh(["gh", "auth", "status"], mutate=False)
         # Not awaited here: the version commit's run (awaited in github) covers every change since the newest green
         # commit (tools/ci/changes.py), this one's included. Only a run that already failed stops the release.
@@ -565,8 +721,10 @@ class Release:
         self.sh(["apps/macos/Bundle/smoke.sh"], capture=False)
         # rebuilds build/Sukrara.app as the App Store version; its validated pkg is the one testflight uploads
         self.sh([r + "mac-appstore.sh"], capture=False)
-        if self.garmin_on():
-            self.sh([r + "garmin-release.sh", "aura", self.v], capture=False)
+        for a in self.garmin_apps():
+            self.sh([r + "garmin-release.sh", a["app"], self.v], capture=False)
+        if self.garmin_on():  # a barrel that doesn't build stops the release
+            self.sh([r + "garmin-release.sh", "sdk"], capture=False)
         if self.dry:
             print("  would check the files it leaves, website/public/appcast.xml's %s item, and that nothing else changed" % self.v)
             return
@@ -617,8 +775,7 @@ class Release:
         exists = subprocess.run(["gh", "release", "view", "v" + self.v, "-R", REPO], capture_output=True).returncode == 0
         if not exists:
             cert = self.read("tools/release/android-cert.sha256").strip()
-            devices = manifest_devices(self.read(GARMIN_MANIFEST)) if self.garmin_on() else ()
-            notes = github_notes(self.current_changelog(), self.v, cert, devices)
+            notes = github_notes(self.current_changelog(), self.v, cert, self.garmin_apps(), self.barrel())
             if self.dry:
                 print("  the notes:\n" + "\n".join("    " + l for l in notes.splitlines()))
             with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
@@ -845,12 +1002,18 @@ class Release:
         """The Connect IQ store has no upload API (docs/20-publishing.md › Garmin): the gate built and signed the .iq,
         github put it on the release; this prints what the owner uploads and types at the developer dashboard."""
         if not self.garmin_on():
-            print("  the Garmin face isn't released yet (no %s): nothing to upload" % GARMIN_KEY_PIN)
+            print("  the Garmin apps aren't released yet (no %s): nothing to upload" % GARMIN_KEY_PIN)
             return
-        iq = self.path(garmin_artifacts(self.v, [])["iq"])
-        self.ok(self.dry or os.path.exists(iq), "no %s: run the gate" % iq)
-        print("\n".join("  " + line for line in garmin_upload_kit(self.v, iq, self.current_changelog()).splitlines()))
-        self.notes_state.append("Connect IQ store: upload %s at %s (the garmin step's lines)" % (iq, GARMIN_DASHBOARD))
+        for a in self.garmin_apps():
+            iq = self.path(garmin_artifacts(self.v, [a])[a["app"] + "-iq"])
+            self.ok(self.dry or os.path.exists(iq), "no %s: run the gate" % iq)
+            with open(self.path("apps/garmin/%s/store/listing.json" % a["app"]), encoding="utf-8") as f:
+                listing = json.load(f)
+            kit = garmin_upload_kit(self.v, a, iq, listing, self.current_changelog())
+            print("\n".join("  " + line for line in kit.splitlines()) + "\n")
+            self.notes_state.append("Connect IQ store: %s %s at %s (the garmin step's lines)" % (
+                "upload a new version of " + a["name"] if a["store"] else "upload " + a["name"] + " as a new app",
+                os.path.basename(iq), GARMIN_DASHBOARD))
 
     def summary(self):
         print("Sukrara %s (%d):" % (self.v, self.code))

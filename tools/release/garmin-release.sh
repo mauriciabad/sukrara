@@ -6,14 +6,17 @@
 # (Sukrara Aura, <Name> SukraraAura), app (Sukrara), field (SukraraField); apps/garmin/README.md:
 #
 #   tools/release/garmin-release.sh <app> <version>  apps/garmin/bin/dist/<Name>-<version>.iq (the store package, every
-#                                                    manifest device) and <Name>-<version>-<device>.prg (sideload)
+#                                                    manifest device) and <Name>-<version>-sideload.zip (one
+#                                                    <Name>-<device>.prg per device, to copy onto a watch by hand)
+#   tools/release/garmin-release.sh sdk              apps/garmin/bin/dist/SukraraFace-<its version>.barrel and
+#                                                    SukraraFace.barrel: the barrel for other developers' faces
 #   tools/release/garmin-release.sh --key-check      only checks the key (release.py's preconditions)
 #   tools/release/garmin-release.sh <app> --beta     apps/garmin/bin/dist/<Name>-beta.iq: the store package under the
 #                                                    app's beta id (build.sh <app> export-beta), for a Connect IQ beta
 #                                                    app upload
 #
 # Every .iq is checked before it is kept (verify_iq): it unpacks (a 7-zip: bsdtar), its manifest has the expected app
-# id, version and every manifest device, its dev_key.pub is the store key's public key, and each device's .prg passes
+# id, version and the part numbers of every manifest device (the SDK's device files; one device can have several), its dev_key.pub is the store key's public key, and each device's .prg passes
 # apps/garmin/tools/verify_prg.sh (the id, no debug code).
 #
 # Signed with the store key: CIQ_KEY (default ~/.connectiq/sukrara-developer-key.der), after checking that its public
@@ -46,8 +49,7 @@ pub_sha() { openssl pkey -inform DER -in "$KEY" -pubout -outform DER | shasum -a
 verify_iq() {
   local iq="$1" id="$2" version="$3" tmp got
   tmp="$(mktemp -d)"
-  IQ_TMP="$tmp"
-  trap 'rm -rf "$IQ_TMP"' EXIT
+  TMPS+=("$tmp")
   bsdtar -xf "$iq" -C "$tmp" 2>/dev/null || die "$iq doesn't unpack (not a Connect IQ package)"
   [ -f "$tmp/manifest.xml" ] && [ -f "$tmp/dev_key.pub" ] && [ -f "$tmp/manifest.sig2" ] || die "$iq lacks manifest.xml, dev_key.pub or manifest.sig2"
   got="$(openssl pkey -pubin -inform DER -in "$tmp/dev_key.pub" -pubout -outform DER | shasum -a 256 | cut -d' ' -f1)"
@@ -59,14 +61,58 @@ verify_iq() {
     "$GARMIN/tools/verify_prg.sh" "$APP" "$tmp/$prg" "$id" >/dev/null || die "$iq: $prg failed verify_prg.sh"
     n=$((n + 1))
   done
-  local want
-  want="$(grep -c '<iq:product ' "$MANIFEST")"
-  [ "$n" = "$want" ] || die "$iq has $n devices, apps/garmin/$APP/manifest.xml lists $want"
-  echo "verified: $iq (app id $id, version $version, $n devices, the store key)"
+  # one entry per part number, not per device (the MARQ (Gen 2) has two): the package's part numbers are those of
+  # every manifest device, as the SDK's device files list them
+  local got_parts want_parts
+  got_parts="$(sed -n 's/.*partNumber="\([^"]*\)".*/\1/p' "$tmp/manifest.xml" | LC_ALL=C sort -u | tr '\n' ' ')"
+  want_parts="$(part_numbers)" || die "no device files (compiler.json) for every device of apps/garmin/$APP/manifest.xml"
+  [ "$got_parts" = "$want_parts" ] ||
+    die "$iq has the part numbers $got_parts; the devices of apps/garmin/$APP/manifest.xml have $want_parts"
+  echo "verified: $iq (app id $id, version $version, $(devices | wc -l | tr -d ' ') devices in $n part numbers, the store key)"
 }
+
+devices() { sed -n 's/.*<iq:product[^>]*id="\([^"]*\)".*/\1/p' "$MANIFEST"; }
+
+# the part numbers of the manifest's devices, sorted, each followed by a space, from the SDK Manager's device files
+part_numbers() {
+  local dir
+  for dir in "$HOME/Library/Application Support/Garmin/ConnectIQ/Devices" "$HOME/.Garmin/ConnectIQ/Devices"; do
+    [ -d "$dir" ] && break
+  done
+  # shellcheck disable=SC2046 # one argument per device id
+  python3 -I -c 'import json, os, sys
+parts = {p["number"] for dev in sys.argv[2:] for p in json.load(open(os.path.join(sys.argv[1], dev, "compiler.json")))["partNumbers"]}
+print("".join(p + " " for p in sorted(parts)))' "$dir" $(devices)
+}
+
+TMPS=()
+trap 'rm -rf "${TMPS[@]:-}"' EXIT
 
 if [ "${1:-}" = "--key-check" ]; then
   key_check
+  exit 0
+fi
+# SukraraFace, the barrel other developers' faces read Sukrara with (apps/garmin/sdk, its own version: the payload's
+# major; docs/GARMIN-FACES.md): built for every product of its manifest, checked, and kept twice, as
+# SukraraFace-<its version>.barrel and as SukraraFace.barrel (the name the latest release's stable URL needs). A barrel
+# isn't signed: no key.
+if [ "${1:-}" = sdk ]; then
+  MANIFEST="$GARMIN/sdk/manifest.xml"
+  version="$(sed -n 's/.*<iq:barrel[^>]* version="\([^"]*\)".*/\1/p' "$MANIFEST")"
+  out="$("$GARMIN/build.sh" sdk release | tail -1)" || die "apps/garmin/build.sh sdk release failed (the barrel)"
+  tmp="$(mktemp -d)"
+  TMPS+=("$tmp")
+  bsdtar -xf "$out" -C "$tmp" 2>/dev/null || die "$out doesn't unpack (not a barrel)"
+  grep -q "<iq:barrel[^>]* module=\"SukraraFace\" version=\"$version\"" "$tmp/manifest.xml" ||
+    die "$out isn't the SukraraFace $version barrel"
+  want="$(devices | wc -l | tr -d ' ')"
+  [ "$want" -gt 0 ] || die "apps/garmin/sdk/manifest.xml lists no product"
+  mkdir -p "$DIST"
+  rm -f "$DIST"/SukraraFace*.barrel
+  cp "$out" "$DIST/SukraraFace-$version.barrel"
+  cp "$out" "$DIST/SukraraFace.barrel"
+  echo "verified: $out (SukraraFace $version, $want products)"
+  ls -l "$DIST"/SukraraFace*.barrel
   exit 0
 fi
 APP="${1:-}"
@@ -101,11 +147,15 @@ manifest_version="$(sed -n 's/.*<iq:application[^>]* version="\([^"]*\)".*/\1/p'
 mkdir -p "$DIST"
 rm -f "$DIST/$NAME"-*
 export CIQ_KEY="$KEY"
-for device in $(sed -n 's/.*<iq:product[^>]*id="\([^"]*\)".*/\1/p' "$MANIFEST"); do
+# the sideload builds: one release .prg per device, together in <Name>-<version>-sideload.zip (<Name>-<device>.prg)
+side="$(mktemp -d)"
+TMPS+=("$side")
+for device in $(devices); do
   out="$(CIQ_DEVICE="$device" "$GARMIN/build.sh" "$APP" release | tail -1)"
   "$GARMIN/tools/verify_prg.sh" "$APP" "$out"
-  cp "$out" "$DIST/$NAME-$VERSION-$device.prg"
+  cp "$out" "$side/$NAME-$device.prg"
 done
+(cd "$side" && zip -q -X "$DIST/$NAME-$VERSION-sideload.zip" ./*.prg)
 out="$("$GARMIN/build.sh" "$APP" export | tail -1)" || die "apps/garmin/build.sh $APP export failed (the store package: monkeyc -e -r)"
 [ "${out##*.}" = "iq" ] || die "apps/garmin/build.sh $APP export made no .iq ($out)"
 verify_iq "$out" "$(sed -n 's/.*<iq:application id="\([^"]*\)".*/\1/p' "$MANIFEST")" "$VERSION"

@@ -167,7 +167,7 @@ again: it skips what's already there):
    Mac job ran on the newest green commit with the same Mac sources: `VERSION` reaches only the bundle, which this
    gate builds, notarizes and smokes).
 4. `github`: the release commit's Checks run green, `main` fast-forwarded, tag `v<version>`, `gh release create
-   --latest` (a normal release, *Latest*) with the APK, the Android mapping, the dmg and the zip (their
+   --latest` (a normal release, *Latest*) with the APK, the Android mapping, the dmg and the zip, each Garmin app's `.iq` and sideload zip and the SukraraFace barrel (their
    sha256 checked against the release's), notes from the CHANGELOG entry with the disclaimer and the files. `main`'s
    own run isn't awaited: it finds the commit's green run and runs nothing again.
 5. `sparkle`: the dmg on the release is the one `website/public/appcast.xml` signs → the appcast committed and pushed to `main`
@@ -191,13 +191,18 @@ again: it skips what's already there):
    another is in review, this release stays on TestFlight (the summary says so) and a later release submits the
    newest. Needs the App Store Connect key with **App Manager** access (`~/.apple-dev/release-AuthKey_<id>.p8`; the
    *Developer* notary key is `notary-AuthKey_<id>.p8`, notarization reads it from the keychain profile).
-10. `garmin`: the Garmin face, once it is released (`tools/release/garmin-key.sha256` committed: the switch). The
-    gate built its store package and sideload builds with `garmin-release.sh` (signed with the store key after
-    checking it is the pinned one; `apps/garmin/build.sh aura`'s release and export builds, debug code compiled out) and
-    `github` put them on the release. The Connect IQ store has no upload API, so this step prints the file, the
-    version and the What's New text to upload at https://apps-developer.garmin.com/developer/dashboard; Garmin
-    reviews it before the store shows it ([docs/20](20-publishing.md#garmin)). The `version` step sets the manifest's
-    version to the release's either way.
+10. `garmin`: the Garmin apps (Sukrara Aura, the watch app *Sukrara*, *Sukrara data field*: every app of
+    `contracts/watchface/payload/apps.json`), released since 0.17.0 (`tools/release/garmin-key.sha256` committed: the
+    switch). The preconditions checked each app's Connect IQ listing (`apps/garmin/<app>/store`); the gate built, per
+    app, its store package and a zip of sideload builds with `garmin-release.sh <app>` (signed with the store key
+    after checking it is the pinned one; `apps/garmin/build.sh <app>`'s release and export builds, debug code compiled
+    out, every `.iq` verified), and the SukraraFace barrel with `garmin-release.sh sdk` (a barrel that doesn't build
+    stops the release); `github` put them on the release (the barrel also as `SukraraFace.barrel`, so
+    `…/releases/latest/download/SukraraFace.barrel` is always the newest). The Connect IQ store has no upload API, so
+    this step prints, per app, what to do at https://apps-developer.garmin.com/developer/dashboard: **Upload an App**
+    with the listing while the app has no store id in `apps.json`, then **Upload a new version** with the What's new;
+    Garmin reviews each before the store shows it ([docs/20 › the owner's steps](20-publishing.md#connect-iq-store-the-owners-steps)).
+    The `version` step sets every manifest's version to the release's either way.
 11. `summary`: every channel's state (`--from summary` alone shows it any time).
 
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes
@@ -379,7 +384,7 @@ face signed with the same key, and the store app is tied to it. `CIQ_KEY` points
 | What | Command |
 |---|---|
 | Release `.prg` (no debug code) | `apps/garmin/build.sh aura` → `apps/garmin/bin/SukraraAura.prg` (`aura debug`, `aura cases` for the others) |
-| Store packages (`.iq`, signed with the store key, verified) | `tools/release/garmin-release.sh aura <version>` (public) or `aura --beta` (the beta app id) → `apps/garmin/bin/dist/`; uploading: [docs/20 › Connect IQ store](20-publishing.md#connect-iq-store-the-owners-steps-beta-first-then-public) |
+| Store packages (`.iq`, signed with the store key, verified) and sideload zips | `tools/release/garmin-release.sh <aura\|app\|field> <version>` (public) or `<app> --beta` (the beta app id); `garmin-release.sh sdk` the SukraraFace barrel → `apps/garmin/bin/dist/`; the listings: `apps/garmin/<app>/store`, images `node assets/brand/sukrara/connectiq/render.mjs`; uploading: [docs/20 › the owner's steps](20-publishing.md#connect-iq-store-the-owners-steps) |
 | The face's words against `words.json` | `python3 apps/garmin/aura/tools/garmin_test.py words` |
 | The phone link's tests (simulator) | `apps/garmin/tools/link-test.sh aura` |
 | Numbers and pictures of every case (simulator) | `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/aura/tools/garmin_test.py run <dir> [<core refs>]` |

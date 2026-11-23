@@ -33,6 +33,10 @@ The first build submitted to Google Play.
 - **Fixes**: one.
 """
 
+# the real registry of Sukrara's Garmin apps (contracts/watchface/payload/apps.json)
+with open(os.path.join(release.ROOT, release.GARMIN_REGISTRY), encoding="utf-8") as _f:
+    REGISTRY = _f.read()
+
 
 class VersionTest(unittest.TestCase):
     def test_code_matches_lib_sh(self):
@@ -111,14 +115,38 @@ class NotesTest(unittest.TestCase):
         self.assertFalse(release.github_notes(release.changelog_release(CHANGELOG, "1.0.0"), "1.0.0", "AB")
                          .startswith("**Not a medical device.** 0.x"))
 
-    def test_github_notes_with_the_garmin_face(self):
+    def test_github_notes_with_the_garmin_apps(self):
         out = release.changelog_release(CHANGELOG, "0.14.0")
         self.assertNotIn("SukraraAura", release.github_notes(out, "0.14.0", "AB"))  # not released yet
-        notes = release.github_notes(out, "0.14.0", "AB", ["descentmk343mm", "venu3s"])
-        self.assertIn("- `SukraraAura-0.14.0-<watch>.prg`: the Sukrara Aura watch face, one per Garmin watch "
-                      "(`descentmk343mm`, `venu3s`), to copy into the watch's `GARMIN/APPS` folder", notes)
-        self.assertEqual(notes.count("SukraraAura-0.14.0-"), 1)  # one line, however many watches
-        self.assertIn("- `SukraraAura-0.14.0.iq`: the Connect IQ store package", notes)
+        apps = release.garmin_apps(REGISTRY)
+        notes = release.github_notes(out, "0.14.0", "AB", apps)
+        self.assertIn("- `SukraraAura-0.14.0.iq` and `SukraraAura-0.14.0-sideload.zip`: Sukrara Aura, the Garmin watch "
+                      "face. The `.iq` is the Connect IQ store package", notes)
+        self.assertIn("the zip has one `SukraraAura-<watch>.prg` per watch model, to copy into the watch's "
+                      "`GARMIN/APPS` folder", notes)
+        self.assertIn("- `Sukrara-0.14.0.iq` and `Sukrara-0.14.0-sideload.zip`: Sukrara, the Garmin watch app.", notes)
+        self.assertIn("- `SukraraField-0.14.0.iq` and `SukraraField-0.14.0-sideload.zip`: Sukrara data field, the "
+                      "Garmin data field.", notes)
+        self.assertNotIn("SukraraFace", notes)
+        notes = release.github_notes(out, "0.14.0", "AB", apps, "5.0.0")
+        self.assertIn("- `SukraraFace-5.0.0.barrel` (the same file as `SukraraFace.barrel`, whose link "
+                      "https://github.com/mauriciabad/sukrara/releases/latest/download/SukraraFace.barrel always gets "
+                      "the latest): SukraraFace 5.0.0, the Monkey Barrel", notes)
+        # every file the release attaches is named in the notes
+        files = dict(release.garmin_artifacts("0.14.0", apps), **release.barrel_artifacts("5.0.0"))
+        for rel in files.values():
+            self.assertIn("`%s`" % os.path.basename(rel), notes)
+
+    def test_barrel(self):
+        with open(os.path.join(release.ROOT, release.BARREL_MANIFEST), encoding="utf-8") as f:
+            v = release.barrel_version(f.read())
+        self.assertRegex(v, r"^\d+\.\d+\.\d+$")
+        self.assertEqual(release.barrel_artifacts(v), {"sdk": "apps/garmin/bin/dist/SukraraFace-%s.barrel" % v,
+                                                       "sdk-latest": "apps/garmin/bin/dist/SukraraFace.barrel"})
+        # the stable link is the latest release's asset of that one name
+        self.assertTrue(release.BARREL_LATEST_URL.endswith("/releases/latest/download/SukraraFace.barrel"))
+        with self.assertRaises(ValueError):
+            release.barrel_version('<iq:barrel id="x" module="Other" version="1.0.0">')
 
     def test_unwrap_keeps_structure(self):
         md = "Para one\ncontinues.\n\n- item\n  wrapped\n- next\n\n```\nkeep\nlines\n```\n## H\nText"
@@ -465,26 +493,91 @@ class GarminTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             release.manifest_with_version(MANIFEST.replace(' version="0.1.0"', ""), "0.15.0")
 
-    def test_files(self):
-        self.assertEqual(release.manifest_devices(MANIFEST), ["descentmk343mm", "fenix847mm"])
-        self.assertEqual(release.garmin_artifacts("0.15.0", ["descentmk343mm", "venu3s"]), {
-            "iq": "apps/garmin/bin/dist/SukraraAura-0.15.0.iq",
-            "prg-descentmk343mm": "apps/garmin/bin/dist/SukraraAura-0.15.0-descentmk343mm.prg",
-            "prg-venu3s": "apps/garmin/bin/dist/SukraraAura-0.15.0-venu3s.prg"})
+    def test_apps_from_the_registry(self):
+        apps = release.garmin_apps(REGISTRY)
+        self.assertEqual([(a["app"], a["file"], a["kind"]) for a in apps],
+                         [("aura", "SukraraAura", "watch face"), ("app", "Sukrara", "watch app"),
+                          ("field", "SukraraField", "data field")])
+        self.assertEqual([a["manifest"] for a in apps], release.GARMIN_MANIFESTS)  # the version step writes them all
+        with self.assertRaises(ValueError):  # a new app needs its file name here and in garmin-release.sh
+            release.garmin_apps(json.dumps({"apps": [{"app": "other", "name": "X", "type": "watchface"}]}))
 
-    def test_upload_kit(self):
-        kit = release.garmin_upload_kit("0.14.0", "/r/SukraraAura-0.14.0.iq", release.changelog_release(CHANGELOG, "0.14.0"))
-        self.assertIn("https://apps-developer.garmin.com/developer/dashboard", kit)
-        self.assertIn("  2. File: /r/SukraraAura-0.14.0.iq\n  3. Version: 0.14.0", kit)
-        self.assertIn("       - **The Mac updates itself** (#91): once a day it looks for a new version, signed", kit)
+    def test_files(self):
+        self.assertEqual(release.garmin_artifacts("0.15.0", release.garmin_apps(REGISTRY)), {
+            "aura-iq": "apps/garmin/bin/dist/SukraraAura-0.15.0.iq",
+            "aura-sideload": "apps/garmin/bin/dist/SukraraAura-0.15.0-sideload.zip",
+            "app-iq": "apps/garmin/bin/dist/Sukrara-0.15.0.iq",
+            "app-sideload": "apps/garmin/bin/dist/Sukrara-0.15.0-sideload.zip",
+            "field-iq": "apps/garmin/bin/dist/SukraraField-0.15.0.iq",
+            "field-sideload": "apps/garmin/bin/dist/SukraraField-0.15.0-sideload.zip"})
+
+    def test_upload_kit_first_upload_has_the_listing(self):
+        app = release.garmin_apps(REGISTRY)[1]
+        listing = {"title": {"en": "Sukrara", "es": "Sukrara"}, "category": "Health & Fitness",
+                   "images": "docs/img/app/store/ciq", "screenshots": ["glance", "app"], "price": "Free",
+                   "privacy": {"en": "https://e/privacy/", "es": "https://e/es/privacy/"},
+                   "support": {"en": "https://e/garmin/", "es": "https://e/es/garmin/"}}
+        kit = release.garmin_upload_kit("0.17.0", app, "/r/Sukrara-0.17.0.iq", listing,
+                                        release.changelog_release(CHANGELOG, "0.17.0"))
+        self.assertIn("Sukrara (watch app), Connect IQ store, by hand at https://apps-developer.garmin.com/", kit)
+        self.assertIn("  1. Upload an App (the first upload of Sukrara; Beta App unticked)\n"
+                      "  2. File: /r/Sukrara-0.17.0.iq\n  3. App Version: 0.17.0.", kit)
+        self.assertIn("Description: apps/garmin/app/store/description-en.txt, apps/garmin/app/store/description-es.txt",
+                      kit)
+        self.assertIn("Screenshots, in order: screen-glance.png, screen-app.png (in docs/img/app/store/ciq)", kit)
+        self.assertIn("Hero: docs/img/app/store/ciq/hero-en.png, docs/img/app/store/ciq/hero-es.png", kit)
+        self.assertIn("contracts/watchface/payload/apps.json `store`", kit)
+        self.assertNotIn("What's new", kit)
+
+    def test_upload_kit_later_versions_have_the_garmin_lines(self):
+        app = dict(release.garmin_apps(REGISTRY)[0], store="abc")
+        changelog = release.changelog_release(CHANGELOG.replace(
+            "- ***Sound", "- **Sukrara Aura** (#240): two fields on\n  top.\n- **Garmin data field**: faster.\n- ***Sound"),
+            "0.18.0")
+        kit = release.garmin_upload_kit("0.18.0", app, "/r/SukraraAura-0.18.0.iq", {}, changelog)
+        self.assertIn("  1. Sukrara Aura → Upload a new version\n  2. File: /r/SukraraAura-0.18.0.iq", kit)
+        self.assertIn("       - **Sukrara Aura** (#240): two fields on top.\n       - **Garmin data field**: faster.", kit)
+        self.assertNotIn("The Mac updates itself", kit)
+        self.assertNotIn("Sound while unlocked", kit)
+
+    def test_listing_problems(self):
+        # the real listings pass
+        for a in release.garmin_apps(REGISTRY):
+            self.assertEqual(release.listing_problems(release.ROOT, a["app"]), [])
+        # a made-up one breaks each rule once
+        root = tempfile.mkdtemp()
+        try:
+            store = os.path.join(root, "apps/garmin/x/store")
+            os.makedirs(store)
+            os.makedirs(os.path.join(root, "img"))
+            with open(os.path.join(store, "listing.json"), "w") as f:
+                json.dump({"title": {"en": "Sukrara for Garmin", "es": "Sukrara"}, "tagline": {"en": ["a", "b"]},
+                           "category": "c", "images": "img", "screenshots": ["s"], "price": "Free",
+                           "privacy": {"en": "https://p/", "es": "https://p/es/"}, "support": {"en": "s", "es": "s"}},
+                          f)
+            en = "**Sukrara** shows it. Android, Garmin Connect. iPhone is not supported. https://p/\n" + "x" * 4000
+            with open(os.path.join(store, "description-en.txt"), "w") as f:
+                f.write(en)
+            png = b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR" + (500).to_bytes(4, "big") + (500).to_bytes(4, "big")
+            with open(os.path.join(root, "img/icon-500.png"), "wb") as f:
+                f.write(png + b"\0" * (400 * 1024))
+            with open(os.path.join(root, "img/hero-en.png"), "wb") as f:
+                f.write(png)
+            problems = "\n".join(release.listing_problems(root, "x"))
+            for want in ["the en title is missing or names Garmin", "description-en.txt is 4", "doesn't say 'not a "
+                         "medical device'", "has Markdown", "no apps/garmin/x/store/description-es.txt",
+                         "img/icon-500.png is 400 KB (at most 300)", "img/hero-en.png isn't a 1440 × 720 PNG",
+                         "no hero es", "no screenshot s"]:
+                self.assertIn(want, problems)
+        finally:
+            shutil.rmtree(root)
 
     def test_garmin_step_is_off_until_the_store_key_is_pinned(self):
         rel = release.Release("9.9.9", dry=True)
-        on = os.path.exists(os.path.join(release.ROOT, release.GARMIN_KEY_PIN)) and \
-            os.path.exists(os.path.join(release.ROOT, release.GARMIN_MANIFEST))
+        on = os.path.exists(os.path.join(release.ROOT, release.GARMIN_KEY_PIN))
         self.assertEqual(rel.garmin_on(), on)
-        if not on:
-            self.assertEqual(rel.garmin_files(), {})
+        self.assertEqual(len(rel.garmin_files()), 8 if on else 0)  # 3 × (.iq, sideload zip) + the barrel twice
+        self.assertEqual(rel.barrel() is not None, on)
 
 
 class CheckoutTest(unittest.TestCase):
