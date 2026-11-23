@@ -73,6 +73,11 @@ import app.mauri.sukrara.feature.sharing.share.ApproveRefusedDialog
 import app.mauri.sukrara.feature.sharing.share.InviteProgress
 import app.mauri.sukrara.feature.sharing.share.InviteUi
 import app.mauri.sukrara.feature.sharing.share.ShareScreen
+import app.mauri.sukrara.integrations.garmin.GarminApp
+import app.mauri.sukrara.integrations.garmin.iconRes
+import app.mauri.sukrara.integrations.garmin.inlineNameRes
+import app.mauri.sukrara.integrations.garmin.nameRes
+import app.mauri.sukrara.integrations.garmin.whatRes
 import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.event.Avatar
@@ -149,6 +154,12 @@ class SharingScreenshotTest {
     )
 
     private val live = facts.copy(ownSensorLive = true)
+
+    /** Sukrara's watch apps on the Garmin step, Sukrara Aura on the watch. */
+    private val watchApps =
+        GarminApp.entries.map {
+            SetupWatchApp(it.key, it.nameRes, it.whatRes, it.iconRes, url = it::storeUrl, onWatch = it == GarminApp.Aura)
+        }
 
     /** Your glucose from LibreLinkUp (docs/44 step 2). */
     private val llu = facts.copy(spec = SourceSpec(Person.Yours, SourceKind.LibreLinkUp))
@@ -283,6 +294,12 @@ class SharingScreenshotTest {
             },
             "setup-3b-updates" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.Open)), a) },
             "setup-3b-updates-on" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.On)), a) },
+            // the Garmin step; a watch app that reads another version of this phone's payload (THE VERSION RULE)
+            "setup-garmin" to { SetupContent(ui(SetupStep.Garmin, 6, facts.copy(garmin = true)).copy(garminApps = watchApps), a) },
+            "setup-garmin-update" to {
+                val update = SetupGarminUpdate(GarminApp.Aura.key, GarminApp.Aura.inlineNameRes, "Descent Mk3i 43mm", newer = false)
+                SetupContent(ui(SetupStep.Garmin, 6, facts.copy(garmin = true)).copy(garminApps = watchApps, garminUpdate = update), a)
+            },
             // docs/44 step 1: a Nightscout site's Connect step in each state
             "setup-5-nightscout" to { SetupContent(ui(SetupStep.Sensor, 5, nightscout), a) },
             "setup-5-nightscout-theirs" to {

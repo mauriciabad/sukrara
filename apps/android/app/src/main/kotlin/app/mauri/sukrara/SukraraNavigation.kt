@@ -703,6 +703,7 @@ fun SukraraNavigation(
                                 backStack.remove(SetupRoute)
                                 backStack.push(ImportRoute)
                             },
+                            onUpdateGarmin = { app, newer -> updateGarmin(context, backStack, app, newer) },
                         )
                     }
                     entry<SetupStepRoute> { key ->
@@ -725,6 +726,7 @@ fun SukraraNavigation(
                                 backStack.pop(key)
                                 backStack.push(ImportRoute)
                             },
+                            onUpdateGarmin = { app, newer -> updateGarmin(context, backStack, app, newer) },
                         )
                     }
                     entry<NewSensorKey> {
@@ -1026,6 +1028,32 @@ private fun openData(
     )
 }
 
+/**
+ * THE VERSION RULE's *Update* for a Garmin watch app (home's banner, setup's Garmin step): Sukrara's own update when
+ * the watch app is [newer] (the GitHub version: About's updater; Google Play: its listing), else the watch app's
+ * Connect IQ listing in the phone's language.
+ */
+private fun updateGarmin(
+    context: Context,
+    backStack: NavBackStack<NavKey>,
+    app: String,
+    newer: Boolean,
+) {
+    if (newer) {
+        AppUpdate.open(context, context.graph.updates != null) { backStack.push(SettingsKey("about")) }
+        return
+    }
+    val watchApp = GarminApp.entries.firstOrNull { it.key == app } ?: return
+    val language =
+        context.resources.configuration.locales[0]
+            .language
+    runCatching {
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse(watchApp.storeUrl(language))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+    }
+}
+
 /** Adds [key] on top unless it's already there (a double tap opens one page, not two). */
 private fun NavBackStack<NavKey>.push(key: NavKey) {
     if (lastOrNull() != key) add(key)
@@ -1159,22 +1187,8 @@ private fun route(
             graph.scope.launch { graph.integrations.aura.setOn(true) }
         }
 
-        // Sukrara's own update (the GitHub version: About's updater; Google Play: its listing), or the watch app's
-        // Connect IQ listing in the phone's language
         is HomeAction.UpdateGarmin -> {
-            if (action.newer) {
-                AppUpdate.open(context, context.graph.updates != null) { backStack.push(SettingsKey("about")) }
-            } else {
-                val app = GarminApp.entries.firstOrNull { it.key == action.app } ?: return
-                val language =
-                    context.resources.configuration.locales[0]
-                        .language
-                runCatching {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse(app.storeUrl(language))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                    )
-                }
-            }
+            updateGarmin(context, backStack, action.app, action.newer)
         }
 
         HomeAction.AllowTaps -> {

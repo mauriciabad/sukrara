@@ -23,6 +23,7 @@ import app.mauri.sukrara.designsystem.root.AccessRunner
 import app.mauri.sukrara.feature.sharing.HistoryLoss
 import app.mauri.sukrara.feature.sharing.LeaveAnswers
 import app.mauri.sukrara.feature.sharing.LeaveFacts
+import app.mauri.sukrara.feature.sharing.SetupGarminUpdate
 import app.mauri.sukrara.feature.sharing.SetupModule
 import app.mauri.sukrara.feature.sharing.SetupWatchApp
 import app.mauri.sukrara.feature.sharing.ended
@@ -147,6 +148,8 @@ data class SetupUi(
     val untold: String? = null,
     /** The Garmin step's apps: what each gives, its store link (once published), whether a watch has it. */
     val garminApps: List<SetupWatchApp> = emptyList(),
+    /** The Garmin step's update notice: a watch app reads another version; null = none. */
+    val garminUpdate: SetupGarminUpdate? = null,
 )
 
 /** The root step's and the glucose notification step's state. */
@@ -899,6 +902,10 @@ class SetupViewModel(
             SharingStarted.WhileSubscribed(5_000),
             emptyList(),
         )
+
+    /** The Garmin step's update notice. */
+    val garminUpdate: StateFlow<SetupGarminUpdate?> =
+        m.garminUpdate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** *Turn on* (or *Keep it on*) on the updates step: the daily check is on, then the walk goes on. */
     fun turnOnUpdates() =

@@ -37,6 +37,8 @@ dependencies {
     // the identity to / from the phone's password manager (Backup, restore)
     implementation(libs.androidx.credentials)
     testImplementation(project(":core:testing"))
+    // the Garmin step's gallery: Sukrara's watch apps with their real names and icons
+    testImplementation(project(":integrations"))
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.androidx.compose.ui.test.junit4)

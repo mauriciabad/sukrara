@@ -921,6 +921,10 @@ class AppGraph(
                     on = integrations.aura.on,
                     setOn = integrations.aura::setOn,
                     apps = integrations.aura.state.map { AppGarmin.apps(it) },
+                    update =
+                        integrations.aura.state
+                            .map(AppGarmin::setupUpdate)
+                            .distinctUntilChanged(),
                 ),
             // the root step and the status bar text
             systemAccess = monitor.root.access,

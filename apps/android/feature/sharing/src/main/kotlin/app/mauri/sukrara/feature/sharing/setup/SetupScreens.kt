@@ -117,6 +117,8 @@ fun SetupScreen(
     sendTestAlert: (() -> Unit)? = null,
     /** Import history (`:integrations`), opened by the history step's *Bring it back* once the step is recorded. */
     onOpenHistoryImport: () -> Unit = {},
+    /** The Garmin step's update notice's *Update*: the watch app's Connect IQ listing, or Sukrara's own update. */
+    onUpdateGarmin: (app: String, newer: Boolean) -> Unit = { _, _ -> },
 ) {
     LifecycleResumeEffect(viewModel) {
         viewModel.onResume()
@@ -127,7 +129,8 @@ fun SetupScreen(
     val site by viewModel.site.collectAsStateWithLifecycle()
     val llu by viewModel.llu.collectAsStateWithLifecycle()
     val garminApps by viewModel.garminApps.collectAsStateWithLifecycle()
-    val u = ui?.copy(nearby = search, site = site, llu = llu, garminApps = garminApps) ?: return
+    val garminUpdate by viewModel.garminUpdate.collectAsStateWithLifecycle()
+    val u = ui?.copy(nearby = search, site = site, llu = llu, garminApps = garminApps, garminUpdate = garminUpdate) ?: return
     val haptics = rememberHaptics()
     // nothing left to show (the view model decides: the walk's end, the last Finish-setup step, the one step answered)
     if (u.step == null) {
@@ -139,7 +142,7 @@ fun SetupScreen(
         return
     }
     PageBackHandler { viewModel.back(onDone) }
-    val actions = viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone, onOpenHistoryImport)
+    val actions = viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone, onOpenHistoryImport, onUpdateGarmin)
     SetupContent(u, actions.copy(sendTestAlert = sendTestAlert), modifier)
 }
 
@@ -241,6 +244,8 @@ data class SetupActions(
     /** The Garmin step's switch (stored at once) and its *Continue*. */
     val setGarmin: (Boolean) -> Unit = {},
     val completeGarmin: () -> Unit = {},
+    /** The Garmin step's update notice's *Update* (the app's key, newer than this phone's Sukrara). */
+    val updateGarmin: (String, Boolean) -> Unit = { _, _ -> },
 )
 
 @Composable
@@ -250,6 +255,7 @@ private fun SetupViewModel.actions(
     onExportHistory: () -> Unit,
     onDone: () -> Unit,
     onOpenHistoryImport: () -> Unit,
+    onUpdateGarmin: (String, Boolean) -> Unit,
 ): SetupActions {
     val context = LocalContext.current
     return remember(this) {
@@ -313,6 +319,7 @@ private fun SetupViewModel.actions(
             completeNotification = ::completeNotification,
             setGarmin = ::setGarmin,
             completeGarmin = ::completeGarmin,
+            updateGarmin = onUpdateGarmin,
         )
     }
 }

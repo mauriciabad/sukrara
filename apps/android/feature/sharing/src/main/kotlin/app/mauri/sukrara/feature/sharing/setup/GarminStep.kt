@@ -9,6 +9,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -33,6 +34,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.designsystem.banner.BannerSlot
+import app.mauri.sukrara.designsystem.banner.updateBanner
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.rows.groupCard
 import app.mauri.sukrara.feature.sharing.R
@@ -42,8 +45,8 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 /**
  * *Your Garmin watch* (optional; only while Garmin Connect is on this phone or a watch has one of Sukrara's apps,
  * #199): *Send to Sukrara on your watch* (on by default; the same switch as Settings › Share with apps › Garmin, stored
- * as it turns), then each of Sukrara's watch apps in one line with *Get* (its Connect IQ store listing) or *On your
- * watch*. *Continue* keeps the switch as set; *Skip* leaves it as it is. Both are final: the Garmin page keeps all of it.
+ * as it turns), the update notice while a watch app reads another version (THE VERSION RULE), then each of Sukrara's
+ * watch apps in one line with *Get* (its Connect IQ store listing) or *On your watch*. *Continue* keeps the switch as set; *Skip* leaves it as it is. Both are final: the Garmin page keeps all of it.
  */
 @Composable
 internal fun ColumnScope.GarminStep(
@@ -75,6 +78,13 @@ internal fun ColumnScope.GarminStep(
             Switch(checked = on, onCheckedChange = null)
         }
     }
+    // THE VERSION RULE: a watch app reads another version of this phone's payload (the Garmin page's and home's notice)
+    BannerSlot(
+        u.garminUpdate?.let {
+            updateBanner(stringResource(it.name), it.watch, it.newer) { actions.updateGarmin(it.app, it.newer) }
+        },
+        margins = PaddingValues(0.dp),
+    )
     for (app in u.garminApps) WatchAppRow(app)
     Text(
         stringResource(R.string.sh_setup_garmin_later),

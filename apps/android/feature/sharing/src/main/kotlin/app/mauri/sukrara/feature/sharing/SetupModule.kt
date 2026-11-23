@@ -120,6 +120,19 @@ class SetupGarmin(
     val setOn: suspend (Boolean) -> Unit,
     /** Each of Sukrara's watch apps, in the registry's order. */
     val apps: Flow<List<SetupWatchApp>>,
+    /** One of them reads another version of this phone's payload (THE VERSION RULE): the update notice; null = none. */
+    val update: Flow<SetupGarminUpdate?> = flowOf(null),
+)
+
+/**
+ * The update notice on setup's Garmin step (the designsystem's `updateBanner`, as on the Garmin page and home): the
+ * app [name] (its registry [app] key) on [watch], and [newer] = it is newer than this phone's Sukrara.
+ */
+data class SetupGarminUpdate(
+    val app: String,
+    @param:StringRes val name: Int,
+    val watch: String,
+    val newer: Boolean,
 )
 
 /**
@@ -249,6 +262,9 @@ class SetupModule(
 
     /** The Garmin step's apps (none without the port). */
     val garminApps: Flow<List<SetupWatchApp>> by lazy { garmin?.apps ?: flowOf(emptyList()) }
+
+    /** The Garmin step's update notice (none without the port). */
+    val garminUpdate: Flow<SetupGarminUpdate?> by lazy { garmin?.update ?: flowOf(null) }
 
     /** Home and setup call this on resume: permissions change in the system's settings. */
     fun refresh() {

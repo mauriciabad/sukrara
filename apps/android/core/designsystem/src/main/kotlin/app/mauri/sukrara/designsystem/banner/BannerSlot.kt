@@ -4,6 +4,7 @@
 package app.mauri.sukrara.designsystem.banner
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,6 +54,8 @@ fun BannerSlot(
     modifier: Modifier = Modifier,
     /** Room its buttons keep at the end ([NoticeCard]'s actionsEndInset). */
     actionsEndInset: Dp = 0.dp,
+    /** Around the card: a page's margins, or none inside a column that has its own (setup's steps). */
+    margins: PaddingValues = NoticeDefaults.PageMargins,
 ) {
     // keep the last banner while it animates out
     var shown by remember { mutableStateOf(banner) }
@@ -62,7 +65,7 @@ fun BannerSlot(
             Swap(b.id) { _ ->
                 NoticeCard(
                     b.text,
-                    Modifier.padding(NoticeDefaults.PageMargins),
+                    Modifier.padding(margins),
                     title = b.title,
                     tone = b.tone,
                     icon = b.icon,

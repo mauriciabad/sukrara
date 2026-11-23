@@ -5,6 +5,7 @@ package app.mauri.sukrara
 
 import app.mauri.sukrara.feature.home.banners.GarminTip
 import app.mauri.sukrara.feature.home.banners.GarminUpdateTip
+import app.mauri.sukrara.feature.sharing.SetupGarminUpdate
 import app.mauri.sukrara.feature.sharing.SetupWatchApp
 import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.GarminLinkState
@@ -35,11 +36,15 @@ internal object AppGarmin {
      * Home's update banner: one of Sukrara's apps reads another payload version (THE VERSION RULE, `mismatch`), on the
      * first watch with one of them; null while every app reads this phone's version, or sending is off.
      */
-    fun update(s: GarminLinkState): GarminUpdateTip? {
+    fun update(s: GarminLinkState): GarminUpdateTip? =
+        setupUpdate(s)?.let { GarminUpdateTip(it.watch, it.app, it.name, it.newer) }
+
+    /** Setup's Garmin step's update notice: the same as home's banner. */
+    fun setupUpdate(s: GarminLinkState): SetupGarminUpdate? {
         if (!s.on) return null
         val (app, side) = s.mismatch() ?: return null
         val watch = s.foundOn ?: return null
-        return GarminUpdateTip(watch.name, app.key, app.inlineNameRes, newer = side == UpdateSide.Phone)
+        return SetupGarminUpdate(app.key, app.inlineNameRes, watch.name, newer = side == UpdateSide.Phone)
     }
 
     /** Setup's Garmin step is offered: Garmin Connect is on this phone, or a watch has one of Sukrara's apps. */
