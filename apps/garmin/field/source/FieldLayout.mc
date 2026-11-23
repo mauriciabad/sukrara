@@ -97,6 +97,10 @@ class FieldSlot {
         top = (obs & 2) != 0; // DataField.OBSCURE_TOP; OBSCURE_BOTTOM 8
         bot = (obs & 8) != 0;
         whole = w >= W - 2 && h >= H - 2;
+        // the screen, for the layout (FieldDraw.hw / hh: the rectangles' label row); before this, the first frame took
+        // the 390's
+        FieldDraw.W = W;
+        FieldDraw.H = H;
     }
 }
 
@@ -210,6 +214,16 @@ module FieldLayout {
     // Sukrara Aura's sparkline (app.js auraSpark, Aura's SPEC §6.5), scaled by [sc], in the box x0 … x1, y0 … y1
     function spark(g as FieldG, d as FieldInput, x0 as Float, x1 as Float, y0 as Float, y1 as Float, sc as Float) as Void {
         new FieldSpark(d, x0, x1, y0, y1, sc).draw(g, d);
+    }
+
+    // half the screen's width at height [y] (units), 2 px in (app.js edgeX: the field draws no rim)
+    function edgeX(y as Numeric) as Float {
+        var m = 2 / FieldFontTable.S;
+        if (FieldFontTable.RECT) {
+            return FieldDraw.hw() - m;
+        }
+        var R = 195 - m;
+        return FieldMath.abs(y) >= R ? 0.0 : Math.sqrt(R * R - y * y).toFloat();
     }
 
     // a box [h] high inside the slot and the screen, at the slot's side toward the centre, as wide as the circle allows
@@ -421,15 +435,18 @@ module FieldLayout {
         var hh = FieldDraw.hh();
         g.r(-hw - 2, -hh - 2, 2 * hw + 4, 2 * hh + 4, col, 1.0);
         var W0 = b.equals("veryLow") || b.equals("low") ? inkOn(col) : inkBy(col);
-        // the word in medium, else smaller (never under xtiny), the bell before it
-        var wf = FieldDraw.fitRole(word, FieldDraw.ME, 2 * hw - 90);
+        // the word in medium, else smaller (never under xtiny), the bell before it: both inside the screen's width at
+        // the word's top (the circle cuts it there); the line inside it where it stands
+        var wf = FieldDraw.fitRole(word, FieldDraw.ME, FieldMath.min(2 * hw - 90, 2 * edgeX(-88 - FieldDraw.capOf(FieldDraw.ME)) - 40));
         var wd = FieldDraw.ww(word, wf) + 32;
         g.icon(-wd / 2 + 12, -88 - FieldDraw.capOf(wf) / 2, 24, W0);
         g.w(-wd / 2 + 32, -88, word, wf, W0, -1);
         if (d.g != null) {
             value(g, d, 0, 30, 116, 0, true, true, W0);
         }
-        g.w(0, 92, line, FieldDraw.fitRole(line, FieldDraw.TI, 2 * hw - 80), W0, 0);
+        var c = FieldDraw.capOf(FieldDraw.TI);
+        g.w(0, 92, line, FieldDraw.fitRole(line, FieldDraw.TI, FieldMath.min(2 * hw - 80,
+            2 * FieldMath.min(edgeX(92 - c), edgeX(92 + c * 0.3)) - 4)), W0, 0);
         return g;
     }
 }

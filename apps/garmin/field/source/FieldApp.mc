@@ -206,6 +206,8 @@ class FieldAlert extends WatchUi.DataFieldAlert {
         var now = Time.now().value();
         var d = new FieldInput().from(Readings.input(now));
         FieldDraw.mdc = dc;
+        FieldDraw.W = dc.getWidth();
+        FieldDraw.H = dc.getHeight();
         FieldPlace.paint(dc, FieldWords.alert(d, _kind), 0, 0, dc.getWidth(), dc.getHeight());
     }
 }

@@ -138,7 +138,19 @@ def class_files(cls, c, plain=False):
         xml.append('    <jsonData id="%s_m" filename="%s.json"/>' % (key, key))
     png, box = bell_png(c["bell"])
     files[os.path.join(res, "fonts", "bell.png")] = png
-    xml.append('    <bitmap id="bell" filename="bell.png" dithering="none" packingFormat="png"/>')
+    if plain:
+        # a font of one glyph, "A" (drawText in a colour): these watches' drawBitmap2 can't tint a bitmap (the Venu Sq 2
+        # refuses it: "Source must be native color format"), as the app's icon fonts
+        files[os.path.join(res, "fonts", "bell.fnt")] = (
+            'info face="SukraraBell" size=%d bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 '
+            'padding=0,0,0,0 spacing=1,1\n'
+            'common lineHeight=%d base=%d scaleW=%d scaleH=%d pages=1 packed=0\n'
+            'page id=0 file="bell.png"\nchars count=1\n'
+            'char id=65 x=0 y=0 width=%d height=%d xoffset=0 yoffset=0 xadvance=%d page=0 chnl=15\n'
+            % (box, box, box, box, box, box, box, box)).encode()
+        xml.append('    <font id="bell" filename="bell.fnt" antialias="true"/>')
+    else:
+        xml.append('    <bitmap id="bell" filename="bell.png" dithering="none" packingFormat="png"/>')
     xml.append("</resources>")
     files[os.path.join(res, "fonts", "fonts.xml")] = ("\n".join(xml) + "\n").encode()
     mc = ["// %s" % h for h in HEAD] + [
@@ -152,6 +164,7 @@ def class_files(cls, c, plain=False):
         "    const S = %r;" % float(c["s"]),
         "    const MIP = %s;" % ("true" if c["mip"] else "false"),
         "    const RECT = %s;" % ("true" if c["rect"] else "false"),
+        "    const PLAIN = %s; // no tinted bitmaps: the bell is a font" % ("true" if plain else "false"),
         "    const ATLAS = [%s];" % ", ".join(str(p) for p in c["atlas"]),
         "    // the bell's tile: its size (px) and the tile with its margin",
         "    const BELL = %d;" % c["bell"],
@@ -171,7 +184,7 @@ def class_files(cls, c, plain=False):
         "    }",
         "",
         "    function bell() as ResourceId {",
-        "        return Rez.Drawables.bell;",
+        "        return %s;" % ("Rez.Fonts.bell" if plain else "Rez.Drawables.bell"),
         "    }",
         "}", ""]
     files[os.path.join(CLASSES, folder, "source", "FieldFontTable.mc")] = "\n".join(mc).encode()

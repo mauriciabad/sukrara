@@ -110,7 +110,7 @@ module FieldDraw {
     var oy as Float = 194.5;
     var s as Float = 1.0;
     var fonts as Dictionary = {};
-    var bell as WatchUi.BitmapResource? = null;
+    var bell = null; // the bell's bitmap, or its font (FieldFontTable.PLAIN)
     // the dither's phase: the screen's centre in the Dc's pixels (app.js: the pattern starts at the layout's origin)
     var px0 as Number = 195;
     var py0 as Number = 195;
@@ -363,7 +363,15 @@ module FieldDraw {
             dc.setFill(argbCol);
             dc.setStroke(argbCol);
         } else {
-            dc.setColor(argbCol & 0xFFFFFF, Graphics.COLOR_TRANSPARENT);
+            // no blending (the Venu Sq 2, the Forerunner 255 family): a tint is its colour over black (the field's
+            // ground), as the app's ink
+            var c = argbCol & 0xFFFFFF;
+            var a = (argbCol >> 24) & 255;
+            if (a < 255) {
+                var k = a / 255.0;
+                c = ((((c >> 16) & 255) * k).toNumber() << 16) | ((((c >> 8) & 255) * k).toNumber() << 8) | ((c & 255) * k).toNumber();
+            }
+            dc.setColor(c, Graphics.COLOR_TRANSPARENT);
         }
     }
 
@@ -519,9 +527,16 @@ module FieldDraw {
 
     function icon(dc as Dc, e as Array) as Void {
         if (bell == null) {
-            bell = WatchUi.loadResource(FieldFontTable.bell()) as WatchUi.BitmapResource;
+            bell = WatchUi.loadResource(FieldFontTable.bell());
         }
         var box = FieldFontTable.BELL_BOX;
+        if (FieldFontTable.PLAIN) {
+            // its one glyph, the tile's top left at the centre less half the tile (bitmap fonts draw 1 px under)
+            dc.setColor(paintCol(e[4] as Number, 1.0, 1) & 0xFFFFFF, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(Math.round(X(e[1]) + 0.5 - box / 2.0), Math.round(Y(e[2]) + 0.5 - box / 2.0) - 1,
+                bell as Graphics.FontType, "A", Graphics.TEXT_JUSTIFY_LEFT);
+            return;
+        }
         var size = (e[3] as Numeric) * s;
         var bs = size / FieldFontTable.BELL;
         var t = new Graphics.AffineTransform();

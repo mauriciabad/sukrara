@@ -29,5 +29,5 @@
     <font id="n112" filename="n112.fnt" antialias="true"/>
     <font id="n116" filename="n116.fnt" antialias="true"/>
     <font id="n120" filename="n120.fnt" antialias="true"/>
-    <bitmap id="bell" filename="bell.png" dithering="none" packingFormat="png"/>
+    <font id="bell" filename="bell.fnt" antialias="true"/>
 </resources>

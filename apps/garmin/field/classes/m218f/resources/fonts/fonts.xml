@@ -18,5 +18,5 @@
     <font id="n48" filename="n48.fnt" antialias="true"/>
     <font id="n56" filename="n56.fnt" antialias="true"/>
     <font id="n64" filename="n64.fnt" antialias="true"/>
-    <bitmap id="bell" filename="bell.png" dithering="none" packingFormat="png"/>
+    <font id="bell" filename="bell.fnt" antialias="true"/>
 </resources>

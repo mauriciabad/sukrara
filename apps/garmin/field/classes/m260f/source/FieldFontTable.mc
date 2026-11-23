@@ -12,6 +12,7 @@ module FieldFontTable {
     const S = 0.6666666666666666;
     const MIP = true;
     const RECT = false;
+    const PLAIN = true; // no tinted bitmaps: the bell is a font
     const ATLAS = [12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 88];
     // the bell's tile: its size (px) and the tile with its margin
     const BELL = 16;
@@ -28,6 +29,6 @@ module FieldFontTable {
     }
 
     function bell() as ResourceId {
-        return Rez.Drawables.bell;
+        return Rez.Fonts.bell;
     }
 }

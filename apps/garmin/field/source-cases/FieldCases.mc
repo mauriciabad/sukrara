@@ -63,6 +63,8 @@ class FieldCasesView extends WatchUi.DataField {
         var W = ds.screenWidth;
         var H = ds.screenHeight;
         d = new FieldInput().from(Readings.input(now));
+        FieldDraw.W = W;
+        FieldDraw.H = H;
         if ((c["screen"] as String).equals("dfAlert")) {
             var kind = c["kind"] as String;
             g = FieldWords.alert(d as FieldInput, kind);

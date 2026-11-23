@@ -192,7 +192,8 @@ xtiny, the value Atkinson; *Waiting for phone* / *No reading since* tiny, else x
 - **Its own alert** (`S.dfAlert`, `DataField.showAlert` + vibration; on per activity in its Alerts › Connect IQ), for
   every kind the phone rings with its notification up while the phone is locked (§7; in an activity the phone is
   mostly in a pocket): the whole page in the level's colour (a rate alert: the value's band; no data: grey), the
-  bell and the word, the value + arrow, "Sukrara · now". Ink white on the low side, else black or white by contrast
+  bell and the word (medium, smaller where the circle cuts it at its top), the value + arrow, "Sukrara · now" (tiny,
+  smaller where it reaches the edge). Ink white on the low side, else black or white by contrast
   (`inkOn`); an old value struck in that ink.
 - **Always its own black ground**, whatever the activity's colours (no light design).
 - **Where the slot is**: Connect IQ gives a field its size, not its place; the field works it out from which edges the
