@@ -212,13 +212,30 @@ change already finds both sides able to say it: the old side must carry the dete
 
 **Never moves**, so any version reads it (`formats.json` names it per format, tests hold it):
 
-- **Watch payload**: the top-level `v` (a whole number) beside `p` and `sent` in the dictionary; the glucose `g` (`t`,
-  `v`); the port and fetch paths; the fetch's `v=` query; a write's `v` and the answer's `r` / `v`.
+- **Watch payload**: the top-level `v` (a whole number) beside `p` and `sent` in the dictionary; `unit` and `bands`
+  (the value in the person's unit and colour); the glucose `g` (`t`, `v`); the port and fetch paths; the fetch's `v=`
+  query; a write's `v` (outside the signature, checked before it) and the answer's `r` / `v`. A fetch or write without
+  `v` is version 5 (the builds from before they said one).
 - **Sharing**: the envelope (event kinds, the `gk` tag, NIP-44 under the group key, the gift-wrap kinds) and `v` at the
   top of the decrypted content; Bluetooth's frames and the hello's `v`.
 - **Identity**: the invite link's shape (`/join#` + 63 characters) and the invite's `v`.
 
 A change that must move one of these is a new format beside the old one, not a version.
+
+**As built (#262)**, where it differs from the above:
+
+- `formats.json` lists five formats: sharing 2, treatments 1 (their own `v`), invite 3, avatar 1 (`reads: every`: its
+  renderers stay, a newer one draws the fallback) and the watch payload 5. `first` names the apps a format change
+  publishes first (the watch payload's Connect IQ apps); the release check is `tools/formats/release_check.py`
+  (`problems(root, releases)`, one of `release.py`'s `RELEASE_CHECKS`).
+- A watch that can't read a payload keeps its glucose alone as a payload of its own version (`SukraraFace.glucoseOnly`)
+  in place of the stored one: every reader already draws a payload without trend, history or status, so no draw code
+  needed a second path. The version refused is kept apart (`Link.update()`, the barrel's `update()`).
+- The phone names the side from the fetch's `v` alone; the report's `x` (kept the older payload) no longer means
+  *outdated* (it still says the order rule kept an older one).
+- The Garmin page's notice sits under the main switch (a `NoticeCard`, Warning tone) and the watch's line, the app's
+  row and Share with apps' Garmin row say it too. *Update Sukrara*: the GitHub version opens About (its updater checks
+  on opening and offers *Install*), Google Play opens Sukrara's listing.
 
 ### Draft: States and exits (for FEATURES.md when built)
 
