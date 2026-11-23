@@ -5,8 +5,9 @@
 // A truecolour PNG (as headless Chrome writes it: 8 bits, RGB or RGBA, not interlaced) as a 256-colour palette PNG:
 // median cut over its colours, each colour to the nearest of the palette, no dithering. The Connect IQ store takes
 // screenshots of at most 150 KB (docs/20-publishing.md), and a watch in its case on a full picture weighs more.
-// Opaque pictures only (the alpha channel is dropped).
-//   import { png8 } from './png8.mjs';   png8(fs.readFileSync(file)) → Buffer
+// Opaque pictures only (the alpha channel is dropped). apng() makes the animated store icon (APNG, ≤ 300 KB) the
+// same way, one palette for all its frames.
+//   import { png8, apng } from './png8.mjs';   png8(fs.readFileSync(file)) → Buffer;   apng([buf, …], 1600) → Buffer
 
 import zlib from 'node:zlib';
 
@@ -77,10 +78,10 @@ function chunk(kind, data) {
   return out;
 }
 
-export function png8(buf, n = 256) {
-  const { w, h, rgb } = decode(buf);
+// pictures of one size → one palette for all, each picture as palette indices
+function quantize(pics, n) {
   const counts = new Map();
-  for (const c of rgb) counts.set(c, (counts.get(c) || 0) + 1);
+  for (const p of pics) for (const c of p.rgb) counts.set(c, (counts.get(c) || 0) + 1);
   const pal = palette(counts, n), index = new Map();
   for (const c of counts.keys()) {
     const r = c >> 16, g = (c >> 8) & 255, b = c & 255;
@@ -91,10 +92,48 @@ export function png8(buf, n = 256) {
     });
     index.set(c, best);
   }
+  return { pal, idx: pics.map((p) => Uint8Array.from(p.rgb, (c) => index.get(c))) };
+}
+// rows x0…x0+w of y0…y0+h, each with filter 0, deflated
+const rows = (idx, W, x0, y0, w, h) => {
   const raw = Buffer.alloc(h * (w + 1));
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) raw[y * (w + 1) + 1 + x] = index.get(rgb[y * w + x]);
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 3;
-  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr),
-    chunk('PLTE', Buffer.from(pal.flat())), chunk('IDAT', zlib.deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0))]);
+  for (let y = 0; y < h; y++) raw.set(idx.subarray((y0 + y) * W + x0, (y0 + y) * W + x0 + w), y * (w + 1) + 1);
+  return zlib.deflateSync(raw, { level: 9 });
+};
+const SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const ihdr = (w, h) => { const b = Buffer.alloc(13); b.writeUInt32BE(w, 0); b.writeUInt32BE(h, 4); b[8] = 8; b[9] = 3; return chunk('IHDR', b); };
+
+export function png8(buf, n = 256) {
+  const pic = decode(buf), { pal, idx } = quantize([pic], n);
+  return Buffer.concat([SIG, ihdr(pic.w, pic.h), chunk('PLTE', Buffer.from(pal.flat())),
+    chunk('IDAT', rows(idx[0], pic.w, 0, 0, pic.w, pic.h)), chunk('IEND', Buffer.alloc(0))]);
+}
+
+// Truecolour PNGs of one size → an animated PNG (APNG) in 256 colours, one palette for every frame, each shown `ms`
+// and looping forever; after the first, a frame holds only the rectangle that changed. Its first frame is the
+// picture a viewer without APNG shows.
+export function apng(bufs, ms, n = 256) {
+  const pics = bufs.map(decode), { w, h } = pics[0];
+  if (pics.some((p) => p.w !== w || p.h !== h)) throw new Error('apng: frames of different sizes');
+  const { pal, idx } = quantize(pics, n);
+  let seq = 0;
+  const fctl = (x, y, fw, fh) => {
+    const b = Buffer.alloc(26);
+    b.writeUInt32BE(seq++, 0); b.writeUInt32BE(fw, 4); b.writeUInt32BE(fh, 8); b.writeUInt32BE(x, 12); b.writeUInt32BE(y, 16);
+    b.writeUInt16BE(ms, 20); b.writeUInt16BE(1000, 22); // delay ms/1000 s; dispose none, blend source
+    return chunk('fcTL', b);
+  };
+  const actl = Buffer.alloc(8);
+  actl.writeUInt32BE(pics.length, 0);
+  const out = [SIG, ihdr(w, h), chunk('acTL', actl), chunk('PLTE', Buffer.from(pal.flat())), fctl(0, 0, w, h), chunk('IDAT', rows(idx[0], w, 0, 0, w, h))];
+  for (let k = 1; k < idx.length; k++) {
+    let x0 = w, y0 = h, x1 = 0, y1 = 0;
+    for (let i = 0; i < w * h; i++) if (idx[k][i] !== idx[k - 1][i]) { const x = i % w, y = (i / w) | 0; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    if (x1 < x0) { x0 = 0; y0 = 0; x1 = 0; y1 = 0; }
+    out.push(fctl(x0, y0, x1 - x0 + 1, y1 - y0 + 1));
+    const s = Buffer.alloc(4); s.writeUInt32BE(seq++, 0);
+    out.push(chunk('fdAT', Buffer.concat([s, rows(idx[k], w, x0, y0, x1 - x0 + 1, y1 - y0 + 1)])));
+  }
+  out.push(chunk('IEND', Buffer.alloc(0)));
+  return Buffer.concat(out);
 }

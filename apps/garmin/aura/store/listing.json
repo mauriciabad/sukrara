@@ -11,5 +11,6 @@
   "screenshots": ["parts", "ranges", "dial", "no-internet", "sensor"],
   "privacy": { "en": "https://sukrara.mauri.app/privacy/", "es": "https://sukrara.mauri.app/es/privacy/" },
   "support": { "en": "https://sukrara.mauri.app/garmin/aura/", "es": "https://sukrara.mauri.app/es/garmin/aura/" },
-  "price": "Free"
+  "price": "Free",
+  "contact": "support-garmin@a.mauri.app"
 }

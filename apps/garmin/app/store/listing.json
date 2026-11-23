@@ -11,5 +11,6 @@
   "screenshots": ["app", "glance", "states", "log", "no-internet"],
   "privacy": { "en": "https://sukrara.mauri.app/privacy/", "es": "https://sukrara.mauri.app/es/privacy/" },
   "support": { "en": "https://sukrara.mauri.app/garmin/", "es": "https://sukrara.mauri.app/es/garmin/" },
-  "price": "Free"
+  "price": "Free",
+  "contact": "support-garmin@a.mauri.app"
 }

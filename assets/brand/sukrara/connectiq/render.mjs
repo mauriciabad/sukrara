@@ -9,9 +9,9 @@
 //   node assets/brand/sukrara/connectiq/render.mjs [aura|app|field …]   (needs Google Chrome, set CHROME to its binary;
 //   and Node 23.6 or newer, which runs the website's TypeScript as it is)
 // Each app's apps/garmin/<app>/store/listing.json says what to write into its `images` folder:
-//   icon-500.png     the store icon: 500 × 500, an opaque background (not black), no text, inside the 10 px margin.
-//                    Aura: a preview of the face (Garmin's advice for watch faces); the app and the data field: Sukrara's
-//                    glyph on the brand's gradient (Garmin's advice for apps and data fields: one brand identity)
+//   icon-500.png     the store icon: 500 × 500, an animated PNG (ICONS), on a solid background (not black), no text,
+//                    inside the 10 px margin. Aura: the face (Garmin's advice for watch faces); the app and the data
+//                    field: their watch with their screens
 //   hero-<lang>.png  1440 × 720 per language: the kind of app as Garmin names it (`kind`), the title (`heroTitle` when
 //                    the store title is too long for it), the tagline and "no internet", beside the app in a watch
 //   screen-<id>.png  each of `screenshots`, in a watch of our own (no Garmin mark: the store's listings show screens in
@@ -32,7 +32,7 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { png8 } from './png8.mjs';
+import { apng, png8 } from './png8.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..', '..', '..');
@@ -128,9 +128,9 @@ const screen = (cfg) => {
 const caseHeight = (s, D) => (s.rect ? D * s.h / s.w + D * 0.3 : D * 1.27);
 const STUB = 0.3; // the stub beyond the case, × D
 function watch(s, cx, cy, D, o = {}) {
-  const u = ++ids, R = D / 2, rect = s.rect, H = rect ? D * s.h / s.w : D, mode = o.strap || 'full';
+  const u = ++ids, R = D / 2, rect = s.rect, H = rect ? D * s.h / s.w : D, mode = o.strap || 'full'; // 'none': no strap, the lugs alone
   const caseW = rect ? D * 1.3 : D * 1.27, caseH = caseHeight(s, D), strapW = rect ? D * 0.7 : R * 1.2;
-  const box = Math.max(caseW, caseH) + D * 0.4, tall = mode === 'stub' ? caseH + 2 * STUB * D : Math.max(box, (o.strapTo || 2000) * 2);
+  const box = Math.max(caseW, caseH) + D * 0.4, tall = mode === 'none' ? box : mode === 'stub' ? caseH + 2 * STUB * D : Math.max(box, (o.strapTo || 2000) * 2);
   const defs = `<defs>
 <linearGradient id="f${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="${(STUB * D * 0.85 / tall).toFixed(3)}" stop-color="#fff"/><stop offset="${(1 - STUB * D * 0.85 / tall).toFixed(3)}" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <mask id="k${u}" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#f${u})"/></mask>
@@ -159,7 +159,7 @@ function watch(s, cx, cy, D, o = {}) {
 <rect x="${-W2 + D * 0.03}" y="${-H2 + D * 0.03}" width="${2 * W2 - D * 0.06}" height="${caseH - D * 0.06}" rx="${D * 0.21}" fill="#0D0E10"/>
 <rect x="${-D / 2 - D * 0.04}" y="${-H / 2 - D * 0.04}" width="${D * 1.08}" height="${H + D * 0.08}" rx="${D * 0.1}" fill="#000"/>`;
   }
-  const strap = `<rect x="${-strapW / 2}" y="${mode === 'down' ? 0 : -tall / 2}" width="${strapW}" height="${mode === 'down' ? tall / 2 : tall}" fill="url(#s${u})"${mode === 'stub' ? ` mask="url(#k${u})"` : ''}/>`;
+  const strap = mode === 'none' ? '' : `<rect x="${-strapW / 2}" y="${mode === 'down' ? 0 : -tall / 2}" width="${strapW}" height="${mode === 'down' ? tall / 2 : tall}" fill="url(#s${u})"${mode === 'stub' ? ` mask="url(#k${u})"` : ''}/>`;
   const shadow = o.shadow === false ? '' : 'filter:drop-shadow(0 ' + D * 0.06 + 'px ' + D * 0.12 + 'px rgba(2,8,24,.6))';
   const sr = rect ? D * 18 / 320 + 'px' : '50%';
   return `<svg class="abs" style="left:${cx - box / 2}px;top:${cy - tall / 2}px;${shadow}" width="${box}" height="${tall}" viewBox="${-box / 2} ${-tall / 2} ${box} ${tall}">${defs}${strap}${body}</svg>
@@ -291,7 +291,7 @@ const AURA_PARTS = [
   { part: 'top', side: 'right', name: 'Your fields', sub: 'steps, weather, heart rate…' },
   { part: 'sideR', side: 'right', name: 'Glucose rail', sub: 'your limits, the last 30 min' },
   { part: 'trend', side: 'right', name: 'The last hours', sub: 'or Sukrara’s trend arrow' },
-  { part: 'pill', side: 'right', name: 'What to do', sub: 'a bell while alerts wait' },
+  { part: 'pill', side: 'right', name: 'Sukrara’s alerts', sub: 'a bell while they wait or are muted' },
   { part: 'fields', side: 'right', name: 'Last treatment', sub: 'insulin and carbs, time since', at: [118, 150] },
 ];
 function auraParts(cfg) {
@@ -363,7 +363,7 @@ const SHOTS = {
       { s: face(day('11:40', { cfg: { dial: 'topo' } })), name: 'Very high', sub: 'the further out, the wider' },
       { s: face(day('12:10', { cfg: { dial: 'topo' } })), name: 'Coming back', sub: 'calmer as you head back' },
       { s: face(day('16:35', { shift: -20, cfg: { status: 'quiet', left: 10, last: { items: [{ k: 'carbs', a: '15' }], ago: 5 }, dial: 'topo' } })), name: 'Low, falling', sub: 'it spreads from below' },
-    ]], { D: 140, title: 'The dial follows your glucose and where it’s heading' }),
+    ]], { D: 140, title: 'The dial follows your glucose and its trend' }),
     'no-internet': () => [W, H, noInternet(face(day('20:10')), W)],
     // the sensor's end and the next one's warm-up; old readings; always-on, night and private
     sensor: () => rows([[
@@ -426,6 +426,22 @@ const SHOTS = {
   },
 };
 
+// The store icons (the upload form's Cover Image: 500 × 500, ≤ 300 KB): animated PNGs, as other listings' (the store
+// serves the file as it is and plays it), ICON_MS a frame, looping. On the brand's dark blue: Garmin's brand guidelines
+// ask for a solid background, not black nor transparent. Aura: the face through a day (the dial following the
+// glucose); the app: its watch with its pages, the main one first; the data field: its watch with each size of slot,
+// the whole screen first. Everything inside the 10 px margin, no strap.
+const ICON_MS = 1600;
+const ICON_BG = `<div class="abs" style="inset:0;background:${brand.bottom}"></div>`;
+const iconFace = (cfg) => `${ICON_BG}<div class="abs scr" style="left:10px;top:10px;width:480px;height:480px;border-radius:50%;overflow:hidden">${face(cfg).svg}</div>`;
+const iconWatch = (cfg) => ICON_BG + watch(screen(cfg), 250, 250, 328, { strap: 'none' });
+const ICONS = {
+  aura: () => ['11:40', '13:20', '20:10', '08:35', '11:20'].map((t) => iconFace(day(t))),
+  app: () => [{ screen: 'appA' }, { screen: 'appNums' }, { screen: 'glance' }, { screen: 'actions' }, { screen: 'logDone' }].map(iconWatch),
+  field: () => [{ screen: 'dfSlot', form: 'whole' }, { screen: 'dfSlot', form: 'half' }, { screen: 'dfSlot', form: 'band' },
+    { screen: 'dfSlot', form: 'quarter', scenario: 'low' }, { screen: 'dfAlert', scenario: 'low' }].map(iconWatch),
+};
+
 // ---- the listing --------------------------------------------------------------------------------------------------------
 
 async function render(app) {
@@ -434,12 +450,14 @@ async function render(app) {
   fs.mkdirSync(out, { recursive: true });
   for (const f of fs.readdirSync(out)) if (/^(icon-500|hero-[a-z]+|screen-.*)\.png$/.test(f)) fs.rmSync(path.join(out, f));
   const jobs = [];
-  const icon = app === 'aura'
-    // the face at a very high reading still rising, so the dial shows, 480 px inside the 10 px margin, on the brand's dark blue
-    ? `<div class="abs scr" style="left:10px;top:10px;width:480px;height:480px">${face(day('11:40')).svg}</div>`
-    // the glyph, white, on the gradient (the Play icon's look), well inside the 10 px margin
-    : `<div style="width:500px;height:500px;background:${HERO_BG};display:flex;align-items:center;justify-content:center"><div style="width:300px;height:300px">${glyph.replace('<svg ', '<svg width="300" height="300" ')}</div></div>`;
-  jobs.push(shoot(500, 500, brand.bottom, icon, path.join(out, 'icon-500.png')));
+  // the icon: an animated PNG of ICONS' frames, the first the still a viewer without APNG shows
+  const frames = ICONS[app]().map((body, k) => shoot(500, 500, brand.bottom, body, path.join(tmp, `${app}-icon-${k + 1}.png`)));
+  jobs.push(Promise.all(frames).then((files) => {
+    if (FRAMES) for (const f of files) fs.copyFileSync(f, path.join(FRAMES, path.basename(f)));
+    const file = path.join(out, 'icon-500.png');
+    fs.writeFileSync(file, apng(files.map((f) => fs.readFileSync(f)), ICON_MS));
+    return file;
+  }));
   for (const lang of Object.keys(l.tagline)) {
     const title = (l.heroTitle || l.title)[lang];
     let body;
@@ -466,7 +484,11 @@ async function render(app) {
   return Promise.all(jobs);
 }
 
-const apps = process.argv.slice(2).length ? process.argv.slice(2) : ['aura', 'app', 'field'];
+// node render.mjs [aura|app|field …] [--frames <dir>]: --frames also keeps each icon frame there, to look at one by one
+const args = process.argv.slice(2), at = args.indexOf('--frames');
+const FRAMES = at >= 0 ? path.resolve(args.splice(at, 2)[1]) : null;
+if (FRAMES) fs.mkdirSync(FRAMES, { recursive: true });
+const apps = args.length ? args : ['aura', 'app', 'field'];
 try {
   for (const app of apps) {
     const files = await render(app);

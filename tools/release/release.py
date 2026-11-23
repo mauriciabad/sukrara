@@ -433,6 +433,7 @@ def garmin_upload_kit(version, app, iq, listing, changelog):
         "       Privacy policy: %s" % " / ".join(listing["privacy"][lang] for lang in GARMIN_LANGS),
         "       Support: %s" % " / ".join(listing["support"][lang] for lang in GARMIN_LANGS),
         "       Price: %s" % listing["price"],
+    ] + (["       Contact e-mail: %s" % listing["contact"]] if listing.get("contact") else []) + [
         "  5. Submit. Garmin reviews it (7–14 days lately) and e-mails on approval; then the listing's id (the last part",
         "     of its apps.garmin.com link) goes into contracts/watchface/payload/apps.json `store` (#247).",
     ])
