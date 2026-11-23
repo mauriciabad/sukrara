@@ -40,6 +40,11 @@ failure with what's done and what's left (resume with --from <step>; every step 
                  "<name> <version>" with only its files, its CHANGELOG entry as notes; Android's is GitHub's Latest
                  (the updater, Obtainium, IzzyOnDroid), every other one --latest=false. main's own run isn't awaited:
                  the commit's green run is what it finds (tools/ci/changes.py)
+  garmin         a Garmin app (first of the channels: Connect IQ's review is the slowest): the Connect IQ store has no
+                 upload API: the release's .iq (built and signed with the store key in the gate, on its GitHub
+                 release) and what to enter at the developer dashboard, for the owner's upload: Upload a new version,
+                 with its What's new (an app's first upload, with its listing, is by hand: docs/20-publishing.md ›
+                 Connect IQ store: the owner's steps)
   sparkle        mac: website/public/appcast.xml committed to main and next once the release's dmg is there, Pages
                  deployed, the feed at https://sukrara.mauri.app/appcast.xml serves the item
   homebrew       mac: the tap's workflow committed the cask for this version (the dmg's sha256)
@@ -53,10 +58,6 @@ failure with what's done and what's left (resume with --from <step>; every step 
                  apps/macos/AppStore/whats-new/<en-US|es-ES>/<versionCode>.txt (at most 4000 characters), released
                  after approval, submitted for App Review (needs the App Manager key); while another version is in
                  review it waits on TestFlight, and a later release submits the newest
-  garmin         a Garmin app: the Connect IQ store has no upload API: the release's .iq (built and signed with the
-                 store key in the gate, on its GitHub release) and what to enter at the developer dashboard, for the
-                 owner's upload: Upload a new version, with its What's new (an app's first upload, with its listing,
-                 is by hand: docs/20-publishing.md › Connect IQ store: the owner's steps)
   summary        every channel's state
 
 --dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
@@ -88,8 +89,8 @@ REPO = "mauriciabad/sukrara"
 REPO_URL = "https://github.com/" + REPO
 TAP = "mauriciabad/homebrew-tap"
 FEED_URL = "https://sukrara.mauri.app/appcast.xml"
-STEPS = ["preconditions", "version", "gate", "github", "sparkle", "homebrew", "play", "testflight", "appstore",
-         "garmin", "summary"]
+STEPS = ["preconditions", "version", "gate", "github", "garmin", "sparkle", "homebrew", "play", "testflight",
+         "appstore", "summary"]
 RESUMABLE = STEPS[2:]  # the version step consumes the change files: a new release starts at preconditions
 PLAY_LANGS = ["en-US", "es-ES"]
 PLAY_TRACKS = ["internal", "production"]
@@ -115,7 +116,9 @@ GARMIN_MUST_SAY = {"en": ["not a medical device", "Android", "Garmin Connect", "
                    "es": ["no es un producto sanitario", "Android", "Garmin Connect", "No funciona con iPhone",
                           "no está afiliada a Garmin"]}
 # Checks across the apps a release takes (#262: the shared formats): each is f(root, {app id: version}) → [problem],
-# run in preconditions; a problem stops the release.
+# run in preconditions; a problem stops the release. An order between apps (#262: a watch payload change publishes the
+# phone only once Connect IQ approved the watch apps) is two runs, the watch apps' first; a check here can refuse the
+# second until the first is live.
 RELEASE_CHECKS = []
 
 

@@ -199,31 +199,32 @@ skips what's already there; `--from` takes the versions of the checked-out relea
    against the release's), notes from its CHANGELOG entry with the disclaimer and the files. Android's is GitHub's **Latest** (`--latest`: Obtainium
    and IzzyOnDroid take its APK); every other one `--latest=false`. `main`'s own run isn't awaited: it finds the
    commit's green run and runs nothing again.
-5. `sparkle` (`mac`): the dmg on the release is the one `website/public/appcast.xml` signs → the appcast committed and
+5. `garmin` (a Garmin app; first of the channels: Connect IQ's review is the slowest): the Connect IQ
+   store has no upload API, so this step prints, per app, what to do at
+   https://apps-developer.garmin.com/developer/dashboard: **Upload a new version** with its `.iq` and its CHANGELOG
+   entry as the What's new; Garmin reviews each before the store shows it
+   ([docs/20 › the owner's steps](20-publishing.md#connect-iq-store-the-owners-steps)).
+6. `sparkle` (`mac`): the dmg on the release is the one `website/public/appcast.xml` signs → the appcast committed and
    pushed to `main` and `next` (if `next` moved meanwhile, the commit is merged into it; HEAD stays on the appcast
    commit, so a re-run never brings `next`'s other work to `main`), Pages deployed, and
    https://sukrara.mauri.app/appcast.xml serves the item.
-6. `homebrew` (`mac`): the tap's cask (bumped by `homebrew-tap.yml` from a `mac-v…` release) at the version, with the
+7. `homebrew` (`mac`): the tap's cask (bumped by `homebrew-tap.yml` from a `mac-v…` release) at the version, with the
    dmg's sha256 and `auto_updates true`.
-7. `play` (`android`): the play bundle on the **internal and production** tracks with the en-US / es-ES notes,
+8. `play` (`android`): the play bundle on the **internal and production** tracks with the en-US / es-ES notes,
    through the Android Publisher API (edits.insert → bundles.upload → tracks.update → edits.commit) with the service
    account `~/.android/sukrara-play.json`; a track that already has the version code is left alone. Managed publishing
    is off: production goes live once Google approves it.
-8. `testflight` (`mac`): unless App Store Connect has a build of the version already, the gate's pkg
+9. `testflight` (`mac`): unless App Store Connect has a build of the version already, the gate's pkg
    (`build/Sukrara-<version>-appstore.pkg`; missing, e.g. `--from testflight` in a fresh checkout, `mac-appstore.sh`
    builds and validates it once), its version and build number checked, uploaded with `mac-appstore.sh --upload`
    (which never builds); then waits until App Store Connect has processed it. A new build shows *Missing Compliance*
    until its export question is answered (since 0.14.6 the App Store build's Info.plist answers it).
-9. `appstore` (`mac`): the App Store version of the release (a new one, or the editable one reused: never submitted,
+10. `appstore` (`mac`): the App Store version of the release (a new one, or the editable one reused: never submitted,
    rejected or removed from review), its VALID build attached, *What's New* from the App Store notes (once a version is
    live), released automatically after approval, submitted for App Review. Apple reviews one version at a time: while
    another is in review, this release stays on TestFlight (the summary says so) and a later release submits the
    newest. Needs the App Store Connect key with **App Manager** access (`~/.apple-dev/release-AuthKey_<id>.p8`; the
    *Developer* notary key is `notary-AuthKey_<id>.p8`, notarization reads it from the keychain profile).
-10. `garmin` (a Garmin app): the Connect IQ store has no upload API, so this step prints, per app, what to do at
-    https://apps-developer.garmin.com/developer/dashboard: **Upload a new version** with its `.iq` and its CHANGELOG
-    entry as the What's new; Garmin reviews each before the store shows it
-    ([docs/20 › the owner's steps](20-publishing.md#connect-iq-store-the-owners-steps)).
 11. `summary`: each release's state and its channels' (`--from summary` alone shows it any time).
 
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes

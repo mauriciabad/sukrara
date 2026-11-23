@@ -87,16 +87,19 @@ re-run):
 - **channels**, only for the apps released: Sparkle, Homebrew, TestFlight, App Store (mac); Play (android); the
   Connect IQ upload kit per Garmin app; nothing more for `face-sdk`.
 - The store notes stay per app and per version code (Play's, the App Store's), written before the release as today.
+- **Order between apps** (#262: a watch payload change publishes the phone only once Connect IQ approved the watch
+  apps): two runs, the watch apps' first; a `RELEASE_CHECKS` function can refuse the second until the first is live.
+  Within a run, `garmin` is the first channel step, so Connect IQ's review (the slowest) starts at once.
 
 What follows the tags:
 
 | Reader | Today | Then |
 |---|---|---|
 | Android updater (`Releases`) | every release, tag `v…` | only `v…` tags: unchanged for the installed ones (they read `mac-v…` as older than anything); the new one skips other tags and asks for 100 releases a page, so a run of other apps' releases never hides Android's |
-| Website (`release.ts`) | `/releases/latest`, needs APK and dmg | the newest `v…` (Android) and the newest `mac-v…` release |
+| Website (`release.ts`) | `/releases/latest`, needs APK and dmg | one list of releases: the newest carrying `Sukrara-<version>.apk` and the newest carrying `Sukrara-<version>.dmg` (the version from the file's name), so the shared releases up to 0.17.1 count until each app's first own one; the hero names both versions |
 | Homebrew tap workflow | every published release | only `mac-v…` (the job's condition; one dispatched by hand is refused otherwise) |
 | SukraraFace download | `/releases/latest/download/SukraraFace.barrel` | `releases/download/face-sdk-v<version>/SukraraFace-<version>.barrel` in GARMIN-FACES.md, rewritten by each SukraraFace release (GitHub has no "latest of a tag prefix" link, so the unversioned `SukraraFace.barrel` copy goes) |
-| Website's Garmin page | "every release has a zip per app" | each Garmin app's newest release |
+| Website's Garmin page | "every release has a zip per app" | each app's releases on GitHub have the zip (the releases list: GitHub has no link to the newest of one prefix) |
 | Obtainium, IzzyOnDroid | Latest's APK | the same: Latest stays Android's with the same `v…` tags, the other releases have no APK; nothing to change in their settings |
 
 ## Shared formats
