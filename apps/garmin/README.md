@@ -14,7 +14,7 @@ Setup, keys, simulator and sideloading: [docs/DEVELOPMENT.md › Garmin](../../d
 | `sdk/` | **SukraraFace**, the Monkey Barrel any watch face reads Sukrara with ([docs/GARMIN-FACES.md](../../docs/GARMIN-FACES.md)): `source/read` (the payload's rules: version, order, clock lead, `SukraraFace.Reading` at every draw; Sukrara's own apps compile it, below), `source/face` (a face's fetch, storage and reading), `test/` (the cases of `cases.json`, generated, and the barrel's tests). Version = the payload's `v` major; strictly type-checked; 0BSD (its LICENSE) |
 | `shared/` | What more than one app needs, compiled into each app that names it (below) |
 | `tools/` | The tools every app uses: `link-test.sh`, `link_cases.py`, `icons.py`, `launcher_icons.py`, `verify_prg.sh`, `sideload.py`, `simshot.py`, `fake_phone.py` |
-| `fonts/` | Atkinson Hyperlegible Next (OFL), the source of the face's atlases (`aura/tools/fonts.py`) |
+| `fonts/` | Atkinson Hyperlegible Next (OFL), the source of the atlases (`aura/tools/fonts.py`, the big numbers); Roboto Condensed Bold / Roboto (OFL), the references' stand-ins for the watch's system fonts (`tools/watchface/app.js` TYPE) |
 | `build.sh` | The one build entry: `build.sh <app> [<mode>]` |
 
 The app and the field run on every watch with API 5 or newer (docs/47 §9: 73 products, every round AMOLED and MIP

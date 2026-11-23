@@ -6,7 +6,7 @@
  * A row of Sukrara's Garmin screens (screens.ts), each with its name and one line. The app's and the data field's are
  * drawn at build time by their reference renderer (tools/watchface/app.js, read through `@repo`, never copied) as
  * inline SVG, so the page needs no script for them; a watch face's example is drawn on the page by its own code, as
- * FaceGallery does. The type is the site's own Atkinson Hyperlegible Next.
+ * FaceGallery does. The type: render.ts fontFace (Atkinson for the big numbers, Roboto stand-ins for the watch's fonts).
  *   <WatchScreens ids={['glance', 'app', 'numbers']} />      <WatchScreens ids={[…]} size="lg" />
  */
 import { aura } from '../face-playground/aura/index.ts';

@@ -45,10 +45,13 @@ phone's metrics as set, in the card's priority), `slot` (the watch's last treatm
 
 Garmin draws the list and Sukrara's icon (60 × 60); the app draws 248 × 103 to its right (Descent; other sizes in
 docs/47). No input: selecting it opens the app.
-- **The widget's top row**: value + arrow left (font 58, 54 when a row sits under it); from the right end, in the card's
+- **The widget's top row**: value + arrow left (Atkinson 58, 54 when a row sits under it); from the right end, in the card's
   priority, as many slots as fit (r 23, stroke 5, 6 apart): the main metric's ring, then the last treatment (§8) when
-  there is one, else the second metric (dimmed). Rings carry **no period label** and a bigger number (23).
-- **Under the value**, only when needed: the reading's time when late (≥ 90 s), then Sukrara's pill (font 15).
+  there is one, else the second metric (dimmed). Rings carry **no period label** and a bigger number (23). With a row
+  under the value the places move to the content's top.
+- **Under the value**, only when needed, at the content's bottom: the reading's time when late (≥ 90 s), then Sukrara's
+  pill; both in the glance's font (`FONT_GLANCE`, §14.1), the pill 1.5 caps tall. Every word of the glance is in that
+  font: the states below wrap to the content's width.
 - **States**: old (≥ 5 min) struck grey with a hollow ring for the arrow; no reading for 20 min → "No reading since" +
   the time; warming up → the pie + "Warming up" + "Ready at …"; no message from the phone yet → "Waiting for your phone" (§4.3).
 
@@ -59,20 +62,22 @@ On every screen a tap acts on what it lands on (a chip, a row, a button, a chevr
 BehaviorDelegate sends a tap to onSelect first, so the app tells START, whose key press comes first, from a tap).
 
 ### 4.1 Page 1: the widget (`S.appA`)
-- Top: the clock (22, soft). The value + arrow (88) between the card's first two places: right = the main metric's ring
-  (never dimmed, on the glance too: the payload's `dim` is for the places after it, as on the phone; #250);
-  left = the next in the card's priority: the last treatment (§8, never dimmed) when there is one, else the second metric
-  (dimmed). Rings r 25, stroke 6, no period label, number 22.
+- Top: the clock (tiny, soft). The value + arrow (Atkinson 88) between the card's first two places: right = the main
+  metric's ring (never dimmed, on the glance too: the payload's `dim` is for the places after it, as on the phone; #250);
+  left = the next in the card's priority: the last treatment (§8, never dimmed; its time in xtiny) when there is one,
+  else the second metric (dimmed). Rings r 25, stroke 6, no period label, number 22 (Atkinson).
 - **The chart**: 12 h (the place's `graph.hours`), x −134 … 146, y −22 … 88. Height on **Kovatchev's symmetrised
   scale** over 40–300 mg/dL (K(g) = 1.509·((ln g)^1.084 − 5.381), as Aura's rail; symmetric there: lows 27 %, the range
   47 %, highs 26 %; above 300 pins to the top). Bands: very good 70–140 (tight green 13 %), good 141–180 (target green
-  7.5 %), dashed limit lines, labels 70 / 180 right. The line in its bands' colours, the bead; treatment marks per
-  `graph.marks` with labels in the hours' row (an overlapping label is dropped). Old: the line grey, ending at the
-  reading.
+  7.5 %), dashed limit lines, labels 70 / 180 right (xtiny). The line in its bands' colours, the bead; treatment marks
+  per `graph.marks` with labels in the hours' row (xtiny; an overlapping label, or one the screen would cut, is
+  dropped). Old: the line grey, ending at the reading. The plot's left and right edges give way to the shares' and the
+  labels' widths in the watch's font.
 - **The % column** (the widget's, on per the place's setting): the window's readings as dot rows per 10 mg/dL from the
   plot's left edge (up to 22 % of its width), **over the line, masking it** (each row repaints the plot's own background,
-  band tint included, before its dots), the shares above / in / below to its left. Port it from the widget's renderer.
-- Bottom row: Sukrara's pill (or the reading's time when late), else the sensor's days.
+  band tint included, before its dots), the shares above / in / below to its left (xtiny). Port it from the widget's
+  renderer.
+- Bottom row: Sukrara's pill (or the reading's time when late), else the sensor's days; xtiny.
 - **States**: low / high (pill), muted (tonal pill counting down), old, no reading for 20 min, warming up.
 
 ### 4.2 Page 2: numbers (`S.appNums`)
@@ -81,6 +86,8 @@ tapping one switches it here without saving; buttons: MENU steps 1d → 7d → 1
 *In range* (with *very good*), *Below range* with their consensus goals as chips (✓ met in green, ✕ not in orange),
 then average, GMI, CV, each with the goal check the phone's report gives it (✓ met / ✕ not: the phone sends whether
 each goal is met, so the watch holds no threshold of its own). Very high / very low rows and the coverage note stay on the phone.
+Type (§14.1): chips, goal chips, *very good* and the numbers' names xtiny; the shares' names tiny (*In range* small); their
+numbers small (*In range*'s medium); average / GMI / CV small.
 
 ### 4.3 Waiting for the phone (`S.setup`)
 
@@ -90,7 +97,8 @@ Until the phone's first message reaches this app (a fresh install: up to a minut
 switch off; Garmin Connect not running), every surface says so instead of drawing empty values. **The watch never names
 a phone screen or setting**: the phone's pages change, the watch app in the store doesn't; the phone and the website
 say where.
-- **The app**: one page, no dots: Sukrara for Android's own icon (the disc, the cube, the dot: the phone app that
+- **The app**: one page, no dots, laid out from the button up (title medium on up to two lines, the body tiny on up to
+  two, else xtiny; the icon where room is left): Sukrara for Android's own icon (the disc, the cube, the dot: the phone app that
   needs to be open, big enough to read; the owner, 2026-11-22), not the watch's cyan launcher icon; *Waiting for your phone*; soft: *Sukrara for Android sends your
   glucose here*; a button **Open on phone** (START or a tap) → `Communications.openWebPage` with the setup link
   (`https://sukrara.mauri.app/garmin/setup/`, `/es/garmin/setup/` when the watch's language is Spanish). Garmin Connect
@@ -109,17 +117,18 @@ say where.
 
 START in the app (or a tap on the Log complication, on a face of a touch watch): the three kinds **in the phone's order**, the first
 selected, each with its last entry and how long ago ("4.5u · 1h"), then *Mute alerts* (or *Muted* + time left).
+Names small (fitted down where the detail needs the room), the detail xtiny, the title *Sukrara* tiny.
 The order is one rule on the phone (`TreatmentOrder`, cases in `contracts/treatments/kind-order.json`, the treatment
 dialog's focus too): carbs when low, the other insulin after a pen dose, else rapid; then Rapid · Long · Carbs. The
 watch never decides it (payload `log.order`).
 
 ## 6. Logging
 
-- **Amount** (`S.logAmount`): the kind's name and mark in its colour on top, the amount (128) with its unit, chevrons
-  above / below; UP / DOWN one step per press (0.5 u, 5 g); touch: a tap on a chevron one step; a drag or swipe up / down
-  runs through the values in one go, the value following the finger (one step every 14 units, down for more; the same
-  steps and limits; #250, until #249's native picker); the person's three
-  usual amounts as chips (the chosen one filled in the kind's colour); *Now* (MENU for earlier); START next.
+- **Amount** (`S.logAmount`): the kind's name (small) and mark in its colour on top, the amount (Atkinson 128) with its
+  unit, chevrons above / below; UP / DOWN one step per press (0.5 u, 5 g); touch: a tap on a chevron one step; a drag or
+  swipe up / down runs through the values in one go, the value following the finger (one step every 14 units, down for
+  more; the same steps and limits; #250, until #249's native picker); the person's three usual amounts as chips (small;
+  the chosen one filled in the kind's colour); *Now* (tiny; MENU for earlier); START next.
 - **Hold to log** (`S.logConfirm`): the amount big in the kind's colour with its mark, "rapid insulin · now", the quiet
   line as the phone says it ("Highs quiet for 1 h"); the rim fills from START over about 1 s while START (or a touch) is
   held; letting go cancels; a notification over the screen cancels. No two-step confirm (the owner).
@@ -168,7 +177,8 @@ shows on the watch when it shows on the widget: a change to the rule changes bot
 
 ## 9. Data field (`S.df*`)
 
-Its own store app; the phone sends it its own data (≤ 3 h). No input. Label *GLUCOSE* (soft, letter-spaced).
+Its own store app; the phone sends it its own data (≤ 3 h). No input. Label *GLUCOSE* (xtiny, soft), the reading's time
+xtiny, the value Atkinson; *Waiting for phone* / *No reading since* tiny, else xtiny.
 - **Aura's sparkline** (§6.5 of Aura's SPEC, `auraSpark`, scaled by `sc` per slot): log time axis (the newest 10 min
   widest; up to 3 h as the width allows), 0.6·sc px per mg/dL never rescaled, the window panning on the last hour,
   overflow fading, the limits dotted with the very-good band at 9 %, the trend ray, the end dot. Whole page: the value
@@ -241,6 +251,13 @@ Decided (the owner, 2026-11-22):
    hand: alarm fatigue). Decided on the phone,
    carried by `ring` (its meaning, not its format: payload version 5 unchanged); the app and the field react to `ring`
    as before. A follower's watch follows the follower's phone.
+7. **Words in the watch's own fonts** (#252, 2026-11-23; the owner: "following their guidelines instead of trying to copy
+   an artifact pixel to pixel"): every small and body text was under Garmin's smallest system font on all 9 class
+   watches (39 – 73 % of `FONT_XTINY`; the 390 design scaled by px, unhinted atlases worst on MIP). Every word is now
+   drawn in the watch's system fonts by role, never under `FONT_XTINY` (§14.1); Atkinson stays only for the big numbers
+   (value, amount, the alert / done values, the ring numbers). The layout follows the fonts: widths and line heights
+   from the watch; what no longer fits takes a smaller role (never under xtiny), wraps, or gives way by a rule (§14.1).
+   Measurements and sources: the phase-1 findings (issue #252).
 
 Open:
 1. The name **CGM-GB-value** in the fēnix 8's own face editor, and Face It's rendering (a real watch).
@@ -272,15 +289,45 @@ button angles); `tools/watchface/app-build.mjs` renders every screen of §1 on e
 ### 14.1 What scales and what doesn't (every class)
 - **Layout units.** Round classes draw the 390's layout × s (s = W / 390: 0.56 – 1.19). Rectangles have their own
   layouts in the Venu Sq 2's px (s = 1; Venu X1 1.2, its extra room going to the layout, §14.5).
-- **Type: the atlas set.** Every size snaps to the class's atlas set (`ATLAS`, `snapFont`): AMOLED 14, 16 … 32 (every
-  2), 36, 40 … 64 (every 4), 72 … 136 (every 8), 148; MIP 12, 14 … 24, 28, 32 … 48, 56 … 88. Floor: 14 px AMOLED, 12 px
-  MIP (the 390's 14–15 px labels stay 14 on the 360; on MIP they are 12, the smallest Atkinson that keeps 1 / 7 / 3 /
-  8 apart on a 202 ppi panel). Big sizes are digits-only atlases. The 390 keeps its approved sizes. Widths are
-  measured at the snapped size (`tw` / `bw`), so nothing collides when a size rounds up.
+- **Type: the watch's fonts** (§13 decided 7; Garmin's UX guidelines, Typography: "The system fonts that come with the
+  device have been tested for readability for the device and should be used whenever possible"). Every word is drawn
+  in the watch's system font of its role, never smaller than `FONT_XTINY` (≈ 1.4 – 1.8 mm cap, 15 – 21′ at 30 cm: the
+  ergonomic minimum):
+
+  | Role | Font | For |
+  |---|---|---|
+  | xtiny | `FONT_XTINY` | fine print: the chart's hours, 70 / 180 and % shares, the list's detail, goal chips, pills, the sensor's days, the data field's label and time, footnotes |
+  | tiny | `FONT_TINY` | sub-lines and body: the clock, *Ready at*, the quiet line, *Sending to your phone*, the done screens' second line |
+  | small | `FONT_SMALL` | list items, buttons, the amount's chips, the report's numbers |
+  | medium | `FONT_MEDIUM` | titles: the done screens, the alert's word, *Waiting for your phone* |
+  | glance | `FONT_GLANCE` (`FONT_XTINY` where a watch lacks it) | every word of the glance |
+
+  A text that doesn't fit its width takes the next smaller role, down to xtiny and never below (`fitRole`); paragraphs
+  wrap (`wrap`, the watch's `Graphics.fitTextToArea`). **Atkinson** (the `n` atlases, digits and `.:-LOHIug`) stays
+  only for the big numbers: the value, the amount and its unit, the alert / done values, the ring numbers, the
+  no-reading time; they snap to the class's atlas set (`ATLAS`, `snapFont`: AMOLED 14, 16 … 32 (every 2), 36, 40 … 64
+  (every 4), 72 … 136 (every 8), 148; MIP 12, 14 … 24, 28, 32 … 48, 56 … 88; the 390 keeps its approved sizes).
+  `app-build.mjs --check` fails on a word in Atkinson or under the class's xtiny (`smallWords`). The references draw the
+  words in Roboto Condensed Bold (the CDPG bitmap watches: MIP, Descent) or Roboto Regular (the TTF AMOLEDs, the Venu
+  Sq 2) from `apps/garmin/fonts` (OFL) as stand-ins for Garmin's font files, which can't be shipped: each class's
+  `TYPE` holds every role's height, ascent, cap and measured width on its reference watch (SDK 9.3 simulator), and each
+  word is stretched to that width. The watch never reads `TYPE`: it measures its own fonts.
+
+  | Class (watch) | xtiny h / cap | tiny | small | medium | glance |
+  |---|---|---|---|---|---|
+  | r390 Descent Mk3 43 (cond) | 29 / 17 | 39 / 23 | 44 / 26 | 51 / 30 | 33 / 19 |
+  | r360 FR 265S (reg) | 29 / 18 | 39 / 24 | 43 / 27 | 50 / 30 | 34 / 21 |
+  | r416 fēnix 8 43 (reg) | 34 / 21 | 43 / 27 | 50 / 30 | 58 / 35 | 39 / 24 |
+  | r454 fēnix 8 47, r466 fēnix 9 Pro 51, x1 Venu X1 (reg) | 37 / 22 | 47 / 29 | 53 / 32 | 61 / 37 | 42 / 26 (X1 37 / 22) |
+  | m218 FR 255S (cond) | 19 / 11 | 23 / 13 | 26 / 16 | 32 / 18 | 19 / 11 |
+  | m260 fēnix 7 (cond) | 19 / 11 | 29 / 16 | 32 / 18 | 37 / 22 | 22 / 12 |
+  | m240 fēnix 7S, m280 fēnix 7X (cond; from their fonts' sizes, not measured) | 19 / 11 | 27 / 15, 30 / 17 | 30 / 17, 34 / 20 | 34 / 20, 38 / 23 | 22 / 12 |
+  | sq2 Venu Sq 2 (reg) | 39 / 23 | 44 / 26 | 51 / 30 | 59 / 34 | 44 / 26 |
 - **Strokes**: AMOLED × s to the half px, never under 1; MIP whole px, hairlines (≤ 1.6 at 390) 1 px, everything else
   ≥ 2 px (rings 4, the chart's line 2 – 3, the rims 5 – 7).
 - **Physical size**: the AMOLEDs are 310 – 327 ppi, the MIPs 202 ppi, so a MIP pixel is 1.6× larger: the 260's
-  layout is 0.67× the 390's in px but 1.07× in mm. The MIP floors are about px, not legibility.
+  layout is 0.67× the 390's in px but 1.07× in mm. Words take the watch's own fonts (above), whose sizes Garmin set per
+  device for legibility; only the drawings scale by s.
 - **The glance's places** (`S.glance`): the same two as page 1, the main metric's ring and then the last treatment
   (else the second metric, dimmed); never a third. They are decided per class, never per reading: a class keeps both
   when the widest value (288 and its arrow) fits beside them at the smallest value size (58 → 46; 54 → 42 with a row
@@ -290,10 +337,13 @@ button angles); `tools/watchface/app-build.mjs` renders every screen of §1 on e
   inside the rim where the screen draws one (`clippedTexts`; `app-build.mjs --check` lists any, and the build fails on
   one). Where a screen can't fit something, it gives way by a rule: the alert's value + sparkline narrows the
   sparkline (132 → 96 units), then the value (84 → 68); the alert's *Reminders every 30 min* line under the buttons is
-  left out where it would reach the rim (the 218, 240 and 260 MIPs; the button's *Remind as usual* already says it); the
-  glance mock's Garmin rows (Heart Rate, Body Battery) are left out where the circle would cut them.
-- **The chart's height** scales with s; the hours row and the % labels don't (floors), so on MIP the plot is 6 – 8 px
-  shorter than s says. The drop rules (§14.3) give it back its width.
+  left out where it would reach the rim (the button's *Remind as usual* already says it); a centred line fits the
+  screen's width where it stands (`edgeX`: a smaller role, never under xtiny), the muted page's footnote wraps; the
+  report's *very good* is left out where even xtiny doesn't fit beside its chip (the Venu Sq 2; the phone's report has
+  it); the mute lengths share the room under their title; the glance mock's Garmin rows (Heart Rate, Body Battery) are
+  left out where the circle would cut them.
+- **The chart's height** scales with s; the hours row and the % labels are in the watch's xtiny, so its plot keeps
+  what's left. The drop rules (§14.3) give it back its width.
 
 ### 14.2 Round AMOLED 360 / 416 / 454 / 466
 The 390 scaled. Only the glance and the data field take their device's own geometry:
@@ -346,7 +396,7 @@ The 390 scaled. Only the glance and the data field take their device's own geome
 One rule on every class (`S.dfSlot`, `fitBox`): **whole** when the slot is the screen (the 390's whole page);
 **value + sparkline** when a box of **260 × 100 units** (× s px) fits inside the slot and the screen (the box sits at
 the slot's side toward the centre, as wide as the circle allows there); otherwise **value + arrow**, the largest atlas
-size that fits (label row when ≥ 64 units high). Every size the layout computes snaps to the class's atlas set, the
+size that fits (label row, xtiny, when ≥ 64 units high). Every size the layout computes snaps to the class's atlas set, the
 390 included (76.8 → 80); the approved fixed sizes stay. The 390's half and band are side by side, its quarter and cap
 value-only, and so on every round class, AMOLED and MIP (the thresholds are in units, so the MIP slots, 0.56 – 0.72×
 in px, keep the 390's forms). Rectangles have no obscured edges: the Venu Sq 2's 97 px slots are under 100 (band and
@@ -362,8 +412,9 @@ rectangle's edge (`rim`, `full`):
   whole width (96 units); the chart runs edge to edge (x −116 … 126 on the Sq 2, 120 units high; the X1's 295 × 165), the % column and its
   shares on the left, 70 / 180 on the right; the pill / sensor row at the bottom; the page dots in the bottom-left
   corner.
-- **Page 2**: chips across the top, the stacked bar down the left edge, the three shares with their goals, then
-  average / GMI / CV across the bottom.
+- **Page 2**: chips across the top, the stacked bar down the left edge, the three shares (name tiny and number small on
+  one line, the goal chip under it), then average / GMI / CV across the bottom; the rows share the height the fonts
+  leave.
 - **The list**: full-width rows (selected 64 high), the last entry right-aligned; Sukrara top-left.
 - **Amount**: no UP / DOWN: the chevrons are full-width buttons above and below the number (tap; swipe up / down too),
   the usual amounts, *Now*.

@@ -7,7 +7,8 @@
 //   node tools/watchface/app-build.mjs --class r360     one class (ids: app.js CLS)
 //   node tools/watchface/app-build.mjs --sheets <dir>   also a contact sheet per class (<dir>/<class>.png)
 //   node tools/watchface/app-build.mjs --list           the cases
-//   node tools/watchface/app-build.mjs --check          only the check that no text is cut by the screen or the rim
+//   node tools/watchface/app-build.mjs --check          only the checks: no text cut by the screen or the rim, no word
+//                                                       under the watch's FONT_XTINY
 // Needs Google Chrome (set CHROME to its binary), as build.mjs.
 
 import { createRequire } from 'node:module';
@@ -93,14 +94,16 @@ async function pool(jobs, n) {
 }
 
 if (args.includes('--list')) { CASES.forEach((c) => console.log(c[0], JSON.stringify(c[1]))); process.exit(0); }
-// every text inside the screen and clear of the rim, on every class (app.js clippedTexts): listed, and the build fails
+// every text inside the screen and clear of the rim, on every class (app.js clippedTexts), and every word in the watch's
+// own fonts, never under its FONT_XTINY (app.js smallWords): listed, and the build fails
 let clippedN = 0;
 for (const k of Object.keys(WL.CLS)) for (const [id, cfg] of CASES) {
   const r = WL.screen(Object.assign({ cls: k }, cfg));
   if (r.clipped.length) { clippedN++; console.log('clipped', k, id, JSON.stringify(r.clipped)); }
+  if (r.small.length) { clippedN++; console.log('under xtiny', k, id, JSON.stringify(r.small)); }
 }
 if (args.includes('--check')) process.exit(clippedN ? 1 : 0);
-if (clippedN) { console.log(clippedN, 'screens cut a text'); process.exit(1); }
+if (clippedN && !args.includes('--force')) { console.log(clippedN, 'screens cut a text or draw a word under xtiny'); process.exit(1); }
 const only = opt('--class');
 const classes = Object.keys(WL.CLS).filter((k) => !only || k === only);
 const sheets = opt('--sheets');

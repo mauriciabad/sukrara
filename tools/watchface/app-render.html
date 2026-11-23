@@ -12,6 +12,9 @@
 <title>Sukrara on Garmin · reference render</title>
 <style>
   @font-face { font-family: 'Atkinson Hyperlegible Next'; src: url('../../apps/garmin/fonts/AtkinsonHyperlegibleNext-wght.ttf') format('truetype'); font-weight: 200 800; font-display: block; }
+  /* the watch's system fonts' stand-ins (app.js TYPE): Roboto Condensed Bold, Roboto Regular */
+  @font-face { font-family: 'Sukrara Roboto Condensed'; src: url('../../apps/garmin/fonts/RobotoCondensed-Bold.woff2') format('woff2'); font-weight: 700; font-display: block; }
+  @font-face { font-family: 'Sukrara Roboto'; src: url('../../apps/garmin/fonts/Roboto-Regular.woff2') format('woff2'); font-weight: 400; font-display: block; }
   html, body { margin: 0; background: transparent; }
   body.watch { background: #000; }
   svg { display: block; }
@@ -47,7 +50,8 @@
     }
   };
   // drawn once, after the font: a draw before it and another after raced the screenshot (pictures not byte-stable)
-  document.fonts.load("700 20px 'Atkinson Hyperlegible Next'").then(() => document.fonts.ready).then(draw, draw);
+  Promise.all(["700 20px 'Atkinson Hyperlegible Next'", "700 20px 'Sukrara Roboto Condensed'", "400 20px 'Sukrara Roboto'"].map((f) => document.fonts.load(f)))
+    .then(() => document.fonts.ready).then(draw, draw);
 </script>
 </body>
 </html>

@@ -71,8 +71,83 @@ var WL = (function () {
     sq2: { half: { i: 0, f: [[7, 30, 313, 132, ''], [7, 211, 313, 132, '']] }, band: { i: 1, f: [[0, 17, 320, 97, ''], [0, 132, 320, 97, ''], [0, 248, 320, 97, '']] }, quarter: { i: 1, f: [[0, 17, 320, 97, ''], [0, 139, 157, 97, ''], [160, 139, 160, 97, ''], [0, 256, 320, 97, '']] }, cap: { i: 0, f: [[0, 17, 320, 97, ''], [0, 139, 157, 97, ''], [160, 139, 160, 97, ''], [0, 256, 320, 97, '']] } },
     x1: { half: { i: 0, f: [[0, 0, 448, 241, ''], [0, 244, 448, 242, '']] }, band: { i: 1, f: [[0, 0, 448, 156, ''], [0, 159, 448, 169, ''], [0, 331, 448, 155, '']] }, quarter: { i: 1, f: [[0, 0, 448, 173, ''], [0, 176, 222, 144, ''], [225, 176, 222, 144, ''], [0, 323, 448, 163, '']] }, cap: { i: 0, f: [[0, 0, 448, 173, ''], [0, 176, 222, 144, ''], [225, 176, 222, 144, ''], [0, 323, 448, 163, '']] } }
   };
-  // the atlas set: the font sizes (px) a class may use. The 390 keeps its approved sizes exactly; every other class
-  // snaps each size (390 size × s) to the nearest of its set, never under the floor (14 px AMOLED, 12 px MIP)
+  // ---- type: the watch's own fonts (SPEC §14.1) ------------------------------------------------------------------
+  // Every word is drawn in the watch's system fonts, by role, never smaller than FONT_XTINY (Garmin's UX guidelines:
+  // "the system fonts … have been tested for readability for the device and should be used whenever possible"):
+  //   xtiny   fine print: the chart's hours and % labels, the list's detail, goal chips, the data field's label / time
+  //   tiny    sub-lines and body
+  //   small   list items, buttons
+  //   medium  titles
+  //   glance  the glance's words (FONT_GLANCE)
+  // Atkinson stays only for the big numbers (the value, the amount, the alert / done values, the ring numbers: `n`).
+  // Per class, each role's [height, ascent, cap, width of "Rapid 4.5u · 35m"] in px, measured on the class's reference
+  // watch in the SDK 9.3 simulator (Graphics.getFontHeight / getFontAscent, the "R"'s cap, getTextWidthInPixels; #252
+  // phase 1). m240 / m280 are not measured: their fonts' sizes (CDPG Roboto 13/17/19/22 B, 13/19/22/25 B, glance 15 B)
+  // placed between the measured MIPs'. The face: `cond` the CDPG Roboto Condensed Bold bitmaps (MIP, Descent), `reg`
+  // Roboto TTF (the newer AMOLEDs; the Venu Sq 2's Roboto Condensed regular bitmaps draw like it). The references draw
+  // them with Roboto Condensed Bold / Roboto Regular (apps/garmin/fonts, OFL) as stand-ins for Garmin's own files
+  // (which can't be shipped), each text stretched to the watch's measured width (textLength). The watch measures its
+  // own fonts (dc.getTextWidthInPixels), so the port never reads this table.
+  var TYPE = {
+    r390: { face: 'cond', xtiny: [29, 23, 17, 160], tiny: [39, 32, 23, 216], small: [44, 35, 26, 243], medium: [51, 41, 30, 286], glance: [33, 26, 19, 186] },
+    r360: { face: 'reg', xtiny: [29, 23, 18, 187], tiny: [39, 30, 24, 249], small: [43, 34, 27, 277], medium: [50, 39, 30, 315], glance: [34, 27, 21, 215] },
+    r416: { face: 'reg', xtiny: [34, 27, 21, 215], tiny: [43, 34, 27, 277], small: [50, 39, 30, 315], medium: [58, 46, 35, 368], glance: [39, 30, 24, 249] },
+    r454: { face: 'reg', xtiny: [37, 29, 22, 230], tiny: [47, 37, 29, 298], small: [53, 42, 32, 334], medium: [61, 48, 37, 389], glance: [42, 33, 26, 268] },
+    r466: { face: 'reg', xtiny: [37, 29, 22, 230], tiny: [47, 37, 29, 298], small: [53, 42, 32, 334], medium: [61, 48, 37, 389], glance: [42, 33, 26, 268] },
+    m218: { face: 'cond', xtiny: [19, 15, 11, 110], tiny: [23, 18, 13, 129], small: [26, 21, 16, 147], medium: [32, 25, 18, 176], glance: [19, 15, 11, 110] },
+    m240: { face: 'cond', xtiny: [19, 15, 11, 110], tiny: [27, 21, 15, 151], small: [30, 24, 17, 166], medium: [34, 27, 20, 191], glance: [22, 17, 12, 116] },
+    m260: { face: 'cond', xtiny: [19, 15, 11, 110], tiny: [29, 23, 16, 160], small: [32, 25, 18, 176], medium: [37, 30, 22, 206], glance: [22, 17, 12, 116] },
+    m280: { face: 'cond', xtiny: [19, 15, 11, 110], tiny: [30, 24, 17, 166], small: [34, 27, 20, 191], medium: [38, 31, 23, 215], glance: [22, 17, 12, 116] },
+    sq2: { face: 'reg', xtiny: [39, 31, 23, 211], tiny: [44, 35, 26, 238], small: [51, 40, 30, 281], medium: [59, 47, 34, 320], glance: [44, 35, 26, 238] },
+    x1: { face: 'reg', xtiny: [37, 29, 22, 230], tiny: [47, 37, 29, 298], small: [53, 42, 32, 334], medium: [61, 48, 37, 389], glance: [37, 29, 22, 230] }
+  };
+  var ROLES = ['xtiny', 'tiny', 'small', 'medium'];
+  // the stand-ins' advances per em (×1000, three digits a glyph) for TCH: Roboto Condensed Bold, Roboto Regular
+  var TCH = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~·áéíóúñüÁÉÍÓÚÑÜ¿¡’−";
+  var TADV = {
+    cond: '230261321528505638579162323324454476245361291332505505505505505505505505505505273253447503454447766597561570565491476585614270490553479758612604568604553540542571578750560542530264381264391400331471495460496479328503492252245478252742492498495497331454307492449633452445452298253298558284471479262498492493492597491271604571612571446271225484',
+    reg: '248258320616562732622175342348431567197276264413562562562562562562562562562562242211508549523473898652623651656568553681713272552627539873713688631688616594597648637887627601599265411265418451309544562523564530348562551243239507243877552570562568339516327551484751496473496338244338680261544530248570551552551652568272688648713648474244200572'
+  };
+  var CAPEM = 0.711; // Roboto's cap height per em
+  var MEASURE = 'Rapid 4.5u · 35m';
+  function advEm(face, s) {
+    var t = 0, a = TADV[face];
+    for (var k = 0; k < s.length; k++) { var i = TCH.indexOf(s[k]); t += i >= 0 ? Number(a.substr(3 * i, 3)) / 1000 : 0.6; }
+    return t;
+  }
+  // a role's font on the class, in px: { h, asc, cap, px (the stand-in's size), k (its widths × k = the watch's) }
+  function font(f) {
+    var T = TYPE[KC ? KC.id : 'r390'], m = T[f] || T.tiny, px = m[2] / CAPEM;
+    return { h: m[0], asc: m[1], cap: m[2], px: px, k: m[3] / (advEm(T.face, MEASURE) * px), face: T.face };
+  }
+  // a role's metrics in the current layout units
+  function fu(f) { var m = font(f); return { h: m.h / SE, asc: m.asc / SE, cap: m.cap / SE, desc: (m.h - m.asc) / SE }; }
+  function capOf(f) { return font(f).cap / SE; }
+  function lh(f) { return font(f).h / SE; }
+  // a word's width (layout units) in a role's font, as the watch measures it
+  function ww(s, f) { var m = font(f); return advEm(m.face, String(s)) * m.px * m.k / SE; }
+  // the largest role from `f` down to xtiny whose width fits `maxW` (never smaller than xtiny: the last one is taken)
+  function fitRole(s, f, maxW) {
+    for (var i = ROLES.indexOf(f); i > 0; i--) if (ww(s, ROLES[i]) <= maxW) return ROLES[i];
+    return 'xtiny';
+  }
+  // the words of `s` in lines no wider than `maxW` in role f: the fewest lines, as even as they come (the watch: the
+  // same greedy wrap at the narrowest width that keeps that count)
+  function greedy(s, f, maxW) {
+    var words = String(s).split(' '), out = [], cur = '';
+    words.forEach(function (w) { var t = cur ? cur + ' ' + w : w; if (cur && ww(t, f) > maxW) { out.push(cur); cur = w; } else cur = t; });
+    if (cur) out.push(cur);
+    return out;
+  }
+  function wrap(s, f, maxW) {
+    var n = greedy(s, f, maxW).length, w = maxW;
+    while (w > 20 && greedy(s, f, w - 4).length === n) w -= 4;
+    return greedy(s, f, w);
+  }
+  // the big numbers' glyphs (Atkinson, the `n` atlases): a text of anything else is a word and takes a role
+  var NUMCH = '0123456789.:-LOHIug';
+  // the atlas set: the font sizes (px) a class may use for the big numbers. The 390 keeps its approved sizes exactly;
+  // every other class snaps each size (390 size × s) to the nearest of its set
   var ATLAS = {
     amoled: [14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 44, 48, 52, 56, 60, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 148],
     mip: [12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 88]
@@ -95,6 +170,8 @@ var WL = (function () {
     return w390 <= 1.6 ? 1 : Math.max(2, Math.round(px));
   }
   var FAM = "'Atkinson Hyperlegible Next', system-ui, sans-serif";
+  var FAM_COND = "'Sukrara Roboto Condensed', 'Roboto Condensed', sans-serif";
+  var FAM_REG = "'Sukrara Roboto', Roboto, sans-serif";
   var KEYS = ' 0123456789.:·ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÁÉÍÓÚÑ';
   var WV = [0.28, 0.648, 0.407, 0.548, 0.576, 0.614, 0.588, 0.598, 0.51, 0.615, 0.595, 0.21, 0.21, 0.24, 0.626, 0.613, 0.645, 0.669, 0.569, 0.552, 0.694, 0.694, 0.392, 0.512, 0.631, 0.541, 0.824, 0.693, 0.714, 0.592, 0.724, 0.614, 0.592, 0.558, 0.69, 0.593, 0.856, 0.623, 0.575, 0.607, 0.525, 0.566, 0.485, 0.564, 0.538, 0.314, 0.558, 0.55, 0.252, 0.245, 0.492, 0.262, 0.845, 0.55, 0.548, 0.566, 0.574, 0.349, 0.471, 0.326, 0.54, 0.461, 0.684, 0.481, 0.449, 0.46, 0.525, 0.538, 0.252, 0.548, 0.54, 0.55, 0.626, 0.569, 0.392, 0.714, 0.69, 0.693];
   var WM = {};
@@ -303,9 +380,22 @@ var WL = (function () {
     o = o || {};
     this.add({ isP: false, isC: false, isR: true, isT: false, x: r1(x), y: r1(y), w: r1(Math.max(0, w)), h: r1(Math.max(0, h)), rx: rx || 0, fill: o.fill || 'none', stroke: o.stroke || 'none', sw: this.sw(o.sw || 0), op: o.op === undefined ? 1 : o.op, tf: '' });
   };
+  // a text, its baseline at y. o.f: a word in the watch's font of that role (fitted down to xtiny to o.max wide when
+  // given); else a big number in Atkinson at o.fs. o.foreign: drawn by something else (another face, Garmin's own
+  // fields), not held to the rules
   G.prototype.t = function (x, y, s, o) {
     o = o || {};
-    this.add({ isP: false, isC: false, isR: false, isT: true, x: r1(x), y: r1(y), s: [String(s)], fs: Math.round(fe(o.fs || 20) * 1000) / 1000, fw: o.fw || 500, fill: o.fill || PAL.ink, anchor: o.anchor || 'middle', ls: o.ls || 0, op: o.op === undefined ? 1 : o.op, fam: FAM, tf: o.tf || '' });
+    s = String(s);
+    if (o.f) {
+      // o.edge: a centred text also fits the screen's width where it stands (its cap above y, its line under)
+      var mx = o.max || 1e9;
+      if (o.edge) mx = Math.min(mx, 2 * Math.min(edgeX(y - capOf(o.f)), edgeX(y + capOf(o.f) * 0.3)) - 4);
+      var f = mx < 1e9 ? fitRole(s, o.f, mx) : o.f, m = font(f), w = ww(s, f);
+      this.add({ isP: false, isC: false, isR: false, isT: true, x: r1(x), y: r1(y), s: [s], role: f, fs: Math.round(m.px / SE * 1000) / 1000, fw: m.face === 'cond' ? 700 : 400, fill: o.fill || PAL.ink, anchor: o.anchor || 'middle', ls: 0, op: o.op === undefined ? 1 : o.op, fam: m.face === 'cond' ? FAM_COND : FAM_REG, tf: o.tf || '', tw: w, top: m.cap / SE, bot: (/[gjpqy,(]/.test(s) ? 0.22 * m.px : 1) / SE, foreign: !!o.foreign });
+      return w;
+    }
+    var fs = fe(o.fs || 20);
+    this.add({ isP: false, isC: false, isR: false, isT: true, x: r1(x), y: r1(y), s: [s], fs: Math.round(fs * 1000) / 1000, fw: o.fw || 700, fill: o.fill || PAL.ink, anchor: o.anchor || 'middle', ls: o.ls || 0, op: o.op === undefined ? 1 : o.op, fam: FAM, tf: o.tf || '', tw: bw(s, o.fs || 20) + (o.ls || 0) * s.length, top: 0.7 * fs, bot: 0.02 * fs, foreign: !!o.foreign });
   };
   function parseCol(c) {
     var m = /^rgba?\(([^)]+)\)/.exec(c);
@@ -387,7 +477,7 @@ var WL = (function () {
     });
     var nf = o.nfs || r * 0.82;
     g.t(cx, cy + (cap ? nf * 0.18 : nf * 0.34), tir.pct, { fs: nf, fw: 700, fill: o.dim ? PAL.soft : PAL.ink });
-    if (cap) g.t(cx, cy + nf * 0.18 + r * 0.5, cap, { fs: r * 0.42, fw: 600, fill: PAL.soft });
+    if (cap) g.t(cx, cy + nf * 0.18 + r * 0.5, cap, { f: 'xtiny', fill: PAL.soft });
   }
 
   function timeSince(m) {
@@ -397,15 +487,25 @@ var WL = (function () {
     if (m < 2880) return [Math.round(m / 60) + 'h'];
     return [Math.round(m / 1440) + 'd'];
   }
-  function lastStack(g, cx, cy, size, t) {
-    var parts = timeSince(t.m), col = PAL[t.k], ms = size * 0.3;
-    var two = parts.length === 2, f1 = size * (two ? 0.4 : 0.46), f2 = size * 0.32;
-    var h = ms + 4 + f1 * 0.72 + (two ? 4 + f2 * 0.72 : 0), y0 = cy - h / 2;
-    if (t.k === 'carbs') g.c(cx, y0 + ms / 2, ms * 0.4, { fill: col });
-    else g.p('M' + r1(cx - ms / 2) + ' ' + r1(y0 + ms * 0.08) + 'H' + r1(cx + ms / 2) + 'L' + r1(cx) + ' ' + r1(y0 + ms * 0.92) + 'Z', t.k === 'long' ? { stroke: col, sw: 2 } : { fill: col });
-    var yb = y0 + ms + 4 + f1 * 0.72;
-    g.t(cx, yb, parts[0], { fs: f1, fw: 700, fill: PAL.ink });
-    if (two) g.t(cx, yb + 4 + f2 * 0.72, parts[1], { fs: f2, fw: 600, fill: PAL.soft });
+  // the last treatment in a ring's room: the kind's mark over the time since ("35m"); from 1 h on two lines ("1h" /
+  // "5m") with the mark left of the first. Words in the role `f` (the app's xtiny, the glance's glance font)
+  function lastStack(g, cx, cy, size, t, f) {
+    f = f || 'xtiny';
+    var parts = timeSince(t.m), col = PAL[t.k], cap = capOf(f), ms = Math.min(size * 0.3, cap * 0.8), gap = cap * 0.3;
+    var two = parts.length === 2, h = two ? 2 * cap + gap : ms + gap + cap, y0 = cy - h / 2;
+    function mark(x, y) {
+      if (t.k === 'carbs') g.c(x, y, ms * 0.4, { fill: col });
+      else g.p('M' + r1(x - ms / 2) + ' ' + r1(y - ms * 0.42) + 'H' + r1(x + ms / 2) + 'L' + r1(x) + ' ' + r1(y + ms * 0.42) + 'Z', t.k === 'long' ? { stroke: col, sw: 2 } : { fill: col });
+    }
+    if (!two) {
+      mark(cx, y0 + ms / 2);
+      g.t(cx, y0 + ms + gap + cap, parts[0], { f: f, fill: PAL.ink });
+      return;
+    }
+    var w0 = ww(parts[0], f), x0 = cx - (ms + 3 + w0) / 2;
+    mark(x0 + ms / 2, y0 + cap / 2);
+    g.t(x0 + ms + 3, y0 + cap, parts[0], { f: f, fill: PAL.ink, anchor: 'start' });
+    g.t(cx, y0 + 2 * cap + gap, parts[1], { f: f, fill: PAL.soft });
   }
   // the card's places in priority: main, last treatment (never dimmed), second (dimmed), third
   function metricSlots(d, c) {
@@ -415,14 +515,17 @@ var WL = (function () {
     list.push({ kind: 'ring', tir: d.tir7, dim: true });
     return list;
   }
-  function drawSlot(g, m, cx, cy, r, sw, nfs) {
-    if (m.kind === 'last') lastStack(g, cx, cy, 2 * r + sw, m.slot);
+  function drawSlot(g, m, cx, cy, r, sw, nfs, f) {
+    if (m.kind === 'last') lastStack(g, cx, cy, 2 * r + sw, m.slot, f);
     else ring(g, cx, cy, r, sw, m.tir, '', { dim: m.dim, nfs: nfs, order: m.order });
   }
+  // Sukrara's pill: its mark and words in the role o.f (xtiny; the glance's glance font), as tall as the words' cap
+  // and a margin
+  function pillWidth(p, f) { var cap = capOf(f); return cap * 0.6 + cap * 1.05 + cap * 0.4 + ww(p.text, f) + cap * 0.7; }
   function pill(g, x, y, p, o) {
     o = o || {};
-    var fs = o.fs || 22, h = fs * 1.36, iw = fs * 0.78, padL = fs * 0.5, padR = fs * 0.6;
-    var w = padL + iw + fs * 0.3 + tw(p.text, fs) + padR;
+    var f = o.f || 'xtiny', fs = capOf(f), h = fs * (o.tall || 1.9), iw = fs * 1.05, padL = fs * 0.6, padR = fs * 0.7;
+    var w = pillWidth(p, f);
     var x0 = o.anchor === 'start' ? x : o.anchor === 'end' ? x - w : x - w / 2;
     var col = PAL[p.k] || PAL.note;
     // tonal on AMOLED (the kind's colour at 24 %); MIP has no tint that keeps the text readable: an outline
@@ -430,7 +533,7 @@ var WL = (function () {
     else g.r(x0, y - h / 2, w, h, h / 2, { fill: col, op: p.filled ? 1 : 0.24 });
     var fg = p.filled ? PAL.on : col;
     g.icon(p.icon || p.k, x0 + padL + iw / 2, y, iw, fg);
-    g.t(x0 + padL + iw + fs * 0.3, y + fs * 0.35, p.text, { fs: fs, fw: 600, fill: fg, anchor: 'start' });
+    g.t(x0 + padL + iw + fs * 0.4, y + fs / 2, p.text, { f: f, fill: fg, anchor: 'start' });
     return w;
   }
 
@@ -451,7 +554,7 @@ var WL = (function () {
       [70, 180].forEach(function (v) { g.p('M' + r1(bx.x0) + ' ' + r1(Y(v)) + 'H' + r1(bx.x1), { stroke: PAL.faint, sw: 1, dash: '3 4' }); });
     }
     if (o.yLabels !== false) {
-      [70, 180].forEach(function (v) { g.t(bx.x1 + 5, Y(v) + 5, d.unit === 'mmol' ? (v / 18.0182).toFixed(1) : v, { fs: o.lfs || 15, fw: 500, fill: PAL.dim, anchor: 'start' }); });
+      [70, 180].forEach(function (v) { g.t(bx.x1 + 5, Y(v) + capOf('xtiny') / 2, d.unit === 'mmol' ? (v / 18.0182).toFixed(1) : v, { f: 'xtiny', fill: PAL.dim, anchor: 'start' }); });
     }
     if (o.under) o.under({ X: X, Y: Y });
     // the line: one path per run of one colour
@@ -477,13 +580,13 @@ var WL = (function () {
       });
     }
     // hour labels (24 h), skipping the ones a treatment label touches
-    var lfs = o.lfs || 15, ly = bx.y1 + lfs + 5;
+    var lf = 'xtiny', ly = bx.y1 + capOf(lf) + 5;
     var labels = [];
     marks.sort(function (a, b) { return b.x - a.x; }).forEach(function (mk) {
-      var s = amt(mk.t), w = tw(s, lfs), L = { x0: mk.x - w / 2, x1: mk.x + w / 2 };
-      if (labels.some(function (o) { return L.x1 + 4 > o.x0 && L.x0 - 4 < o.x1; })) return;
+      var s = amt(mk.t), w = ww(s, lf), L = { x0: mk.x - w / 2, x1: mk.x + w / 2 };
+      if (labels.some(function (o) { return L.x1 + 4 > o.x0 && L.x0 - 4 < o.x1; }) || Math.max(-L.x0, L.x1) > edgeX(ly + 2)) return;
       labels.push(L);
-      g.t(mk.x, ly, s, { fs: lfs, fw: 600, fill: PAL[mk.t.k] });
+      g.t(mk.x, ly, s, { f: lf, fill: PAL[mk.t.k] });
     });
     if (o.hoursRow !== false) {
       var step = hours >= 12 ? 3 : hours >= 6 ? 2 : 1;
@@ -492,9 +595,9 @@ var WL = (function () {
         if (((hh % 24) + 24) % 24 % step) continue;
         var m = (nowH - hh) * 60, x = X(m);
         if (x < bx.x0 + 8 || x > bx.x1 - 8) continue;
-        var s = String(((hh % 24) + 24) % 24), w = tw(s, lfs);
-        if (labels.some(function (L) { return x + w / 2 + 4 > L.x0 && x - w / 2 - 4 < L.x1; })) continue;
-        g.t(x, ly, s, { fs: lfs, fw: 500, fill: PAL.dim });
+        var s = String(((hh % 24) + 24) % 24), w = ww(s, lf);
+        if (labels.some(function (L) { return x + w / 2 + 4 > L.x0 && x - w / 2 - 4 < L.x1; }) || Math.abs(x) + w / 2 > edgeX(ly + 2)) continue;
+        g.t(x, ly, s, { f: lf, fill: PAL.dim });
       }
     }
     return { X: X, Y: Y, lo: lo, hi: hi };
@@ -529,10 +632,11 @@ var WL = (function () {
       if (dd) g.p(dd, { fill: PAL[bandOf(v + 5)], op: 0.95 });
     });
     var pa = Math.round(above / n * 100), pb = Math.round(below / n * 100), pin = 100 - pa - pb;
-    var lfs = o.lfs || 15, lx = bx.x0 - 5;
-    if (pa) g.t(lx, Math.min(sc.Y(230), sc.Y(180) - 2) + lfs * 0.35, pa + '%', { fs: lfs, fw: 600, fill: PAL.soft, anchor: 'end' });
-    g.t(lx, (sc.Y(70) + sc.Y(180)) / 2 + lfs * 0.35, pin + '%', { fs: lfs + 1, fw: 700, fill: PAL.ink, anchor: 'end' });
-    if (pb || o.always) g.t(lx, Math.max(sc.Y(55), sc.Y(70) + lfs * 0.6) + lfs * 0.35, pb + '%', { fs: lfs, fw: 600, fill: PAL.soft, anchor: 'end' });
+    // the shares: xtiny, each centred on its band and never into the next (the one in range between its limits)
+    var cp = capOf('xtiny'), lx = bx.x0 - 5, ym = (sc.Y(70) + sc.Y(180)) / 2;
+    g.t(lx, ym + cp / 2, pin + '%', { f: 'xtiny', fill: PAL.ink, anchor: 'end' });
+    if (pa) g.t(lx, Math.min(sc.Y(230) + cp / 2, ym - cp * 0.5 - 4), pa + '%', { f: 'xtiny', fill: PAL.soft, anchor: 'end' });
+    if (pb || o.always) g.t(lx, Math.max(sc.Y(55) + cp / 2, ym + cp * 1.5 + 4), pb + '%', { f: 'xtiny', fill: PAL.soft, anchor: 'end' });
   }
 
   // Sukrara Aura's sparkline (SPEC §6.5), scaled by sc: a log time axis (the newest 10 min ≈ 36 px, up to 3 h as the
@@ -601,21 +705,21 @@ var WL = (function () {
     g.c(X(l.m), Y(l.v), (o.sw || 3) * 1.8, { fill: d.age >= 5 ? '#000' : PAL[bandOf(l.v)], stroke: d.age >= 5 ? PAL.grey : '#000', sw: 2 });
   }
 
-  function clock(g, d, y, o) { o = o || {}; g.t(o.x || 0, y, d.clock, { fs: o.fs || 24, fw: 600, fill: o.fill || PAL.soft }); }
+  function clock(g, d, y, o) { o = o || {}; g.t(o.x || 0, y, d.clock, { f: 'tiny', fill: o.fill || PAL.soft }); }
   function sensorTag(g, d, x, y, o) {
-    o = o || {}; var fs = o.fs || 18, s = d.sensorDays + 'd', w = fs + 4 + tw(s, fs);
+    o = o || {}; var fs = capOf('xtiny') * 1.1, s = d.sensorDays + 'd', w = fs + 4 + ww(s, 'xtiny');
     var x0 = o.anchor === 'end' ? x - w : o.anchor === 'start' ? x : x - w / 2;
-    g.icon('sensor', x0 + fs / 2, y - fs * 0.34, fs, PAL.soft);
-    g.t(x0 + fs + 4, y, s, { fs: fs, fw: 600, fill: PAL.soft, anchor: 'start' });
+    g.icon('sensor', x0 + fs / 2, y - capOf('xtiny') / 2, fs, PAL.soft);
+    g.t(x0 + fs + 4, y, s, { f: 'xtiny', fill: PAL.soft, anchor: 'start' });
     return w;
   }
   function lastTag(g, d, x, y, o) {
     o = o || {}; var t = d.last; if (!t) return 0;
-    var fs = o.fs || 18, a = amt(t), s = ago(t.m), w = fs * 0.8 + 4 + tw(a, fs) + 6 + tw(s, fs);
+    var fs = capOf('xtiny'), a = amt(t), s = ago(t.m), w = fs + 4 + ww(a, 'xtiny') + 6 + ww(s, 'xtiny');
     var x0 = o.anchor === 'end' ? x - w : o.anchor === 'start' ? x : x - w / 2;
-    g.icon(t.k, x0 + fs * 0.4, y - fs * 0.34, fs * 0.8, PAL[t.k]);
-    g.t(x0 + fs * 0.8 + 4, y, a, { fs: fs, fw: 600, fill: PAL[t.k], anchor: 'start' });
-    g.t(x0 + fs * 0.8 + 4 + tw(a, fs) + 6, y, s, { fs: fs, fw: 500, fill: PAL.soft, anchor: 'start' });
+    g.icon(t.k, x0 + fs / 2, y - fs / 2, fs, PAL[t.k]);
+    g.t(x0 + fs + 4, y, a, { f: 'xtiny', fill: PAL[t.k], anchor: 'start' });
+    g.t(x0 + fs + 4 + ww(a, 'xtiny') + 6, y, s, { f: 'xtiny', fill: PAL.soft, anchor: 'start' });
     return w;
   }
   // the page dots: at the bottom on round screens; on rectangles in the bottom-left corner (the bottom row's middle is
@@ -642,8 +746,8 @@ var WL = (function () {
     if (KC && KC.keys[name] !== undefined) ang = KC.keys[name];
     g.p(arc(190, ang - 9, ang + 9), { stroke: col, sw: 5, op: o.op || 0.9 });
     if (label) {
-      var p = P(o.r || 160, ang), fs = o.fs || 18;
-      g.t(p[0] + (o.dx || 0), p[1] + fs * 0.35 + (o.dy || 0), label, { fs: fs, fw: 600, fill: col, anchor: o.anchor || (ang < 180 ? 'end' : 'start') });
+      var p = P(o.r || 160, ang);
+      g.t(p[0] + (o.dx || 0), p[1] + capOf('small') / 2 + (o.dy || 0), label, { f: 'small', fill: col, anchor: o.anchor || (ang < 180 ? 'end' : 'start') });
     }
   }
   // the screen's edge: a ring on round screens; on rectangles a rounded rectangle 6 units in. `p` < 1 draws that share
@@ -663,6 +767,13 @@ var WL = (function () {
     var L = 2 * (x1 - x0 + y1 - y0) - 8 * rc + 2 * Math.PI * rc;
     g.p(d, { stroke: col, sw: sw, cap: p >= 1 ? 'butt' : 'round', dash: p >= 1 ? 'none' : r1(L * p) + ' ' + r1(L) });
   }
+  // half the screen's width at height y (layout units), inside the rim and 2 px in: what a centred line may take there
+  function edgeX(y) {
+    var m = ((KC.rimPx || 0) + 2) / KC.s;
+    if (KC.rect) return KC.hw - m;
+    var R = 195 - m;
+    return Math.abs(y) >= R ? 0 : Math.sqrt(R * R - y * y);
+  }
   // does a box (layout units) sit inside the screen, clear of the rim, 2 px in?
   function inside(x0, y0, x1, y1) {
     var m = ((KC.rimPx || 0) + 2) / KC.s;
@@ -680,52 +791,70 @@ var WL = (function () {
   // the app's message where the value would be (no value): Aura's words
   function noValue(g, d, y) {
     if (d.sensorState === 'warmup') {
-      var tw0 = tw('Warming up', 26), tot = 34 + 12 + tw0, mx = -tot / 2;
+      var wf = fitRole('Warming up', 'medium', 170), tw0 = ww('Warming up', wf), tot = 34 + 12 + tw0, mx = -tot / 2, cw = capOf(wf);
       g.c(mx + 17, y - 12, 17, { stroke: PAL.soft, sw: 2.5 });
       g.p('M' + r1(mx + 17) + ' ' + r1(y - 12) + 'L' + r1(mx + 17) + ' ' + r1(y - 24.5) + arc(12.5, 0, 0.6 * 360, mx + 17, y - 12).replace('M' + r1(mx + 17) + ' ' + r1(y - 24.5), '') + 'Z', { fill: PAL.soft });
-      g.t(mx + 46, y - 3, 'Warming up', { fs: 26, fw: 600, fill: PAL.ink, anchor: 'start' });
-      g.t(0, y + 30, 'Ready at ' + (d.readyAt || '21:20'), { fs: 20, fw: 500, fill: PAL.soft });
+      g.t(mx + 46, y - 12 + cw / 2, 'Warming up', { f: wf, fill: PAL.ink, anchor: 'start' });
+      g.t(0, y + 14 + capOf('tiny') + 6, 'Ready at ' + (d.readyAt || '21:20'), { f: 'tiny', fill: PAL.soft });
       return;
     }
-    g.t(0, y - 26, 'No reading since', { fs: 22, fw: 600, fill: PAL.soft });
-    g.t(0, y + 20, d.readAt, { fs: 48, fw: 600, fill: PAL.ink });
+    g.t(0, y - 22, 'No reading since', { f: 'small', max: 210, fill: PAL.soft });
+    g.t(0, y + 32, d.readAt, { fs: 48, fill: PAL.ink });
   }
   function chipRow(g, d, y, o) {
     o = o || {};
-    var fs = o.fs || 20, late = d.age >= 1.5 && d.age < 20, ageS = late ? d.readAt : '', aw = late ? tw(ageS, fs) : 0;
-    var pw = 0, pillOn = d.pill && d.age < 5;
-    if (pillOn) { var fs2 = fs, h = fs2 * 1.36, iw = fs2 * 0.78; pw = fs2 * 0.5 + iw + fs2 * 0.3 + tw(d.pill.text, fs2) + fs2 * 0.6; }
+    var f = 'xtiny', late = d.age >= 1.5 && d.age < 20, ageS = late ? d.readAt : '', aw = late ? ww(ageS, f) : 0;
+    var pillOn = d.pill && d.age < 5, pw = pillOn ? pillWidth(d.pill, f) : 0;
     var gap = late && pillOn ? 12 : 0, tot = aw + gap + pw, x0 = -tot / 2;
-    if (late) g.t(x0, y + fs * 0.35, ageS, { fs: fs, fw: 500, fill: PAL.soft, anchor: 'start' });
-    if (pillOn) pill(g, x0 + aw + gap, y, d.pill, { fs: fs, anchor: 'start' });
+    if (late) g.t(x0, y + capOf(f) / 2, ageS, { f: f, fill: PAL.soft, anchor: 'start' });
+    if (pillOn) pill(g, x0 + aw + gap, y, d.pill, { f: f, anchor: 'start' });
     return tot > 0;
   }
   S.appA = function (g, d, c) {
     var dr = drops();
-    if (!dr.clock) clock(g, d, -150, { fs: 22 });
+    if (!dr.clock) clock(g, d, -148);
     if (d.age >= 20 || d.sensorState === 'warmup') noValue(g, d, -66);
     else value(g, d, 0, -58, 88);
     var ms = metricSlots(d, c);
-    drawSlot(g, ms[1], -142, -82, 25, 6, 22);
-    drawSlot(g, ms[0], 142, -82, 25, 6, 22);
+    drawSlot(g, ms[1], -142, -82, 25, 6, 22, 'xtiny');
+    drawSlot(g, ms[0], 142, -82, 25, 6, 22, 'xtiny');
     // without the % column and the 70 / 180 labels the plot takes their room
-    var bx = { x0: dr.dist ? -150 : -134, x1: dr.yLabels ? 158 : 146, y0: -22, y1: 88 };
-    var sc = chart(g, d, bx, { hours: c.hours || 12, lfs: 14, ms: 10, yLabels: !dr.yLabels });
+    // the % column's shares left of the plot and the 70 / 180 labels right of it take their own fonts' widths
+    var bx = { x0: dr.dist ? -150 : Math.max(-134, -edgeX(84) + ww('100%', 'xtiny') + 6), x1: dr.yLabels ? 158 : Math.min(146, edgeX(44) - ww('180', 'xtiny') - 6), y0: -22, y1: 88 };
+    var sc = chart(g, d, bx, { hours: c.hours || 12, ms: 10, yLabels: !dr.yLabels });
     // the % column over the line's start, masking it (the widget's)
-    if (c.dist !== false && !dr.dist) pctColumn(g, d, sc, bx, { lfs: 14, hours: c.hours || 12, dot: 4.6, mask: true });
+    if (c.dist !== false && !dr.dist) pctColumn(g, d, sc, bx, { hours: c.hours || 12, dot: 4.6, mask: true });
     // the bottom row: Sukrara's pill (or the reading's time), else the sensor's days (the last treatment is in its ring)
-    if (!chipRow(g, d, 146, { fs: 19 }) && !dr.sensor) sensorTag(g, d, 0, 152, { fs: 17 });
+    if (!chipRow(g, d, 146) && !dr.sensor) sensorTag(g, d, 0, 146 + capOf('xtiny') / 2);
     if (c.dots !== false) pageDots(g, 2, 0);
   };
 
+  // a goal chip (✓ met in green, ✕ not in orange) centred on cy: its mark and words in xtiny; returns its width
+  function goal(g, x, cy, text, met) {
+    var cap = capOf('xtiny'), h = cap + 10, ic = cap * 0.8, padL = cap * 0.45, w = padL + ic + cap * 0.35 + ww(text, 'xtiny') + cap * 0.55, col = met ? PAL.tight : PAL.high;
+    g.r(x, cy - h / 2, w, h, h / 2, { fill: met ? '#173A27' : '#3D2A10' });
+    var mx = x + padL, my = cy;
+    if (met) g.p('M' + r1(mx) + ' ' + r1(my) + 'l' + r1(ic * 0.35) + ' ' + r1(ic * 0.35) + 'l' + r1(ic * 0.65) + ' ' + r1(-ic * 0.7), { stroke: col, sw: 2 });
+    else g.p('M' + r1(mx + ic * 0.1) + ' ' + r1(my - ic * 0.4) + 'l' + r1(ic * 0.8) + ' ' + r1(ic * 0.8) + 'M' + r1(mx + ic * 0.9) + ' ' + r1(my - ic * 0.4) + 'l' + r1(-ic * 0.8) + ' ' + r1(ic * 0.8), { stroke: col, sw: 2 });
+    g.t(x + padL + ic + cap * 0.35, cy + cap / 2, text, { f: 'xtiny', fill: col, anchor: 'start' });
+    return w;
+  }
+  // a number of the report (small) with its name under it (xtiny) after its goal's mark
+  function numCheck(g, x, y, m) {
+    g.t(x, y, m[0], { f: 'small', fill: PAL.ink });
+    var cap = capOf('xtiny'), ic = cap * 0.75, lw = ww(m[1], 'xtiny') + ic + 4, ly = y + 6 + cap, x0 = x - lw / 2, my = ly - cap / 2;
+    if (m[2]) g.p('M' + r1(x0) + ' ' + r1(my) + 'l' + r1(ic * 0.35) + ' ' + r1(ic * 0.35) + 'l' + r1(ic * 0.65) + ' ' + r1(-ic * 0.7), { stroke: PAL.tight, sw: 2 });
+    else g.p('M' + r1(x0) + ' ' + r1(my - ic * 0.4) + 'l' + r1(ic * 0.8) + ' ' + r1(ic * 0.8) + 'M' + r1(x0 + ic * 0.8) + ' ' + r1(my - ic * 0.4) + 'l' + r1(-ic * 0.8) + ' ' + r1(ic * 0.8), { stroke: PAL.high, sw: 2 });
+    g.t(x0 + ic + 4, ly, m[1], { f: 'xtiny', fill: PAL.soft, anchor: 'start' });
+  }
   // the numbers: the phone's Glucose report, simplified (one period, the three shares with their goals, average, GMI, CV)
   S.appNums = function (g, d, c) {
     var per = c.period || '14d', pers = ['1d', '7d', '14d', '30d'];
-    var cw = 50, gp = 6, x0 = -(pers.length * cw + (pers.length - 1) * gp) / 2;
+    var cw = 50, gp = 6, x0 = -(pers.length * cw + (pers.length - 1) * gp) / 2, ch = capOf('xtiny') + 14;
     pers.forEach(function (p, i) {
       var on = p === per, x = x0 + i * (cw + gp);
-      g.r(x, -152, cw, 30, 15, { fill: on ? PAL.card2 : 'none', stroke: on ? PAL.soft : PAL.faint, sw: 1.5 });
-      g.t(x + cw / 2, -131, p, { fs: 17, fw: on ? 700 : 500, fill: on ? PAL.ink : PAL.soft });
+      g.r(x, -152, cw, ch, ch / 2, { fill: on ? PAL.card2 : 'none', stroke: on ? PAL.soft : PAL.faint, sw: 1.5 });
+      g.t(x + cw / 2, -152 + ch / 2 + capOf('xtiny') / 2, p, { f: 'xtiny', fill: on ? PAL.ink : PAL.soft });
     });
     // the report of the period (d.rep: the shares as shown, the bands' split, each goal met or not, the three numbers)
     var R = d.rep || { above: '14 %', inR: '85 %', good: '64 %', below: '0.1 %', split: [0, 0.1, 64, 21, 14, 0.8, 0], met: [true, true, true],
@@ -740,31 +869,18 @@ var WL = (function () {
       g.r(bx, y - h + (h > 3 ? 1 : 0), 12, Math.max(1.5, h - (h > 3 ? 2 : 0)), 2, { fill: PAL[k] });
       y -= h;
     });
-    function goal(x, yy, text, met) {
-      var w = 26 + tw(text, 14), col = met ? PAL.tight : PAL.high;
-      g.r(x, yy - 15, w, 22, 11, { fill: met ? '#173A27' : '#3D2A10' });
-      if (met) g.p('M' + r1(x + 8) + ' ' + r1(yy - 4.5) + 'l3.5 3.5l6 -7', { stroke: col, sw: 2 });
-      else g.p('M' + r1(x + 9) + ' ' + r1(yy - 9) + 'l7 7M' + r1(x + 16) + ' ' + r1(yy - 9) + 'l-7 7', { stroke: col, sw: 2 });
-      g.t(x + 21, yy + 1, text, { fs: 14, fw: 600, fill: col, anchor: 'start' });
-    }
     function row(yy, label, pct, gtext, big, sub, met) {
-      g.t(-116, yy, label, { fs: big ? 22 : 19, fw: big ? 700 : 600, fill: PAL.ink, anchor: 'start' });
-      g.t(152, yy + (big ? 4 : 0), pct, { fs: big ? 32 : 22, fw: 700, fill: PAL.ink, anchor: 'end' });
-      if (gtext) goal(-116, yy + 22, gtext, met !== false);
-      if (sub) g.t(-116 + 26 + tw(gtext, 14) + 10, yy + 23, sub, { fs: 15, fw: 500, fill: PAL.soft, anchor: 'start' });
+      g.t(-116, yy, label, { f: big ? 'small' : 'tiny', max: 150, fill: PAL.ink, anchor: 'start' });
+      var pf = big ? 'medium' : 'small';
+      g.t(Math.min(152, edgeX(yy - capOf(pf)) - 2), yy, pct, { f: pf, fill: PAL.ink, anchor: 'end' });
+      var w = gtext ? goal(g, -116, yy + 18, gtext, met !== false) : 0;
+      if (sub) g.t(-116 + w + 10, yy + 18 + capOf('xtiny') / 2, sub, { f: 'xtiny', max: edgeX(yy + 18) - (-116 + w + 10), fill: PAL.soft, anchor: 'start' });
     }
-    row(-96, 'Above range', R.above, '< 25%', false, '', R.met[0]);
-    row(-30, 'In range', R.inR, '> 70%', true, 'very good ' + R.good, R.met[1]);
-    row(38, 'Below range', R.below, '< 4%', false, '', R.met[2]);
-    g.p('M-140 80H140', { stroke: PAL.grid, sw: 1.5 });
-    R.nums.forEach(function (m, i) {
-      var x = -92 + i * 92;
-      g.t(x, 114, m[0], { fs: 24, fw: 700, fill: PAL.ink });
-      var lw = tw(m[1], 15) + 18;
-      if (m[2]) g.p('M' + r1(x - lw / 2) + ' 131l3.2 3.2l5.5 -6.5', { stroke: PAL.tight, sw: 2 });
-      else g.p('M' + r1(x - lw / 2 + 1) + ' 127.6l6 6M' + r1(x - lw / 2 + 7) + ' 127.6l-6 6', { stroke: PAL.high, sw: 2 });
-      g.t(x - lw / 2 + 14, 137, m[1], { fs: 15, fw: 600, fill: PAL.soft, anchor: 'start' });
-    });
+    row(-90, 'Above range', R.above, '< 25%', false, '', R.met[0]);
+    row(-26, 'In range', R.inR, '> 70%', true, 'very good ' + R.good, R.met[1]);
+    row(36, 'Below range', R.below, '< 4%', false, '', R.met[2]);
+    g.p('M-140 78H140', { stroke: PAL.grid, sw: 1.5 });
+    R.nums.forEach(function (m, i) { numCheck(g, -92 + i * 92, 108, m); });
     if (c.dots !== false) pageDots(g, 2, 1);
   };
 
@@ -807,12 +923,12 @@ var WL = (function () {
       if (!KC.rect) { var ys = Math.abs(n[0]) * B.sc, ch = Math.sqrt(Math.max(0, 195 * 195 - ys * ys)); dx = Math.max(0, (-ch + 30 - B.x0) / B.sc - (ic - 24)); }
       // a row the screen would cut is left out (the mock never shows a clipped row)
       if (!KC.rect) {
-        var tx1 = B.x0 + (dx + Math.max(tw(n[4], 17), tw(n[5], 24)) + 4) * B.sc, ty0 = (n[0] - 22) * B.sc, ty1 = (n[0] + 26) * B.sc, ix0 = B.x0 + (ic + dx - 22) * B.sc, Rr = 191;
+        var tx1 = B.x0 + (dx + Math.max(ww(n[4], 'glance'), ww(n[5], 'glance')) + 4) * B.sc, ty0 = (n[0] - 22) * B.sc, ty1 = (n[0] + 26) * B.sc, ix0 = B.x0 + (ic + dx - 22) * B.sc, Rr = 191;
         if ([[ix0, ty0], [ix0, ty1], [tx1, ty0], [tx1, ty1]].some(function (q) { return q[0] * q[0] + q[1] * q[1] > Rr * Rr; })) return;
       }
       g.c(ic + dx, n[0], 22, { fill: n[1] }); g.icon(n[2], ic + dx, n[0], 22, n[3]);
-      g.t(-1 + dx, n[0] - 6, n[4], { fs: 17, fw: 600, fill: PAL.dim, anchor: 'start' });
-      g.t(-1 + dx, n[0] + 20, n[5], { fs: 24, fw: 700, fill: PAL.soft, anchor: 'start' });
+      g.t(-1 + dx, n[0] - 4, n[4], { f: 'glance', fill: PAL.dim, anchor: 'start', foreign: true });
+      g.t(-1 + dx, n[0] + 4 + capOf('glance'), n[5], { f: 'glance', fill: PAL.soft, anchor: 'start', foreign: true });
     });
     g.p('M' + r1(ic - 25) + ' ' + r1(-B.h / 2 - gap / 2) + 'H' + r1(B.w - 15) + 'M' + r1(ic - 25) + ' ' + r1(B.h / 2 + gap / 2) + 'H' + r1(B.w - 15), { stroke: PAL.grid, sw: 1.5 });
     g.pop();
@@ -823,6 +939,11 @@ var WL = (function () {
     draw(B);
     g.pop();
   }
+  // lines of the glance's font, centred on the content's middle
+  function glanceLines(g, lines, x, col) {
+    var h = lh('glance'), cap = capOf('glance'), y0 = -(lines.length - 1) * h / 2 + cap / 2;
+    lines.forEach(function (t, i) { g.t(x, y0 + i * h, t, { f: 'glance', fill: col, anchor: 'start' }); });
+  }
   // The glance: the widget's top row (as the collapsed notification): the value and its arrow, then as many of the
   // person's metrics as fit, in the card's priority (main, last treatment, second…), the rings without their period
   // label and with a bigger number. A pill or the reading's time sits under the value.
@@ -830,18 +951,22 @@ var WL = (function () {
     glanceLoop(g, d, function (B) {
       var X0 = 0, X1 = B.w, R = 23, SW = 5, gapR = 6;
       // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page
-      if (c.setup) { g.t(X0, 8, c.setupText || 'Waiting for your phone', { fs: 18, fw: 600, fill: PAL.soft, anchor: 'start' }); return; }
+      // words in the glance's font (FONT_GLANCE), wrapped to the content's width
+      if (c.setup) { glanceLines(g, wrap(c.setupText || 'Waiting for your phone', 'glance', X1 - X0), X0, PAL.soft); return; }
       var under = (d.pill && d.age < 5) || d.age >= 1.5 || !!c.sending;
-      var vy = under ? 4 : 20, fs = under ? 54 : 58;
+      // the row under the value: the glance's font, the pill 1.5 caps tall, at the content's bottom; the value over it
+      var gc = capOf('glance'), rowH = gc * 1.5, cy = B.h / 2 - rowH / 2 - 1;
+      var vy = under ? cy - rowH / 2 - 6 : 20, fs = under ? 54 : 58, sy = under ? Math.min(0, -B.h / 2 + R + SW / 2 + 2) : 0;
       if (d.age >= 20 || d.sensorState === 'warmup') {
         if (d.sensorState === 'warmup') {
+          var gc = capOf('glance');
           g.c(X0 + 14, -14, 14, { stroke: PAL.soft, sw: 2.2 });
           g.p('M' + r1(X0 + 14) + ' -14L' + r1(X0 + 14) + ' -24' + arc(10, 0, 216, X0 + 14, -14).replace(/^M[^A]+/, '') + 'Z', { fill: PAL.soft });
-          g.t(X0 + 36, -6, 'Warming up', { fs: 24, fw: 600, fill: PAL.ink, anchor: 'start' });
-          g.t(X0, 28, 'Ready at ' + (d.readyAt || '21:20'), { fs: 18, fw: 500, fill: PAL.soft, anchor: 'start' });
+          g.t(X0 + 36, -14 + gc / 2, 'Warming up', { f: 'glance', fill: PAL.ink, anchor: 'start' });
+          g.t(X0, 14 + gc + 4, 'Ready at ' + (d.readyAt || '21:20'), { f: 'glance', fill: PAL.soft, anchor: 'start' });
         } else {
-          g.t(X0, -14, 'No reading since', { fs: 18, fw: 600, fill: PAL.soft, anchor: 'start' });
-          g.t(X0, 26, d.readAt, { fs: 38, fw: 600, fill: PAL.ink, anchor: 'start' });
+          g.t(X0, -18, 'No reading since', { f: 'glance', fill: PAL.soft, anchor: 'start' });
+          g.t(X0, 30, d.readAt, { fs: 38, fill: PAL.ink, anchor: 'start' });
         }
         return;
       }
@@ -857,23 +982,24 @@ var WL = (function () {
       mets.forEach(function (m) {
         var w = 2 * R + SW;
         if (room < w) { room = -1; return; }
-        drawSlot(g, m, x - w / 2, 0, R, SW, 23);
+        drawSlot(g, m, x - w / 2, sy, R, SW, 23, 'glance');
         x -= w + gapR; room -= w + gapR;
       });
       if (under) {
-        var cy = 34, late = d.age >= 1.5, ax = X0;
-        if (late) { g.t(ax, cy + 6, d.readAt, { fs: 17, fw: 500, fill: PAL.soft, anchor: 'start' }); ax += tw(d.readAt, 17) + 10; }
-        if (d.pill && d.age < 5) ax += pill(g, ax, cy, d.pill, { fs: 15, anchor: 'start' }) + 10;
+        var late = d.age >= 1.5, ax = X0;
+        if (late) { g.t(ax, cy + gc / 2, d.readAt, { f: 'glance', fill: PAL.soft, anchor: 'start' }); ax += ww(d.readAt, 'glance') + 10; }
+        if (d.pill && d.age < 5) ax += pill(g, ax, cy, d.pill, { f: 'glance', anchor: 'start', tall: 1.5 }) + 10;
         // the outbox (Waiting for the phone, Sent, The phone has a question), where it fits after the rest
         var snd = c.sending;
-        if (snd && ax + tw(snd.text, 15) <= X1) g.t(ax, cy + 5, snd.text, { fs: 15, fw: 600, fill: snd.ask ? PAL.high : PAL.soft, anchor: 'start' });
+        if (snd && ax + ww(snd.text, 'glance') <= X1) g.t(ax, cy + gc / 2, snd.text, { f: 'glance', fill: snd.ask ? PAL.high : PAL.soft, anchor: 'start' });
       }
     }, c);
   };
 
   // ---- the data field, in an activity's data screen ---------------------------------------------------------------
-  function dfLabel(g, x, y, s, o) { o = o || {}; g.t(x, y, s, { fs: o.fs || 17, fw: 600, fill: o.fill || PAL.soft, ls: 1.2, anchor: o.anchor || 'middle' }); }
-  function otherField(g, x, y, label, val, fs) { dfLabel(g, x, y - fs * 0.78, label); g.t(x, y, val, { fs: fs, fw: 700, fill: PAL.ink }); }
+  // the field's label (GLUCOSE): xtiny, soft. o.foreign: another field's (drawn by the watch)
+  function dfLabel(g, x, y, s, o) { o = o || {}; g.t(x, y, s, { f: 'xtiny', fill: o.fill || PAL.soft, anchor: o.anchor || 'middle', foreign: o.foreign }); }
+  function otherField(g, x, y, label, val, fs) { dfLabel(g, x, y - fs * 0.78, label, { foreign: true }); g.t(x, y, val, { fs: fs, fw: 700, fill: PAL.ink, foreign: true }); }
   function dfBlock(g, d, x0, y0, x1, y1) {
     // low / very low: the field's own block in the range's colour, the value white (Aura's very-low block)
     var b = bandOf(d.g);
@@ -885,7 +1011,7 @@ var WL = (function () {
     dfLabel(g, 0, -128, 'GLUCOSE', { fill: inv ? '#FFFFFF' : PAL.soft });
     value(g, d, 0, -8, 116, { inverted: inv, col: inv ? '#FFFFFF' : undefined });
     if (!inv) { var scl = 1.4, Wd = 100 / Math.log(7) * scl * Math.log(19) + 24 * scl; auraSpark(g, d, { x0: -Wd / 2, x1: Wd / 2, y0: 26, y1: 110 }, { sc: scl }); }
-    if (d.age >= 1.5) g.t(0, 150, d.readAt, { fs: 20, fw: 500, fill: inv ? '#FFFFFF' : PAL.soft });
+    if (d.age >= 1.5) g.t(0, 150, d.readAt, { f: 'xtiny', fill: inv ? '#FFFFFF' : PAL.soft });
   };
   S.df2 = function (g, d) {
     var inv = dfBlock(g, d, -200, -200, 200, -1);
@@ -896,7 +1022,7 @@ var WL = (function () {
       value(g, d, x0, -34, 84, { anchor: 'start', arrow: false });
       auraSpark(g, d, { x0: x0 + vw + 14, x1: x0 + vw + 14 + W, y0: -100, y1: -30 }, { sc: 0.95 });
     }
-    if (d.age >= 1.5) g.t(0, -8, d.readAt, { fs: 17, fw: 500, fill: inv ? '#FFFFFF' : PAL.soft });
+    if (d.age >= 1.5) g.t(0, -8, d.readAt, { f: 'xtiny', fill: inv ? '#FFFFFF' : PAL.soft });
     g.p('M-200 0H200', { stroke: PAL.faint, sw: 2 });
     otherField(g, 0, 92, 'HEART RATE', '142', 84);
   };
@@ -917,14 +1043,14 @@ var WL = (function () {
     otherField(g, 0, -86, 'DISTANCE', '6.42', 62);
     g.p('M-200 -64H200M-200 64H200M0 -64V64', { stroke: PAL.faint, sw: 2 });
     var inv = dfBlock(g, d, -200, -63, -1, 63);
-    dfLabel(g, -100, -34, 'GLUCOSE', { fill: inv ? '#FFFFFF' : PAL.soft, fs: 15 });
+    dfLabel(g, -100, -34, 'GLUCOSE', { fill: inv ? '#FFFFFF' : PAL.soft });
     value(g, d, -96, 34, 60, { inverted: inv, col: inv ? '#FFFFFF' : undefined });
     otherField(g, 100, 34, 'HR', '142', 60);
     otherField(g, 0, 138, 'PACE', '5:12', 62);
   };
   S.df4small = function (g, d) {
     var inv = dfBlock(g, d, -200, -200, 200, -65);
-    dfLabel(g, 0, -136, 'GLUCOSE', { fs: 14, fill: inv ? '#FFFFFF' : PAL.soft });
+    dfLabel(g, 0, -136, 'GLUCOSE', { fill: inv ? '#FFFFFF' : PAL.soft });
     value(g, d, 0, -78, 50, { inverted: inv, col: inv ? '#FFFFFF' : undefined });
     g.p('M-200 -64H200M-200 64H200M0 -64V64', { stroke: PAL.faint, sw: 2 });
     otherField(g, -100, 34, 'TIMER', '32:10', 50);
@@ -937,16 +1063,16 @@ var WL = (function () {
     // any face: the face draws each complication from what Sukrara publishes (a String, a fixed icon); here a plain
     // face with four slot styles
     var old = d.age >= 5, v = old ? '---' : fmtG(d.g, d.unit);
-    g.t(0, 22, '10:09', { fs: 108, fw: 600, fill: PAL.ink });
-    g.t(0, -64, 'MON 16', { fs: 22, fw: 600, fill: PAL.soft, ls: 2 });
+    g.t(0, 22, '10:09', { fs: 108, fw: 600, fill: PAL.ink, foreign: true });
+    g.t(0, -64, 'MON 16', { fs: 22, fw: 600, fill: PAL.soft, ls: 2, foreign: true });
     // top: a round slot, icon above the value (Sukrara glucose)
     g.c(0, -122, 38, { stroke: PAL.faint, sw: 2 });
     g.icon('drop', 0, -140, 16, PAL.soft);
-    g.t(0, -106, v, { fs: 26, fw: 700, fill: PAL.ink });
-    g.t(0, -92, 'CGM', { fs: 10, fw: 600, fill: PAL.soft, ls: 1 });
+    g.t(0, -106, v, { fs: 26, fw: 700, fill: PAL.ink, foreign: true });
+    g.t(0, -92, 'CGM', { fs: 10, fw: 600, fill: PAL.soft, ls: 1, foreign: true });
     // bottom left: icon + text (Sukrara glucose again, in another face's style)
     g.icon('drop', -110, 85, 20, PAL.soft);
-    g.t(-96, 93, v, { fs: 26, fw: 700, fill: PAL.ink, anchor: 'start' });
+    g.t(-96, 93, v, { fs: 26, fw: 700, fill: PAL.ink, anchor: 'start', foreign: true });
     // bottom right: the Log slot: a generic icon, the last treatment as text (u = rapid, g = carbs)
     // the Log value, as the watch's setting says: the time since (default), the amount, or both; the label is fixed
     var show = c.logShow || 'time', lv = 'Log';
@@ -956,20 +1082,20 @@ var WL = (function () {
     }
     var lfs = lv.length > 7 ? 20 : 24;
     g.icon('pen', 34, 85, 22, PAL.soft);
-    g.t(50, 93, lv, { fs: lfs, fw: 700, fill: PAL.ink, anchor: 'start' });
-    g.t(50, 70, 'LOG', { fs: 12, fw: 600, fill: PAL.soft, anchor: 'start', ls: 1 });
+    g.t(50, 93, lv, { fs: lfs, fw: 700, fill: PAL.ink, anchor: 'start', foreign: true });
+    g.t(50, 70, 'LOG', { fs: 12, fw: 600, fill: PAL.soft, anchor: 'start', ls: 1, foreign: true });
     // bottom: a CGM+ GB face's own graph and arrow from CGM-GB-data
     if (!old) sparkline(g, d, { x0: -60, x1: 60, y0: 114, y1: 150 }, { hours: 3, sw: 2.5 });
-    else g.t(0, 140, 'old', { fs: 15, fw: 600, fill: PAL.dim });
+    else g.t(0, 140, 'old', { fs: 15, fw: 600, fill: PAL.dim, foreign: true });
   };
 
   // ---- logging -----------------------------------------------------------------------------------------------------
   S.logAmount = function (g, d, c) {
     var k = c.kind || 'rapid', col = PAL[k], label = { rapid: 'Rapid insulin', carbs: 'Carbs', long: 'Long insulin' }[k];
     var a = c.amount !== undefined ? c.amount : (k === 'carbs' ? 50 : k === 'long' ? 14 : 4.5), unit = k === 'carbs' ? 'g' : 'u';
-    var lw = tw(label, 22) + 30;
-    g.icon(k, -lw / 2 + 10, -129, 18, col);
-    g.t(-lw / 2 + 26, -122, label, { fs: 22, fw: 600, fill: col, anchor: 'start' });
+    var lf = fitRole(label, 'small', 220), lw = ww(label, lf) + 30;
+    g.icon(k, -lw / 2 + 10, -122 - capOf(lf) / 2, 18, col);
+    g.t(-lw / 2 + 26, -122, label, { f: lf, fill: col, anchor: 'start' });
     var s = String(a), fs = 128, w = bw(s, fs), uw = tw(unit, 50);
     var x0 = -(w + 8 + uw) / 2;
     g.t(x0, 22, s, { fs: fs, fw: 700, fill: PAL.ink, anchor: 'start' });
@@ -979,37 +1105,48 @@ var WL = (function () {
     g.p('M-16 42L0 56L16 42', { stroke: PAL.dim, sw: 4 });
     // the usual amounts
     var chips = c.usual || (k === 'carbs' ? ['15', '30', '50'] : k === 'long' ? ['12', '14', '16'] : ['4', '4.5', '6']);
-    var cw = 64, gap = 10, cx0 = -(chips.length * cw + (chips.length - 1) * gap) / 2;
+    var cw = 64, gap = 10, cx0 = -(chips.length * cw + (chips.length - 1) * gap) / 2, chh = capOf('small') + 16;
     chips.forEach(function (ch, i) {
       var on = ch === s, x = cx0 + i * (cw + gap);
-      g.r(x, 76, cw, 36, 18, { fill: on ? col : PAL.card2, op: 1 });
-      g.t(x + cw / 2, 101, ch, { fs: 20, fw: 700, fill: on ? PAL.on : PAL.soft });
+      g.r(x, 74, cw, chh, chh / 2, { fill: on ? col : PAL.card2, op: 1 });
+      g.t(x + cw / 2, 74 + chh / 2 + capOf('small') / 2, ch, { f: 'small', fill: on ? PAL.on : PAL.soft });
     });
-    g.t(0, 146, 'Now', { fs: 20, fw: 600, fill: PAL.soft });
+    g.t(0, 74 + chh + 10 + capOf('tiny'), 'Now', { f: 'tiny', fill: PAL.soft });
     btnHint(g, 60, '', {});
-    btnHint(g, 270, '+', { fs: 26, r: 170, anchor: 'start', dx: -4 });
-    btnHint(g, 240, '−', { fs: 26, r: 166, anchor: 'start', dx: -4 });
+    btnHint(g, 270, '+', { r: 170, anchor: 'start', dx: -4 });
+    btnHint(g, 240, '-', { r: 166, anchor: 'start', dx: -4 });
   };
+  // Undo (START) with the ring counting its 10 s down, a small button centred under the done screens' words
+  function undo(g, y) {
+    var uf = 'small', h = capOf(uf) + 18, w = ww('Undo', uf) + 30 + 26;
+    g.r(-w / 2, y, w, h, h / 2, { fill: PAL.card2 });
+    g.t(-w / 2 + 18, y + h / 2 + capOf(uf) / 2, 'Undo', { f: uf, fill: PAL.ink, anchor: 'start' });
+    var rx = w / 2 - 22, ry = y + h / 2;
+    g.c(rx, ry, 9, { stroke: PAL.grid, sw: 3 });
+    g.p(arc(9, 0, 220, rx, ry), { stroke: PAL.soft, sw: 3 });
+  }
   S.logConfirm = function (g, d, c) {
     var k = c.kind || 'rapid', col = PAL[k], a = c.amount !== undefined ? c.amount : (k === 'carbs' ? 50 : 4.5), unit = k === 'carbs' ? 'g' : 'u';
     var word = { rapid: 'rapid insulin', carbs: 'carbs', long: 'long insulin' }[k];
-    if (c.dup) {
-      g.icon('warn', -96, -132, 22, PAL.high);
-      g.t(-80, -125, (k === 'carbs' ? '50g' : '4.5u') + ' 3 min ago', { fs: 20, fw: 600, fill: PAL.high, anchor: 'start' });
-    } else g.t(0, -124, 'Log', { fs: 22, fw: 600, fill: PAL.soft });
-    var wN = bw(String(a), 96), wU = tw(unit, 96) * 0.97, tot = 30 + 12 + wN + wU, x0 = -tot / 2;
-    g.icon(k, x0 + 15, -40, 30, col);
-    g.t(x0 + 42, -8, String(a) + unit, { fs: 96, fw: 700, fill: col, anchor: 'start' });
-    g.t(0, 30, word + ' · now', { fs: 22, fw: 600, fill: PAL.ink });
-    // the quiet line as the phone says it (c.quiet: the watch's, null = nothing goes quiet: no line)
-    var ql = c.quiet !== undefined ? c.quiet : k === 'carbs' ? 'Lows quiet for 15 min' : k === 'rapid' ? 'Highs quiet for 1 h' : null;
-    if (ql) g.t(0, 62, ql, { fs: 18, fw: 500, fill: PAL.soft });
     // hold to confirm: the rim fills from START; the words say how
     var p = c.progress === undefined ? 0.45 : c.progress;
     rim(g, PAL.grid, 8, 1);
     if (p > 0) rim(g, col, 8, p);
-    g.r(-92, 102, 184, 44, 22, { fill: PAL.card2 });
-    g.t(0, 131, 'Hold to log', { fs: 20, fw: 700, fill: PAL.ink });
+    if (c.dup) {
+      var dt = (k === 'carbs' ? '50g' : '4.5u') + ' 3 min ago', df = fitRole(dt, 'tiny', 200), dw = ww(dt, df) + 28;
+      g.icon('warn', -dw / 2 + 11, -122 - capOf(df) / 2, 22, PAL.high);
+      g.t(-dw / 2 + 28, -122, dt, { f: df, fill: PAL.high, anchor: 'start' });
+    } else g.t(0, -122, 'Log', { f: 'small', fill: PAL.soft });
+    var wN = bw(String(a), 96), wU = tw(unit, 96) * 0.97, tot = 30 + 12 + wN + wU, x0 = -tot / 2;
+    g.icon(k, x0 + 15, -40, 30, col);
+    g.t(x0 + 42, -8, String(a) + unit, { fs: 96, fw: 700, fill: col, anchor: 'start' });
+    g.t(0, 30, word + ' · now', { f: 'small', edge: true, fill: PAL.ink });
+    // the quiet line as the phone says it (c.quiet: the watch's, null = nothing goes quiet: no line)
+    var ql = c.quiet !== undefined ? c.quiet : k === 'carbs' ? 'Lows quiet for 15 min' : k === 'rapid' ? 'Highs quiet for 1 h' : null;
+    if (ql) g.t(0, 36 + capOf('tiny') + 10, ql, { f: 'tiny', edge: true, fill: PAL.soft });
+    var hf = fitRole('Hold to log', 'small', 200), hw0 = ww('Hold to log', hf) + 44, hh0 = capOf('small') + 20;
+    g.r(-hw0 / 2, 102, hw0, hh0, hh0 / 2, { fill: PAL.card2 });
+    g.t(0, 102 + hh0 / 2 + capOf(hf) / 2, 'Hold to log', { f: hf, fill: PAL.ink });
     btnHint(g, 60, '', { col: col });
   };
   // what was logged, as the done screens say it: "4.5u rapid"
@@ -1023,29 +1160,27 @@ var WL = (function () {
     g.c(0, -36, 46, { stroke: PAL.grid, sw: 6 });
     g.p(arc(46, 20, 130, 0, -36), { stroke: col, sw: 6 });
     g.icon('phone', 0, -36, 30, PAL.soft);
-    g.t(0, 46, what(c), { fs: 30, fw: 700, fill: PAL.ink });
-    g.t(0, 80, 'Sending to your phone', { fs: 20, fw: 500, fill: PAL.soft });
+    g.t(0, 46, what(c), { f: 'medium', edge: true, fill: PAL.ink });
+    g.t(0, 56 + capOf('tiny') + 6, 'Sending to your phone', { f: 'tiny', edge: true, fill: PAL.soft });
   };
   S.logDone = function (g, d, c) {
     var k = c.kind || 'rapid', col = PAL[k];
     g.c(0, -46, 50, { fill: col });
     g.p('M-22 -46l14 14l30 -30', { stroke: PAL.on, sw: 8 });
-    g.t(0, 40, 'Logged ' + what(c), { fs: 28, fw: 700, fill: PAL.ink });
+    g.t(0, 40, 'Logged ' + what(c), { f: 'medium', edge: true, fill: PAL.ink });
     var qd = c.quiet !== undefined ? c.quiet : 'Highs quiet for 1 h';
-    if (qd) g.t(0, 72, qd, { fs: 20, fw: 500, fill: PAL.soft });
-    g.r(-64, 98, 128, 42, 21, { fill: PAL.card2 });
-    g.t(-8, 126, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
-    g.c(40, 119, 10, { stroke: PAL.grid, sw: 3 });
-    g.p(arc(10, 0, 220, 40, 119), { stroke: PAL.soft, sw: 3 });
+    if (qd) g.t(0, 50 + capOf('tiny') + 6, qd, { f: 'tiny', edge: true, fill: PAL.soft });
+    undo(g, 96);
     btnHint(g, 60, '', {});
   };
   S.logQueued = function (g, d, c) {
     g.icon('phone', 0, -60, 46, PAL.high);
     g.p('M-24 -84L24 -36', { stroke: PAL.high, sw: 4 });
-    g.t(0, 10, 'Saved on the watch', { fs: 26, fw: 700, fill: PAL.ink });
-    g.t(0, 42, what(c) + ' · ' + d.clock, { fs: 20, fw: 600, fill: PAL[c.kind || 'rapid'] });
-    g.t(0, 76, 'Goes to your phone', { fs: 18, fw: 500, fill: PAL.soft });
-    g.t(0, 100, 'when it’s near', { fs: 18, fw: 500, fill: PAL.soft });
+    g.t(0, 10, 'Saved on the watch', { f: 'medium', edge: true, fill: PAL.ink });
+    g.t(0, 18 + capOf('tiny') + 8, what(c) + ' · ' + d.clock, { f: 'tiny', edge: true, fill: PAL[c.kind || 'rapid'] });
+    var y2 = 18 + capOf('tiny') + 8 + 14 + capOf('tiny');
+    g.t(0, y2, 'Goes to your phone', { f: 'tiny', edge: true, fill: PAL.soft });
+    g.t(0, y2 + lh('tiny'), 'when it’s near', { f: 'tiny', edge: true, fill: PAL.soft });
   };
 
   // ---- alerts -------------------------------------------------------------------------------------------------------
@@ -1056,8 +1191,9 @@ var WL = (function () {
     else rim(g, col, 10, 1);
     // on the block: white (MIP: white or black, whichever reads better on the 64-colour block, inkOn)
     var W0 = inkOn(col), ink = very ? W0 : col;
-    g.icon('bell', -tw(word, 20) / 2 - 16, -140, 20, ink);
-    g.t(12, -133, word, { fs: 20, fw: 700, fill: ink, ls: 1.5 });
+    var wy = -124, wf = fitRole(word, 'medium', 2 * edgeX(wy - capOf('medium')) - 34), wd = ww(word, wf) + 28;
+    g.icon('bell', -wd / 2 + 10, wy - capOf(wf) / 2, 20, ink);
+    g.t(-wd / 2 + 28, wy, word, { f: wf, fill: ink, anchor: 'start' });
     var spark = c.spark !== false;
     if (c.noValue) noValue(g, d, -66);
     else if (spark) {
@@ -1095,13 +1231,13 @@ var WL = (function () {
     rows.forEach(function (r, i) {
       var y = ys[i], w = ws[i];
       g.r(-w / 2, y - 23, w, 46, 23, { fill: r.fill, stroke: r.line ? W0 : 'none', sw: 2 });
-      var tw0 = tw(r.t, 20) + (r.icon ? 26 : 0), x0 = -tw0 / 2;
+      var bf = fitRole(r.t, 'small', w - 36 - (r.icon ? 26 : 0)), tw0 = ww(r.t, bf) + (r.icon ? 26 : 0), x0 = -tw0 / 2;
       if (r.icon) g.icon(r.icon, x0 + 9, y, 18, r.iconCol || r.fg);
-      g.t(x0 + (r.icon ? 26 : 0), y + 7, r.t, { fs: 20, fw: 700, fill: r.fg, anchor: 'start' });
+      g.t(x0 + (r.icon ? 26 : 0), y + capOf(bf) / 2, r.t, { f: bf, fill: r.fg, anchor: 'start' });
     });
     // the relaxed interval under the buttons, where it fits inside the rim (else the button's words say it: SPEC §14.1)
-    var rw = tw('Reminders every 30 min', 15);
-    if (relaxed && c.every !== null && inside(-rw / 2, 150 - fe(15) * 0.7, rw / 2, 150 + fe(15) * 0.22)) g.t(0, 150, 'Reminders every 30 min', { fs: 15, fw: 500, fill: very ? W0 : PAL.soft });
+    var rw = ww('Reminders every 30 min', 'xtiny'), ry = 132 + capOf('xtiny') + 4;
+    if (relaxed && c.every !== null && inside(-rw / 2, ry - capOf('xtiny'), rw / 2, ry + 2)) g.t(0, ry, 'Reminders every 30 min', { f: 'xtiny', fill: very ? W0 : PAL.soft });
     btnHint(g, 60, '', { col: very ? W0 : tk ? PAL[tk] : PAL.ink });
   };
   // c.col: the side (low / high); c.title, c.line (null: none) the watch's words
@@ -1109,51 +1245,69 @@ var WL = (function () {
     var sc = PAL[c.col === 'high' ? 'high' : 'low'];
     g.c(0, -56, 46, { fill: sc, op: 0.24 });
     g.icon(c.icon || 'bellPause', 0, -56, 44, sc);
-    g.t(0, 28, c.title || 'Lows: remind less', { fs: 28, fw: 700, fill: PAL.ink });
-    if (c.line !== null) g.t(0, 60, c.line || 'Reminders every 30 min', { fs: 20, fw: 500, fill: PAL.soft });
-    g.r(-64, 92, 128, 42, 21, { fill: PAL.card2 });
-    g.t(-8, 120, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
-    g.c(40, 113, 10, { stroke: PAL.grid, sw: 3 });
-    g.p(arc(10, 0, 220, 40, 113), { stroke: PAL.soft, sw: 3 });
+    g.t(0, 28, c.title || 'Lows: remind less', { f: 'medium', edge: true, fill: PAL.ink });
+    if (c.line !== null) g.t(0, 38 + capOf('tiny') + 6, c.line || 'Reminders every 30 min', { f: 'tiny', edge: true, fill: PAL.soft });
+    undo(g, 96);
     btnHint(g, 60, '', {});
   };
   S.wake = function (g, d) {
     // Garmin's full-screen notification, sent by the app's background (API 5.1+): title, subtitle, icon, actions.
     // Every action opens the app with that action; Remind less and Mute send it and close again at once.
     appIcon(g, 0, -140, 20);
-    g.t(0, -96, 'Low 62', { fs: 32, fw: 700, fill: PAL.ink });
-    g.t(0, -68, 'Falling · 20:41', { fs: 19, fw: 500, fill: PAL.soft });
+    g.t(0, -94, 'Low 62', { f: 'medium', fill: PAL.ink });
+    g.t(0, -86 + capOf('tiny') + 4, 'Falling · 20:41', { f: 'tiny', fill: PAL.soft });
     var rows = [['carbs', 'Treatment', PAL.carbs], ['bellPause', 'Remind less', PAL.soft], ['bellOff', 'Mute lows 30m', PAL.soft]];
     rows.forEach(function (r, i) {
       var y = -26 + i * 56, w = i === 2 ? 220 : 240;
       g.r(-w / 2, y - 23, w, 46, 23, { fill: PAL.card2 });
-      var tw0 = tw(r[1], 20) + 26, x0 = -tw0 / 2;
+      var bf = fitRole(r[1], 'small', w - 62), tw0 = ww(r[1], bf) + 26, x0 = -tw0 / 2;
       g.icon(r[0], x0 + 9, y, 18, r[2]);
-      g.t(x0 + 26, y + 7, r[1], { fs: 20, fw: 700, fill: PAL.ink, anchor: 'start' });
+      g.t(x0 + 26, y + capOf(bf) / 2, r[1], { f: bf, fill: PAL.ink, anchor: 'start' });
     });
-    g.t(0, 152, 'Garmin draws this', { fs: 14, fw: 500, fill: PAL.dim });
+    g.t(0, 152, 'Garmin draws this', { f: 'xtiny', fill: PAL.dim, foreign: true });
   };
   // Waiting for the phone (SPEC §4.3): until the phone's first message, one page: Sukrara's mark, what it waits for,
   // and Open on phone (Garmin Connect opens the setup link there; Sukrara for Android takes it as an App Link). After
   // the press (c.opened): Look at your phone for 5 s. No dots, no list. Never a phone screen or setting's name.
   S.setup = function (g, d, c) {
-    phoneIcon(g, 0, -92, 30);
-    g.t(0, -26, c.title || 'Waiting for your phone', { fs: 26, fw: 700, fill: PAL.ink });
-    var lines = c.lines || ['Sukrara for Android sends', 'your glucose here'];
-    g.t(0, 8, lines[0], { fs: 18, fw: 500, fill: PAL.soft });
-    g.t(0, 33, lines[1], { fs: 18, fw: 500, fill: PAL.soft });
+    // the title in medium on up to two lines; the body in tiny wrapped; the button at the bottom (small)
+    // laid out from the button up: the body in tiny on up to two lines (else xtiny), the title in medium on up to two,
+    // the phone's icon over them where the room is left (else none)
+    var top = KC.rect ? -KC.hh + 20 : -150, ir = 24, by = KC.rect ? KC.hh - 70 : 96, bh = capOf('small') + 22;
+    var tl = wrap(c.title || 'Waiting for your phone', 'medium', 290).slice(0, 2), mh = lh('medium') * 0.9;
+    var given = c.lines || ['Sukrara for Android sends', 'your glucose here'], bf0 = 'tiny', bw1 = 2 * edgeX(by - 10) - 20, lines;
+    for (var k = 0; k < 2; k++) {
+      bf0 = ['tiny', 'xtiny'][k];
+      lines = given.every(function (t) { return ww(t, bf0) <= bw1; }) ? given : wrap(given.join(' '), bf0, bw1);
+      if (lines.length <= 2) break;
+    }
+    var th = lh(bf0) * 0.85, bodyH = capOf(bf0) + (lines.length - 1) * th, titleH = capOf('medium') + (tl.length - 1) * mh;
+    var y = by - 12 - bodyH - 12 - titleH;
+    if (y - 2 * ir - 10 >= top) phoneIcon(g, 0, y - 10 - ir, ir);
+    tl.forEach(function (t, i) { g.t(0, y + capOf('medium') + i * mh, t, { f: 'medium', edge: true, fill: PAL.ink }); });
+    y += titleH + 12;
+    lines.forEach(function (t, i) { g.t(0, y + capOf(bf0) + i * th, t, { f: bf0, edge: true, fill: PAL.soft }); });
     if (c.opened) {
-      var look = c.look || 'Look at your phone', lw = tw(look, 22) + 30;
-      g.icon('phone', -lw / 2 + 11, 90, 22, PAL.ink);
-      g.t(-lw / 2 + 30, 98, look, { fs: 22, fw: 700, fill: PAL.ink, anchor: 'start' });
+      var look = c.look || 'Look at your phone', lf = fitRole(look, 'small', Math.min(250, 2 * edgeX(by + bh / 2 + capOf('small') / 2 + 4) - 34)), lw = ww(look, lf) + 30;
+      g.icon('phone', -lw / 2 + 11, by + bh / 2, 22, PAL.ink);
+      g.t(-lw / 2 + 30, by + bh / 2 + capOf(lf) / 2, look, { f: lf, fill: PAL.ink, anchor: 'start' });
       return;
     }
-    var bt = c.button || 'Open on phone', bw0 = tw(bt, 22) + 26, w = bw0 + 56;
-    g.r(-w / 2, 70, w, 52, 26, { fill: PAL.ink });
-    g.icon('phone', -bw0 / 2 + 10, 96, 20, PAL.on);
-    g.t(-bw0 / 2 + 26, 104, bt, { fs: 22, fw: 700, fill: PAL.on, anchor: 'start' });
+    var bt = c.button || 'Open on phone', bf = fitRole(bt, 'small', Math.min(220, 2 * edgeX(by + bh) - 70)), bw0 = ww(bt, bf) + 26, w = bw0 + 40;
+    g.r(-w / 2, by, w, bh, bh / 2, { fill: PAL.ink });
+    g.icon('phone', -bw0 / 2 + 10, by + bh / 2, 20, PAL.on);
+    g.t(-bw0 / 2 + 26, by + bh / 2 + capOf(bf) / 2, bt, { f: bf, fill: PAL.on, anchor: 'start' });
     btnHint(g, 60, '', {});
   };
+  // a row of the one list between x0 and x1: the kind's mark, its name (small) and its last entry (xtiny) at the right;
+  // the selected row on a card. The name gives way to the detail (it fits down to xtiny)
+  function listRow(g, it, y, x0, x1, on, h) {
+    if (on) g.r(x0, y - h / 2, x1 - x0, h, Math.min(32, h / 2), { fill: PAL.card2 });
+    var ix = x0 + 38, lx = x0 + 62, sw = it.sub ? ww(it.sub, 'xtiny') + 12 : 0, lf = fitRole(it.label, 'small', x1 - 16 - sw - lx);
+    g.icon(it.icon, ix, y, on ? 26 : 22, it.col);
+    g.t(lx, y + capOf(lf) / 2, it.label, { f: lf, fill: on ? PAL.ink : PAL.soft, anchor: 'start' });
+    if (it.sub) g.t(x1 - 16, y + capOf('xtiny') / 2, it.sub, { f: 'xtiny', fill: it.subCol || PAL.soft, anchor: 'end' });
+  }
   // START in the app: one list, the kinds in the phone's order (the focused one first and selected), then mute
   S.actions = function (g, d, c) {
     var last = d.lastBy || { rapid: '4.5u · 1h', carbs: '50g · 1h', long: '14u · 12h' };
@@ -1161,52 +1315,47 @@ var WL = (function () {
     var items = d.order.map(function (k) { return { label: name[k], icon: k, col: PAL[k], sub: last[k] }; });
     var mr = c.mutedRow || ['Muted', '1h 20m'];
     items.push(c.muted ? { label: mr[0], icon: 'bellOff', col: PAL.note, sub: mr[1], subCol: PAL.note } : { label: 'Mute alerts', icon: 'bellOff', col: PAL.soft });
-    g.t(0, -138, 'Sukrara', { fs: 20, fw: 600, fill: PAL.soft });
+    g.t(0, -136, 'Sukrara', { f: 'tiny', fill: PAL.soft });
     var ys = [-74, -12, 44, 100];
-    items.forEach(function (it, i) {
-      var y = ys[i], on = i === 0, fs = on ? 30 : 23;
-      if (on) g.r(-166, y - 32, 332, 64, 32, { fill: PAL.card2 });
-      g.icon(it.icon, -128, y, on ? 26 : 21, it.col);
-      g.t(-104, y + fs * 0.35, it.label, { fs: fs, fw: on ? 700 : 600, fill: on ? PAL.ink : PAL.soft, anchor: 'start' });
-      if (it.sub) g.t(150, y + 7, it.sub, { fs: on ? 18 : 16, fw: 600, fill: it.subCol || (on ? PAL.soft : PAL.dim), anchor: 'end' });
-    });
+    items.forEach(function (it, i) { listRow(g, it, ys[i], -166, 166, i === 0, 64); });
     btnHint(g, 60, '', {});
   };
   S.muteLengths = function (g, d, c) {
     var side = c.side;
-    g.t(0, -140, side === 'low' ? 'Mute lows' : side === 'high' ? 'Mute highs' : 'Mute all alerts', { fs: 22, fw: 700, fill: PAL.ink });
-    g.t(0, -114, side ? 'on your phone and this watch' : 'very low and no data too', { fs: 16, fw: 500, fill: PAL.soft });
+    g.t(0, -128, side === 'low' ? 'Mute lows' : side === 'high' ? 'Mute highs' : 'Mute all alerts', { f: 'small', edge: true, fill: PAL.ink });
+    g.t(0, -128 + 10 + capOf('xtiny'), side ? 'on your phone and this watch' : 'very low and no data too', { f: 'xtiny', edge: true, fill: PAL.soft });
     var items = c.items || ['15 min', '30 min', '1 h', '2 h', side ? '' : 'Until I unmute'].filter(Boolean), sel = c.sel !== undefined ? c.sel : 1;
-    var ys = [-62, -8, 46, 100, 150];
+    var ys0 = -128 + 10 + capOf('xtiny') + 12, room = (KC.rect ? KC.hh - 8 : 168) - ys0, pitch = Math.min(lh('small') + 6, room / Math.min(5, items.length)), y0 = ys0 + pitch / 2;
     items.slice(0, 5).forEach(function (it, i) {
-      var y = ys[i], on = i === sel, fs = on ? 30 : 24;
-      if (on) g.r(-150, y - 28, 300, 56, 28, { fill: PAL.card2 });
-      g.t(0, y + fs * 0.35, it, { fs: fs, fw: on ? 700 : 600, fill: on ? PAL.ink : PAL.soft });
+      var y = y0 + i * pitch, on = i === sel;
+      if (on) g.r(-150, y - pitch / 2 + 1, 300, pitch - 2, (pitch - 2) / 2, { fill: PAL.card2 });
+      g.t(0, y + capOf('small') / 2, it, { f: 'small', max: 260, edge: true, fill: on ? PAL.ink : PAL.soft });
     });
     btnHint(g, 60, '', {});
   };
   S.muteDone = function (g, d, c) {
     g.c(0, -56, 46, { fill: PAL.note, op: 0.24 });
     g.icon('bellOff', 0, -56, 44, PAL.note);
-    g.t(0, 28, c.title || (c.side === 'low' ? 'Lows muted' : 'Alerts muted'), { fs: 30, fw: 700, fill: PAL.ink });
-    g.t(0, 60, c.line || 'for 30 min · until 21:11', { fs: 20, fw: 500, fill: PAL.soft });
-    g.r(-64, 92, 128, 42, 21, { fill: PAL.card2 });
-    g.t(-8, 120, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
-    g.c(40, 113, 10, { stroke: PAL.grid, sw: 3 });
-    g.p(arc(10, 0, 220, 40, 113), { stroke: PAL.soft, sw: 3 });
+    g.t(0, 28, c.title || (c.side === 'low' ? 'Lows muted' : 'Alerts muted'), { f: 'medium', edge: true, fill: PAL.ink });
+    g.t(0, 38 + capOf('tiny') + 6, c.line || 'for 30 min · until 21:11', { f: 'tiny', edge: true, fill: PAL.soft });
+    undo(g, 96);
     btnHint(g, 60, '', {});
   };
   S.muted = function (g, d, c) {
     g.icon('bellOff', 0, -118, 30, PAL.note);
-    g.t(0, -70, c.title || 'Alerts muted', { fs: 28, fw: 700, fill: PAL.ink });
-    g.t(0, -40, c.line || '1h 20m left · until 22:01', { fs: 19, fw: 500, fill: PAL.soft });
-    var ys = [10, 70], items = ['Unmute', 'Change time'], sel = c.sel || 0;
+    g.t(0, -70, c.title || 'Alerts muted', { f: 'medium', edge: true, fill: PAL.ink });
+    g.t(0, -62 + capOf('tiny') + 6, c.line || '1h 20m left · until 22:01', { f: 'tiny', edge: true, fill: PAL.soft });
+    var ys = [4, 60], items = ['Unmute', 'Change time'], sel = c.sel || 0;
     items.forEach(function (it, i) {
       var y = ys[i], on = i === sel;
       g.r(-130, y - 26, 260, 52, 26, { fill: on ? PAL.note : PAL.card2 });
-      g.t(0, y + 8, it, { fs: 22, fw: 700, fill: on ? PAL.on : PAL.ink });
+      g.t(0, y + capOf('small') / 2, it, { f: 'small', max: 230, fill: on ? PAL.on : PAL.ink });
     });
-    if (c.foot !== false) g.t(0, 134, 'Very low and no data too', { fs: 16, fw: 500, fill: PAL.dim });
+    // the foot: xtiny, on two lines where one is wider than the screen there
+    if (c.foot !== false) {
+      var fy = 98 + capOf('xtiny'), fl = wrap('Very low and no data too', 'xtiny', 2 * edgeX(fy + lh('xtiny')) - 8);
+      fl.forEach(function (t, i) { g.t(0, fy + i * lh('xtiny') * 0.85, t, { f: 'xtiny', edge: true, fill: PAL.soft }); });
+    }
     btnHint(g, 60, '', {});
   };
 
@@ -1222,10 +1371,11 @@ var WL = (function () {
     var b = kind === 'no_data' ? 'grey' : DF_BAND[kind] || bandOf(d.g), col = PAL[b], word = (c && c.word) || DF_WORD[kind];
     full(g, col);
     var W0 = b === 'veryLow' || b === 'low' ? inkOn(col) : contrast('#FFFFFF', col) >= contrast('#000000', col) ? '#FFFFFF' : '#000000';
-    g.icon('bell', 12 - tw(word, 24) / 2 - 30, -96, 24, W0);
-    g.t(12, -88, word, { fs: 24, fw: 700, fill: W0, ls: 1.5 });
+    var wf = fitRole(word, 'medium', 2 * KC.hw - 90), wd = ww(word, wf) + 32;
+    g.icon('bell', -wd / 2 + 12, -88 - capOf(wf) / 2, 24, W0);
+    g.t(-wd / 2 + 32, -88, word, { f: wf, fill: W0, anchor: 'start' });
     if (d.g !== null && d.g !== undefined) value(g, d, 0, 30, 116, { col: W0, inverted: true });
-    g.t(0, 92, 'Sukrara · ' + (d.age < 1 ? 'now' : Math.round(d.age) + ' min ago'), { fs: 20, fw: 600, fill: W0 });
+    g.t(0, 92, 'Sukrara · ' + (d.age < 1 ? 'now' : Math.round(d.age) + ' min ago'), { f: 'tiny', max: 2 * KC.hw - 80, fill: W0 });
   };
 
   // ---- the watch around it ---------------------------------------------------------------------------------------
@@ -1274,13 +1424,13 @@ var WL = (function () {
     var best = null;
     for (var h = b.y1 - b.y0 - 8; h >= 24; h -= 2) {
       var bx = fitBox(b, h, 4); if (!bx) continue;
-      var lab = h >= 64, fsH = (h - (lab ? 24 : 0) - 6) / 0.668, fsW = bx.w * 0.9 / em, fs = Math.min(fsH, fsW, max);
+      var lab = h >= 64, fsH = (h - (lab ? capOf('xtiny') + 8 : 0) - 6) / 0.668, fsW = bx.w * 0.9 / em, fs = Math.min(fsH, fsW, max);
       if (!best || fs > best.fs + 0.5) best = { box: bx, fs: fs, lab: lab };
     }
     if (!best) return null;
     best.fs = feFit(best.fs);
     // the content (label row + value) keeps to the box's side toward the screen's centre: no gap inside it
-    var ch = (best.lab ? 24 : 0) + fe(best.fs) * 0.668 + 6, bb = best.box, top = b.obs.indexOf('T') >= 0, bot = b.obs.indexOf('B') >= 0;
+    var ch = (best.lab ? capOf('xtiny') + 8 : 0) + fe(best.fs) * 0.668 + 6, bb = best.box, top = b.obs.indexOf('T') >= 0, bot = b.obs.indexOf('B') >= 0;
     var y0 = top && !bot ? bb.y1 - ch : bot && !top ? bb.y0 : (bb.y0 + bb.y1) / 2 - ch / 2;
     best.box = { x0: bb.x0, x1: bb.x1, y0: y0, y1: y0 + ch, w: bb.w, h: ch };
     return best;
@@ -1289,21 +1439,22 @@ var WL = (function () {
   // not set up (SPEC §4.3: no message from the phone yet): GLUCOSE and "Waiting for phone" (soft) in every slot, on two
   // lines where one doesn't fit; the label row where the slot has room for it. c.setup: the two lines' words
   function dfSetup(g, b, whole, words) {
-    var w = words || ['Waiting', 'for phone'], one = w.join(' '), fs = 20, lh = 26;
+    var w = words || ['Waiting', 'for phone'], one = w.join(' '), lr = lh('xtiny');
     if (whole) {
       dfLabel(g, 0, KC.rect ? -KC.hh + 40 : -128, 'GLUCOSE');
-      g.t(0, 8, one, { fs: 24, fw: 600, fill: PAL.soft });
+      g.t(0, 8, one, { f: 'small', max: 2 * KC.hw - 60, fill: PAL.soft });
       return 'setup-whole';
     }
     // the label and one line, the label and two, then without the label: the first whose box fits the slot inside the
     // screen (at the slot's side toward the centre, as fitBox places it)
-    var tries = [[true, [one]], [true, w], [false, [one]], [false, w]];
+    // the words in tiny, else xtiny (never smaller)
+    var tries = [[true, [one], 'tiny'], [true, w, 'tiny'], [true, [one], 'xtiny'], [true, w, 'xtiny'], [false, [one], 'xtiny'], [false, w, 'xtiny']];
     for (var k = 0; k < tries.length; k++) {
-      var lab = tries[k][0], lines = tries[k][1], ch = (lab ? 24 : 0) + lines.length * lh, bx = fitBox(b, ch, 4);
-      if (!bx || Math.max.apply(null, lines.map(function (t) { return tw(t, fs); })) > bx.w * 0.92) continue;
+      var lab = tries[k][0], lines = tries[k][1], f = tries[k][2], lf = lh(f), ch = (lab ? lr : 0) + lines.length * lf, bx = fitBox(b, ch, 4);
+      if (!bx || Math.max.apply(null, lines.map(function (t) { return ww(t, f); })) > bx.w * 0.92) continue;
       var cx = (bx.x0 + bx.x1) / 2;
-      if (lab) dfLabel(g, cx, bx.y0 + 16, 'GLUCOSE', { fs: 15 });
-      lines.forEach(function (t, i) { g.t(cx, bx.y0 + (lab ? 24 : 0) + lh * (i + 1) - 6, t, { fs: fs, fw: 600, fill: PAL.soft }); });
+      if (lab) dfLabel(g, cx, bx.y0 + capOf('xtiny') + 3, 'GLUCOSE');
+      lines.forEach(function (t, i) { g.t(cx, bx.y0 + (lab ? lr : 0) + lf * i + (lf + capOf(f)) / 2, t, { f: f, fill: PAL.soft }); });
       return 'setup';
     }
     return 'none';
@@ -1315,13 +1466,13 @@ var WL = (function () {
     if (whole) {
       dfLabel(g, 0, KC.rect ? -KC.hh + 40 : -128, 'GLUCOSE');
       g.t(0, -8, '---', { fs: 116, fw: 700, fill: PAL.grey });
-      g.t(0, 60, why, { fs: 20, fw: 500, fill: PAL.soft });
+      g.t(0, 60, why, { f: 'tiny', max: 2 * KC.hw - 60, fill: PAL.soft });
       return 'none-whole';
     }
     var fv = fitValue(b, emOf('---', false), 116);
     if (!fv) return 'none';
     var bx = fv.box, cx = (bx.x0 + bx.x1) / 2;
-    if (fv.lab) dfLabel(g, cx, bx.y0 + 16, 'GLUCOSE', { fs: 15 });
+    if (fv.lab) dfLabel(g, cx, bx.y0 + capOf('xtiny') + 3, 'GLUCOSE');
     g.t(cx, bx.y1 - 4, '---', { fs: fv.fs, fw: 700, fill: PAL.grey });
     return 'none-value';
   }
@@ -1336,7 +1487,7 @@ var WL = (function () {
       dfLabel(g, 0, top, 'GLUCOSE', { fill: lab });
       value(g, d, 0, -8, 116, { inverted: inv, col: inv ? W0 : undefined });
       if (!inv) { var scl = 1.4, Wd = 100 / Math.log(7) * scl * Math.log(19) + 24 * scl; auraSpark(g, d, { x0: -Wd / 2, x1: Wd / 2, y0: 26, y1: 110 }, { sc: scl }); }
-      if (late) g.t(0, 150, d.readAt, { fs: 20, fw: 500, fill: inv ? W0 : PAL.soft });
+      if (late) g.t(0, 150, d.readAt, { f: 'xtiny', fill: inv ? W0 : PAL.soft });
       return 'whole';
     }
     // value + sparkline side by side (the 390's half and band)
@@ -1348,7 +1499,7 @@ var WL = (function () {
         if (Wsp < 90) break;
         var gw = vw + 14 + Wsp, x0 = (sb.x0 + sb.x1) / 2 - gw / 2, yb = sb.y1 - 16, cap = fs * 0.668;
         dfLabel(g, x0, sb.y0 + 20, 'GLUCOSE', { anchor: 'start' });
-        if (late) g.t(x0 + gw, sb.y0 + 20, d.readAt, { fs: 17, fw: 500, fill: PAL.soft, anchor: 'end' });
+        if (late) g.t(x0 + gw, sb.y0 + 20, d.readAt, { f: 'xtiny', fill: PAL.soft, anchor: 'end' });
         value(g, d, x0, yb, fs, { anchor: 'start', arrow: false });
         auraSpark(g, d, { x0: x0 + vw + 14, x1: x0 + gw, y0: yb - cap - 8, y1: yb }, { sc: Math.min(1, fs / 88) });
         return 'side by side';
@@ -1358,7 +1509,7 @@ var WL = (function () {
     var fv = fitValue(b, emOf(str, Number.isFinite(d.rate)), 116);
     if (!fv) return 'none';
     var bx = fv.box, cx = (bx.x0 + bx.x1) / 2;
-    if (fv.lab) dfLabel(g, cx, bx.y0 + 16, 'GLUCOSE', { fill: lab, fs: 15 });
+    if (fv.lab) dfLabel(g, cx, bx.y0 + capOf('xtiny') + 3, 'GLUCOSE', { fill: lab });
     value(g, d, cx, bx.y1 - 4, fv.fs, { inverted: inv, col: inv ? W0 : undefined });
     return 'value';
   }
@@ -1366,8 +1517,8 @@ var WL = (function () {
     var o = OTHER[i % OTHER.length], fv = fitValue(b, emOf(o[1], false), 84);
     if (!fv) return;
     var bx = fv.box, cx = (bx.x0 + bx.x1) / 2;
-    if (fv.lab) dfLabel(g, cx, bx.y0 + 16, o[0], { fs: 15 });
-    g.t(cx, bx.y1 - 4, o[1], { fs: fv.fs, fw: 700, fill: PAL.ink });
+    if (fv.lab) dfLabel(g, cx, bx.y0 + capOf('xtiny') + 3, o[0], { foreign: true });
+    g.t(cx, bx.y1 - 4, o[1], { fs: fv.fs, fw: 700, fill: PAL.ink, foreign: true });
   }
   S.dfSlot = function (g, d, c) {
     // c.slots: a layout of the watch's own ({i, f} as DFS), c.others false: the other slots left empty (the field's
@@ -1395,31 +1546,31 @@ var WL = (function () {
   var R = {};
   R.appA = function (g, d, c) {
     var hw = KC.hw, hh = KC.hh;
-    clock(g, d, -hh + 34, { fs: 22 });
+    clock(g, d, -hh + 12 + capOf('tiny'));
     var ms = metricSlots(d, c), rr = 24, sw = 6, sy = -hh + 34;
-    drawSlot(g, ms[1], -hw + 14 + rr + sw / 2, sy, rr, sw, 22);
-    drawSlot(g, ms[0], hw - 14 - rr - sw / 2, sy, rr, sw, 22);
+    drawSlot(g, ms[1], -hw + 14 + rr + sw / 2, sy, rr, sw, 22, 'xtiny');
+    drawSlot(g, ms[0], hw - 14 - rr - sw / 2, sy, rr, sw, 22, 'xtiny');
     var vy = -hh + 150;
     if (d.age >= 20 || d.sensorState === 'warmup') noValue(g, d, vy - 34);
     else value(g, d, 0, vy, 96);
-    var bx = { x0: -hw + 44, x1: hw - 34, y0: vy + 26, y1: hh - 64 };
-    var sc = chart(g, d, bx, { hours: c.hours || 12, lfs: 14, ms: 10 });
-    if (c.dist !== false) pctColumn(g, d, sc, bx, { lfs: 14, hours: c.hours || 12, dot: 4.6, mask: true });
-    if (!chipRow(g, d, hh - 22, { fs: 19 })) sensorTag(g, d, 0, hh - 16, { fs: 17 });
+    var pr = capOf('xtiny') * 1.9, bx = { x0: -hw + 12 + ww('100%', 'xtiny'), x1: hw - 12 - ww('180', 'xtiny'), y0: vy + 26, y1: hh - 14 - pr - 10 - capOf('xtiny') - 8 };
+    var sc = chart(g, d, bx, { hours: c.hours || 12, ms: 10 });
+    if (c.dist !== false) pctColumn(g, d, sc, bx, { hours: c.hours || 12, dot: 4.6, mask: true });
+    if (!chipRow(g, d, hh - 14 - pr / 2)) sensorTag(g, d, 0, hh - 14 - pr / 2 + capOf('xtiny') / 2);
     if (c.dots !== false) pageDots(g, 2, 0);
   };
   R.appNums = function (g, d, c) {
     var hw = KC.hw, hh = KC.hh, per = c.period || '14d', pers = ['1d', '7d', '14d', '30d'];
-    var cw = Math.min(64, (2 * hw - 32 - 18) / 4), gp = 6, x0 = -(pers.length * cw + (pers.length - 1) * gp) / 2, cyy = -hh + 16;
+    var cw = Math.min(64, (2 * hw - 32 - 18) / 4), gp = 6, x0 = -(pers.length * cw + (pers.length - 1) * gp) / 2, cyy = -hh + 12, ch = capOf('xtiny') + 14;
     pers.forEach(function (p, i) {
       var on = p === per, x = x0 + i * (cw + gp);
-      g.r(x, cyy, cw, 32, 16, { fill: on ? PAL.card2 : 'none', stroke: on ? PAL.soft : PAL.faint, sw: 1.5 });
-      g.t(x + cw / 2, cyy + 22, p, { fs: 17, fw: on ? 700 : 500, fill: on ? PAL.ink : PAL.soft });
+      g.r(x, cyy, cw, ch, ch / 2, { fill: on ? PAL.card2 : 'none', stroke: on ? PAL.soft : PAL.faint, sw: 1.5 });
+      g.t(x + cw / 2, cyy + ch / 2 + capOf('xtiny') / 2, p, { f: 'xtiny', fill: on ? PAL.ink : PAL.soft });
     });
     // the report of the period (d.rep, as S.appNums)
     var Rr = d.rep || { above: '14 %', inR: '85 %', good: '64 %', below: '0.1 %', split: [0, 0.1, 64, 21, 14, 0.8, 0], met: [true, true, true],
       nums: [['136', 'Average', true], ['6.6 %', 'GMI', true], ['27 %', 'CV', true]] };
-    var top = cyy + 52, bot = hh - 86, bxx = -hw + 14, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
+    var nb = capOf('small') + 4 + 6 + capOf('xtiny') + 0.3 * font('xtiny').px / SE + 2, top = cyy + ch + 10, bot = hh - nb, bxx = -hw + 14, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
     Rr.split.forEach(function (v) { tot += v; });
     var y = bot;
     keys.forEach(function (k, i) {
@@ -1428,31 +1579,18 @@ var WL = (function () {
       g.r(bxx, y - h + (h > 3 ? 1 : 0), 12, Math.max(1.5, h - (h > 3 ? 2 : 0)), 2, { fill: PAL[k] });
       y -= h;
     });
-    var lx = bxx + 26, rx = hw - 12, step = (bot - top) / 3;
-    function goal(x, yy, text, met) {
-      var w = 26 + tw(text, 14), col = met ? PAL.tight : PAL.high;
-      g.r(x, yy - 15, w, 22, 11, { fill: met ? '#173A27' : '#3D2A10' });
-      if (met) g.p('M' + r1(x + 8) + ' ' + r1(yy - 4.5) + 'l3.5 3.5l6 -7', { stroke: col, sw: 2 });
-      else g.p('M' + r1(x + 9) + ' ' + r1(yy - 9) + 'l7 7M' + r1(x + 16) + ' ' + r1(yy - 9) + 'l-7 7', { stroke: col, sw: 2 });
-      g.t(x + 21, yy + 1, text, { fs: 14, fw: 600, fill: col, anchor: 'start' });
-      return w;
-    }
+    // each share: its name and number on one line (tiny, small), its goal chip under it (xtiny)
+    var lx = bxx + 26, rx = hw - 12, step = (bot - 4 - top) / 3, gh = capOf('xtiny') + 8;
     [['Above range', Rr.above, '< 25%'], ['In range', Rr.inR, '> 70%', 'very good ' + Rr.good], ['Below range', Rr.below, '< 4%']].forEach(function (r, i) {
-      var yy = top + 22 + i * step, big = i === 1;
-      g.t(lx, yy, r[0], { fs: big ? 22 : 19, fw: big ? 700 : 600, fill: PAL.ink, anchor: 'start' });
-      g.t(rx, yy + (big ? 4 : 0), r[1], { fs: big ? 32 : 22, fw: 700, fill: PAL.ink, anchor: 'end' });
-      var w = goal(lx, yy + 24, r[2], Rr.met[i] !== false);
-      if (r[3]) g.t(lx + w + 10, yy + 25, r[3], { fs: 15, fw: 500, fill: PAL.soft, anchor: 'start' });
+      var yy = top + i * step + capOf('small'), pw = ww(r[1], 'small');
+      g.t(lx, yy, r[0], { f: 'tiny', max: rx - lx - pw - 8, fill: PAL.ink, anchor: 'start' });
+      g.t(rx, yy, r[1], { f: 'small', fill: PAL.ink, anchor: 'end' });
+      var w = goal(g, lx, yy + 5 + gh / 2, r[2], Rr.met[i] !== false);
+      // very good: left out where even xtiny doesn't fit beside the chip (the phone's report has it)
+      if (r[3] && ww(r[3], 'xtiny') <= rx - (lx + w + 8)) g.t(lx + w + 8, yy + 5 + gh / 2 + capOf('xtiny') / 2, r[3], { f: 'xtiny', fill: PAL.soft, anchor: 'start' });
     });
-    g.p('M' + r1(-hw + 12) + ' ' + r1(bot + 14) + 'H' + r1(hw - 12), { stroke: PAL.grid, sw: 1.5 });
-    Rr.nums.forEach(function (m, i) {
-      var x = (i - 1) * (2 * hw - 40) / 3;
-      g.t(x, bot + 48, m[0], { fs: 24, fw: 700, fill: PAL.ink });
-      var lw = tw(m[1], 15) + 18;
-      if (m[2]) g.p('M' + r1(x - lw / 2) + ' ' + r1(bot + 65) + 'l3.2 3.2l5.5 -6.5', { stroke: PAL.tight, sw: 2 });
-      else g.p('M' + r1(x - lw / 2 + 1) + ' ' + r1(bot + 61.6) + 'l6 6M' + r1(x - lw / 2 + 7) + ' ' + r1(bot + 61.6) + 'l-6 6', { stroke: PAL.high, sw: 2 });
-      g.t(x - lw / 2 + 14, bot + 71, m[1], { fs: 15, fw: 600, fill: PAL.soft, anchor: 'start' });
-    });
+    g.p('M' + r1(-hw + 12) + ' ' + r1(bot + 2) + 'H' + r1(hw - 12), { stroke: PAL.grid, sw: 1.5 });
+    Rr.nums.forEach(function (m, i) { numCheck(g, (i - 1) * (2 * hw - 40) / 3, bot + 4 + capOf('small'), m); });
     if (c.dots !== false) pageDots(g, 2, 1);
   };
   R.actions = function (g, d, c) {
@@ -1461,24 +1599,18 @@ var WL = (function () {
     var items = d.order.map(function (k) { return { label: name[k], icon: k, col: PAL[k], sub: last[k] }; });
     var mr = c.mutedRow || ['Muted', '1h 20m'];
     items.push(c.muted ? { label: mr[0], icon: 'bellOff', col: PAL.note, sub: mr[1], subCol: PAL.note } : { label: 'Mute alerts', icon: 'bellOff', col: PAL.soft });
-    g.t(-hw + 18, -hh + 34, 'Sukrara', { fs: 20, fw: 600, fill: PAL.soft, anchor: 'start' });
-    var y0 = -hh + 86, step = (2 * hh - 86 - 40) / 4 + 2;
-    items.forEach(function (it, i) {
-      var y = y0 + i * step, on = i === 0, fs = on ? 30 : 23;
-      if (on) g.r(-hw + 8, y - 32, 2 * hw - 16, 64, 20, { fill: PAL.card2 });
-      g.icon(it.icon, -hw + 38, y, on ? 26 : 21, it.col);
-      g.t(-hw + 62, y + fs * 0.35, it.label, { fs: fs, fw: on ? 700 : 600, fill: on ? PAL.ink : PAL.soft, anchor: 'start' });
-      if (it.sub) g.t(hw - 20, y + 7, it.sub, { fs: on ? 18 : 16, fw: 600, fill: it.subCol || (on ? PAL.soft : PAL.dim), anchor: 'end' });
-    });
+    g.t(-hw + 18, -hh + 14 + capOf('tiny'), 'Sukrara', { f: 'tiny', fill: PAL.soft, anchor: 'start' });
+    var y0 = -hh + 30 + lh('tiny') + 32, step = (hh - 40 - y0) / 3;
+    items.forEach(function (it, i) { listRow(g, it, y0 + i * step, -hw + 8, hw - 8, i === 0, Math.min(64, step - 4)); });
     btnHint(g, 60, '', {});
   };
   // the amount: no UP / DOWN on the rectangles, so the chevrons are the buttons (tap; swipe up / down too)
   R.logAmount = function (g, d, c) {
     var hw = KC.hw, hh = KC.hh, k = c.kind || 'rapid', col = PAL[k], label = { rapid: 'Rapid insulin', carbs: 'Carbs', long: 'Long insulin' }[k];
     var a = c.amount !== undefined ? c.amount : (k === 'carbs' ? 50 : k === 'long' ? 14 : 4.5), unit = k === 'carbs' ? 'g' : 'u';
-    var lw = tw(label, 22) + 30;
-    g.icon(k, -lw / 2 + 10, -hh + 33, 18, col);
-    g.t(-lw / 2 + 26, -hh + 40, label, { fs: 22, fw: 600, fill: col, anchor: 'start' });
+    var lf = fitRole(label, 'small', 2 * hw - 60), lw = ww(label, lf) + 30;
+    g.icon(k, -lw / 2 + 10, -hh + 14 + capOf(lf) / 2, 18, col);
+    g.t(-lw / 2 + 26, -hh + 14 + capOf(lf), label, { f: lf, fill: col, anchor: 'start' });
     var s = String(a), fs = 120, w = bw(s, fs), uw = tw(unit, 48), yU = -hh + 82, ay = yU + 112, yD = ay + 34, x0 = -(w + 8 + uw) / 2;
     g.t(x0, ay, s, { fs: fs, fw: 700, fill: PAL.ink, anchor: 'start' });
     g.t(x0 + w + 8, ay, unit, { fs: 48, fw: 600, fill: PAL.soft, anchor: 'start' });
@@ -1488,13 +1620,13 @@ var WL = (function () {
       g.p('M-16 ' + r1(cy - 6 * dir) + 'L0 ' + r1(cy + 6 * dir) + 'L16 ' + r1(cy - 6 * dir), { stroke: PAL.soft, sw: 4 });
     });
     var chips = c.usual || (k === 'carbs' ? ['15', '30', '50'] : k === 'long' ? ['12', '14', '16'] : ['4', '4.5', '6']);
-    var cw = 72, gap = 12, cx0 = -(chips.length * cw + (chips.length - 1) * gap) / 2, cy0 = hh - 92;
+    var cw = 72, gap = 12, cx0 = -(chips.length * cw + (chips.length - 1) * gap) / 2, chh = capOf('small') + 14, cy0 = hh - 16 - lh('tiny') - chh;
     chips.forEach(function (ch, i) {
       var on = ch === s, x = cx0 + i * (cw + gap);
-      g.r(x, cy0, cw, 38, 19, { fill: on ? col : PAL.card2 });
-      g.t(x + cw / 2, cy0 + 26, ch, { fs: 20, fw: 700, fill: on ? PAL.on : PAL.soft });
+      g.r(x, cy0, cw, chh, chh / 2, { fill: on ? col : PAL.card2 });
+      g.t(x + cw / 2, cy0 + chh / 2 + capOf('small') / 2, ch, { f: 'small', fill: on ? PAL.on : PAL.soft });
     });
-    g.t(0, hh - 22, 'Now', { fs: 20, fw: 600, fill: PAL.soft });
+    g.t(0, hh - 14, 'Now', { f: 'tiny', fill: PAL.soft });
     btnHint(g, 60, '', {});
   };
 
@@ -1522,8 +1654,10 @@ var WL = (function () {
     if (e.isP) return '<path d="' + e.d + '"' + paint + dash + ' stroke-linecap="' + e.cap + '" stroke-linejoin="' + e.join + '" fill-rule="' + (e.rule || 'evenodd') + '"/>';
     if (e.isC) return '<circle cx="' + e.cx + '" cy="' + e.cy + '" r="' + e.r + '"' + paint + dash + '/>';
     if (e.isR) return '<rect x="' + e.x + '" y="' + e.y + '" width="' + e.w + '" height="' + e.h + '" rx="' + e.rx + '"' + paint + '/>';
+    // a word: the stand-in stretched to the watch's own width
+    var tl = e.role && e.tw > 0 ? ' textLength="' + r1(e.tw) + '" lengthAdjust="spacingAndGlyphs"' : '';
     return '<text x="' + e.x + '" y="' + e.y + '" font-family="' + esc(e.fam) + '" font-size="' + e.fs + '" font-weight="' + e.fw + '" text-anchor="' + e.anchor + '"' +
-      (e.ls ? ' letter-spacing="' + e.ls + '"' : '') + ' fill="' + e.fill + '"' + op + ' transform="' + tf + '">' + esc(e.s[0]) + '</text>';
+      (e.ls ? ' letter-spacing="' + e.ls + '"' : '') + tl + ' fill="' + e.fill + '"' + op + ' transform="' + tf + '">' + esc(e.s[0]) + '</text>';
   }
   // svg(cfg): the screen at 1:1 (cfg.bezel: the 390 in its bezel). MIP: the whole screen through a filter that rounds
   // every pixel to the 64 colours, as the panel shows it (anti-aliased edges included)
@@ -1546,17 +1680,27 @@ var WL = (function () {
     return o.join('\n');
   }
 
-  // every text the screen would cut, or that runs into the rim: its box (Atkinson's widths, cap 0.7, descenders 0.22)
-  // must lie 2 px inside the screen, and inside the rim where the screen draws one. The build lists them (none allowed)
+  // every word not in the watch's fonts: a text in Atkinson that isn't one of the big numbers (NUMCH), or a role
+  // smaller than the class's xtiny. The build lists them (none allowed)
+  function smallWords(els) {
+    var bad = [], xt = font('xtiny').px;
+    els.forEach(function (e) {
+      if (!e.isT || e.foreign) return;
+      var sc = +/scale\(([-\d.]+)\)/.exec(e.gt)[1];
+      if (e.role ? e.fs * sc < xt - 0.01 : e.s[0].split('').some(function (ch) { return NUMCH.indexOf(ch) < 0; })) bad.push(e.s[0]);
+    });
+    return bad;
+  }
+  // every text the screen would cut, or that runs into the rim: its box (the width the watch measures, the cap above
+  // the baseline, descenders under it) must lie 2 px inside the screen, and inside the rim where the screen draws one.
+  // The build lists them (none allowed)
   function clippedTexts(els) {
     var bad = [], m0 = (KC.rimPx || 0) + 2, W = KC.w, H = KC.h;
     els.forEach(function (e) {
       if (!e.isT || e.tf) return;
-      var m = /translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+)\)/.exec(e.gt), tx = +m[1], ty = +m[2], sc = +m[3], str = e.s[0], w = 0;
-      for (var i = 0; i < str.length; i++) w += (e.fs >= 40 && BIG[str[i]] !== undefined ? BIG[str[i]] : WM[str[i]] !== undefined ? WM[str[i]] : 0.6);
-      w = w * e.fs * (e.fs >= 40 ? 1 : 1.03) + (e.ls || 0) * str.length;
+      var m = /translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+)\)/.exec(e.gt), tx = +m[1], ty = +m[2], sc = +m[3], str = e.s[0], w = e.tw;
       var x0 = e.anchor === 'start' ? e.x : e.anchor === 'end' ? e.x - w : e.x - w / 2;
-      var X0 = tx + x0 * sc, X1 = tx + (x0 + w) * sc, Y0 = ty + (e.y - 0.7 * e.fs) * sc, Y1 = ty + (e.y + (/[gjpqy,]/.test(str) ? 0.22 : 0.02) * e.fs) * sc;
+      var X0 = tx + x0 * sc, X1 = tx + (x0 + w) * sc, Y0 = ty + (e.y - e.top) * sc, Y1 = ty + (e.y + e.bot) * sc;
       var out = KC.rect ? (X0 < -W / 2 + m0 || X1 > W / 2 - m0 || Y0 < -H / 2 + m0 || Y1 > H / 2 - m0)
         : [[X0, Y0], [X1, Y0], [X0, Y1], [X1, Y1]].some(function (q) { return Math.sqrt(q[0] * q[0] + q[1] * q[1]) > W / 2 - m0; });
       if (out) bad.push(str);
@@ -1574,12 +1718,12 @@ var WL = (function () {
     var d = c.input || data(c), g = new G();
     var f = (KC.rect && R[c.screen]) || S[c.screen] || S.appA;
     f(g, d, c);
-    var clipped = clippedTexts(g.els);
+    var clipped = clippedTexts(g.els), small = smallWords(g.els);
     var bez = c.bezel && KC.id === 'r390' ? bezel(c.metal) : [];
-    var out = { els: g.els, bez: bez, pats: g.pats, w: KC.w, h: KC.h, cls: KC.id, mip: !!KC.mip, rect: !!KC.rect, s: KC.s, vb: c.bezel ? '-292 -292 584 584' : '-195 -195 390 390', label: 'Sukrara on Garmin (' + KC.name + '): ' + (c.screen || 'appA'), d: d, clipped: clipped };
+    var out = { els: g.els, bez: bez, pats: g.pats, w: KC.w, h: KC.h, cls: KC.id, mip: !!KC.mip, rect: !!KC.rect, s: KC.s, vb: c.bezel ? '-292 -292 584 584' : '-195 -195 390 390', label: 'Sukrara on Garmin (' + KC.name + '): ' + (c.screen || 'appA'), d: d, clipped: clipped, small: small };
     KC = null; SE = 1; PAL = PAL_AMOLED;
     return out;
   }
-  return { screen: screen, svg: svg, CLS: CLS, DFS: DFS, ATLAS: ATLAS, PAL: PAL_AMOLED, PAL_MIP: PAL_MIP, bandOf: bandOf, fmtG: fmtG, contrast: contrast, near64: near64 };
+  return { screen: screen, svg: svg, CLS: CLS, DFS: DFS, ATLAS: ATLAS, TYPE: TYPE, PAL: PAL_AMOLED, PAL_MIP: PAL_MIP, bandOf: bandOf, fmtG: fmtG, contrast: contrast, near64: near64 };
 })();
 if (typeof module !== 'undefined') module.exports = WL;
