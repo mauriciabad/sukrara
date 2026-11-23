@@ -14,6 +14,17 @@
     <description>Updates of Sukrara for Mac (the GitHub and Homebrew version).</description>
     <language>en</language>
     <item>
+      <title>Sukrara 0.17.1</title>
+      <pubDate>Mon, 23 Nov 2026 15:09:20 GMT</pubDate>
+      <sparkle:version>17001</sparkle:version>
+      <sparkle:shortVersionString>0.17.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/mauriciabad/sukrara/releases/tag/v0.17.1</sparkle:fullReleaseNotesLink>
+      <description><![CDATA[<ul><li><b>Extremely high stays quiet after insulin</b>: rapid insulin you log now quiets the extremely high alert too, for the same time as high and very high (Settings › Alerts › <i>Quiet highs after insulin</i>, 60 min by default). Before, it rang again minutes after a dose whenever glucose touched the threshold, and the card said <i>Take insulin</i>. If glucose is still that high when the time is up, it alerts at once, as before.</li><li><b>The Mac menu bar's glucose in the card's colours</b> (<a href="https://github.com/mauriciabad/sukrara/issues/257">#257</a>): out of range, the value is in its range's colour on the card (very low, low, high, very high, extremely high), like the phone's status bar, instead of one red below the range and one orange above; where the card's colour is too faint for small text on the bar, a deeper (light bar) or paler (dark bar) shade of it.</li><li><b>Each Garmin app's own store page</b> (<a href="https://github.com/mauriciabad/sukrara/issues/247">#247</a>): the phone's <i>Get</i> (setup's <i>Your Garmin watch</i>) and the Garmin page's <i>Connect IQ store</i> rows open that app's Connect IQ listing (Garmin's Spanish store on a phone in Spanish) instead of the store's search for Sukrara, and the website links the three listings.</li></ul>]]></description>
+      <enclosure url="https://github.com/mauriciabad/sukrara/releases/download/v0.17.1/Sukrara-0.17.1.dmg" length="16714194" type="application/octet-stream"
+        sparkle:edSignature="0YMeETA67vM1UcUDp/atBj6zrUIZPa8AjrAIksrAKPSxO7Ka2PkcqUvXus2GskI1teyJ4b7RZQP+2ounOHlHAw=="/>
+    </item>
+    <item>
       <title>Sukrara 0.17.0</title>
       <pubDate>Mon, 23 Nov 2026 12:11:44 GMT</pubDate>
       <sparkle:version>17000</sparkle:version>
