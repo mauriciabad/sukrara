@@ -171,8 +171,8 @@
                 return model.menubarTitle
             }
             let titles = [
-                ending(112, rate: -0.4), ending(62, rate: -1.6), ending(246, rate: 1.2),
-                ending(131, rate: 0, age: 12 * 60),
+                ending(112, rate: -0.4), ending(50, rate: -1.6), ending(62, rate: -1.6), ending(210, rate: 1.2),
+                ending(276, rate: 0.4), ending(320, rate: 1.2), ending(131, rate: 0, age: 12 * 60),
             ].map(title)
             let inks = Scene(
                 view: AnyView(
@@ -260,7 +260,7 @@
                 ),
             ]
             return nightscout + libreLinkUp + [
-                // in range, low, high and stale on the bar, over a wallpaper and with Reduce Transparency
+                // in range, every range's colour and stale on the bar, over a wallpaper and with Reduce Transparency
                 ("menubar-inks", inks),
                 ("panel-following", scene(readings: ending(112, rate: -0.4))),
                 ("panel-low", scene(readings: ending(62, rate: -1.6))),

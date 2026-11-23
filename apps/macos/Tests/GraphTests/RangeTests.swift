@@ -93,17 +93,19 @@ private let now = GraphFixtures.now
     }
 }
 
-/// The menu bar's colour side at the limits: the value as written, a limit in the range beyond it (#181).
-@Test func menuBarSideAtTheLimits() {
-    func side(_ v: Double) -> RangeSide? {
-        GlucoseCard.rangeSide(CardData(readings: [GraphReading(t: now - 60, v: v)], now: now), config: GraphConfig())
+/// The menu bar's colour range at the limits: the value as written, a limit in the range beyond it (#181, #257).
+@Test func menuBarRangeAtTheLimits() {
+    func range(_ v: Double) -> RangeState? {
+        GlucoseCard.range(CardData(readings: [GraphReading(t: now - 60, v: v)], now: now), config: GraphConfig())
     }
-    #expect(side(180) == .above)
-    #expect(side(179.6) == .above)  // written 180
-    #expect(side(179) == .inRange)
-    #expect(side(70) == .inRange)
-    #expect(side(69) == .below)
-    #expect(side(55) == .below)
+    #expect(range(180) == .high)
+    #expect(range(179.6) == .high)  // written 180
+    #expect(range(179) == nil)
+    #expect(range(70) == nil)
+    #expect(range(69) == .low)
+    #expect(range(55) == .veryLow)
+    #expect(range(276) == .veryHigh)
+    #expect(range(300) == .extremelyHigh)
 }
 
 /// An out-of-range value says its range in words on the card, never by colour alone (Android RangeWordTest).

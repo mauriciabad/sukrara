@@ -73,8 +73,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         button.setAccessibilityLabel(title.accessibilityLabel)
     }
 
-    /// The value's colour: red below the range, orange above, grey when stale or warming up, else the menu bar's own
-    /// ink (nil: the button follows light / dark and the selected highlight). Resolved from the appearance it is drawn
+    /// The value's colour: its range's colour on the card, grey when stale or warming up, else the menu bar's own ink
+    /// (nil: the button follows light / dark and the selected highlight). Resolved from the appearance it is drawn
     /// in (the button's), so each passes 4.5:1 on a light and on a dark bar (`MenubarInk`, #8).
     static func color(_ tint: MenubarTitle.Tint) -> NSColor? {
         guard let light = MenubarInk.rgb(tint, dark: false), let dark = MenubarInk.rgb(tint, dark: true) else {

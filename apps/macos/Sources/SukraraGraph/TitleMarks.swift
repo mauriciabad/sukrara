@@ -5,23 +5,13 @@ import CoreGraphics
 import Foundation
 import SukraraCore
 
-/// Which side of the user's range the newest value is on: the menu bar colours its number by it (below red, above
-/// orange, in range the menu bar's own ink).
-public enum RangeSide: Sendable, Equatable {
-    case below, inRange, above
-}
-
 extension GlucoseCard {
-    /// The side of `config`'s ranges the newest reading of `data` is on; nil without a reading. Below = very low +
-    /// low, above = high + very high (the time-in-range groups).
-    public static func rangeSide(_ data: CardData, config: GraphConfig) -> RangeSide? {
+    /// The range of `config` the newest reading of `data` is in, nil in range or without a reading: the menu bar
+    /// colours its number with that range's colour on the card (`RangeState.color`, #257), like Android's status bar.
+    public static func range(_ data: CardData, config: GraphConfig) -> RangeState? {
         // the value as written (whole mg/dL): 179.6 reads 180, so it is high like the card's 180
         guard let sgv = data.latest?.sgv else { return nil }
-        switch config.bands.sane().of(Double(sgv)).group {
-        case 0: return .below
-        case 2: return .above
-        default: return .inRange
-        }
+        return RangeState.of(sgv, config.bands.sane())
     }
 
     /// The SF Symbol a text place shows instead of a value for no readings for 20 min.

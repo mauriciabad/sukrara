@@ -1,29 +1,56 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import CoreGraphics
 import Foundation
 import SukraraAlerts
 import SukraraCore
 import SukraraGraph
 
-/// The title's inks on the menu bar (#8): red below the range, orange above, grey when stale or warming up, each with
-/// at least `minContrast` (WCAG 4.5:1, 13 pt text) on the bar it's drawn on. The system red and orange are about 3.6:1
-/// and 2.2:1 on a light bar, so a light bar gets darker ones and a dark bar lighter ones; the status item picks them
+/// The title's inks on the menu bar: a value out of range in its range's colour on the card (#257, the owner: the menu
+/// bar's 276 wasn't the card's colour; Android's status bar takes the card's too), grey when stale or warming up, each
+/// with at least `minContrast` (WCAG 4.5:1, 13 pt text) on the bar it's drawn on (#8). A card colour that reads at
+/// that on every bar of its appearance is used as it is; one that doesn't is taken towards black on a light bar
+/// (towards white on a dark one) just far enough: the same hue, a deeper or paler shade. The status item picks the ink
 /// from the button's appearance when it draws (`StatusItemController.color`). `lightBars` / `darkBars` are the
 /// lightest and darkest a bar of that appearance gets, plain or over a wallpaper (grey levels, 0–1).
 enum MenubarInk {
+    typealias RGB = (r: Double, g: Double, b: Double)
     static let minContrast = 4.5
     static let lightBars: [Double] = [1.0, 0.85]
     static let darkBars: [Double] = [0.0, 0.12, 0.2]
 
     /// The ink (sRGB, 0–1) of `tint` on a light or dark bar; nil = the bar's own ink (in range).
-    static func rgb(_ tint: MenubarTitle.Tint, dark: Bool) -> (r: Double, g: Double, b: Double)? {
+    static func rgb(_ tint: MenubarTitle.Tint, dark: Bool) -> RGB? {
         switch tint {
         case .plain: nil
-        case .below: dark ? (1.0, 0.478, 0.439) : (0.69, 0.0, 0.125)
-        case .above: dark ? (1.0, 0.624, 0.039) : (0.604, 0.271, 0.0)
+        case .range(let r): readable(card(r, dark: dark), dark: dark)
         case .grey: dark ? (0.659, 0.659, 0.659) : (0.373, 0.373, 0.373)
         }
+    }
+
+    /// `r`'s colour on the card of that appearance (sRGB).
+    static func card(_ r: RangeState, dark: Bool) -> RGB {
+        let c =
+            r.color(dark: dark).converted(
+                to: CGColorSpace(name: CGColorSpace.sRGB)!, intent: .defaultIntent, options: nil)?
+            .components ?? [0, 0, 0]
+        return (Double(c[0]), Double(c[1]), Double(c[2]))
+    }
+
+    /// `c`, or the nearest shade of it towards black (light bars) / white (dark bars) in 1 % steps, that reads at
+    /// `minContrast` on every bar of that appearance.
+    static func readable(_ c: RGB, dark: Bool) -> RGB {
+        let bars = dark ? darkBars : lightBars
+        for step in 0...100 {
+            let t = Double(step) / 100
+            let m: RGB =
+                dark
+                ? (c.r + (1 - c.r) * t, c.g + (1 - c.g) * t, c.b + (1 - c.b) * t)
+                : (c.r * (1 - t), c.g * (1 - t), c.b * (1 - t))
+            if bars.allSatisfy({ contrast(m, ($0, $0, $0)) >= minContrast }) { return m }
+        }
+        return dark ? (1, 1, 1) : (0, 0, 0)
     }
 
     /// WCAG relative luminance of an sRGB colour.
@@ -41,7 +68,7 @@ enum MenubarInk {
 
 /// What the status item shows: the value's decision from the one renderer (`GlucoseCard.face`, surface
 /// `.menubarTitle`: value, strike when stale, the trend, warm-up / ended / no readings), its range colour
-/// (`GlucoseCard.rangeSide`), the mute bell and the tooltip. It adds no freshness or value logic of its own.
+/// (`GlucoseCard.range`), the mute bell and the tooltip. It adds no freshness or value logic of its own.
 struct MenubarTitle: Equatable {
     /// The picture beside (or instead of) the value.
     enum Mark: Equatable {
@@ -58,10 +85,8 @@ struct MenubarTitle: Equatable {
     enum Tint: Equatable {
         /// The menu bar's own ink (in range).
         case plain
-        /// Below the range: red.
-        case below
-        /// Above the range: orange.
-        case above
+        /// Out of range: that range's colour on the card.
+        case range(RangeState)
         /// Secondary: a stale value, the warm-up's time left.
         case grey
     }
@@ -132,15 +157,11 @@ struct MenubarTitle: Equatable {
             }
             if look.strike {
                 tint = .grey
-            } else if let data {
-                switch GlucoseCard.rangeSide(data, config: config) {
-                case .below: tint = .below
-                case .above: tint = .above
-                case .inRange, nil: tint = .plain
-                }
+            } else if let range = data.flatMap({ GlucoseCard.range($0, config: config) }) {
+                tint = .range(range)
             }
             // the range in words where the colour shows it (#26: never by colour alone; VoiceOver's sentence says it too)
-            let range = tint == .plain || tint == .grey ? nil : latest.flatMap { RangeState.of($0.sgv, config.bands) }
+            let range: RangeState? = if case .range(let r) = tint { r } else { nil }
             if let readAt {
                 tooltip =
                     if let range {

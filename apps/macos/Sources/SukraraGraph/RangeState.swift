@@ -37,6 +37,18 @@ public enum RangeState: String, CaseIterable, Sendable {
         if let pill, !pill.tonal, pill.kind == "carbs" || pill.kind == "rapid" { return nil }
         return of(sgv, bands.sane())
     }
+
+    /// The colour of a value in this range on the card (`GraphPalette.at`): the menu bar's ink starts from it.
+    public func color(dark: Bool) -> CGColor {
+        let p = GraphPalette.of(dark: dark)
+        return switch self {
+        case .veryLow: p.veryLow
+        case .low: p.low
+        case .high: p.high
+        case .veryHigh: p.veryHigh
+        case .extremelyHigh: p.extremelyHigh
+        }
+    }
 }
 
 /// The range word under (or beside) an out-of-range value: the word in the card's primary ink on a pill tinted with the

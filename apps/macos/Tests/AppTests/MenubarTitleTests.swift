@@ -68,10 +68,13 @@ import Testing
         }
     }
 
+    /// Every ink the title can have: each range's and the grey.
+    static let inks: [MenubarTitle.Tint] = RangeState.allCases.map { .range($0) } + [.grey]
+
     /// #8: the title keeps its colour but every ink passes 4.5:1 on every bar it can be drawn on, light or dark, plain or
     /// over a wallpaper (the system orange was about 2.2:1 and the red 3.6:1 on a light bar).
     @Test func inksAreReadableOnLightAndDarkBars() throws {
-        for tint in [MenubarTitle.Tint.below, .above, .grey] {
+        for tint in Self.inks {
             for dark in [false, true] {
                 let ink = try #require(MenubarInk.rgb(tint, dark: dark))
                 for g in dark ? MenubarInk.darkBars : MenubarInk.lightBars {
@@ -84,9 +87,37 @@ import Testing
         #expect(MenubarInk.rgb(.plain, dark: false) == nil && MenubarInk.rgb(.plain, dark: true) == nil)
     }
 
+    /// #257: a value's ink is its range's colour on the card: the very colour where that reads on the bar (276, very
+    /// high, on a dark bar: the card's #FF7A45, not the old system orange), else the nearest deeper / paler shade of it.
+    @Test func inksAreTheCardsRangeColours() throws {
+        func near(_ a: MenubarInk.RGB, _ b: MenubarInk.RGB) -> Bool {
+            abs(a.r - b.r) < 0.002 && abs(a.g - b.g) < 0.002 && abs(a.b - b.b) < 0.002
+        }
+        for dark in [false, true] {
+            for r in RangeState.allCases {
+                let card = MenubarInk.card(r, dark: dark)
+                let ink = try #require(MenubarInk.rgb(.range(r), dark: dark))
+                let bars = dark ? MenubarInk.darkBars : MenubarInk.lightBars
+                let readsAsIs = bars.allSatisfy { MenubarInk.contrast(card, ($0, $0, $0)) >= MenubarInk.minContrast }
+                if readsAsIs {
+                    #expect(near(ink, card), "\(r) \(dark ? "dark" : "light"): the card's colour as it is")
+                } else {
+                    // the same hue: every channel moved the same share of the way to black / white
+                    let t = dark ? (ink.r - card.r) / (1 - card.r) : 1 - ink.r / card.r
+                    let back: MenubarInk.RGB =
+                        dark
+                        ? (card.r + (1 - card.r) * t, card.g + (1 - card.g) * t, card.b + (1 - card.b) * t)
+                        : (card.r * (1 - t), card.g * (1 - t), card.b * (1 - t))
+                    #expect(t > 0 && t < 0.5 && near(ink, back), "\(r) \(dark ? "dark" : "light"): \(t)")
+                }
+            }
+        }
+        #expect(near(try #require(MenubarInk.rgb(.range(.veryHigh), dark: true)), (1, 0x7A / 255.0, 0x45 / 255.0)))
+    }
+
     /// The status item resolves the ink from the appearance the bar draws in (the button's), never one for both.
     @Test func theInkFollowsTheBarsAppearance() throws {
-        for tint in [MenubarTitle.Tint.below, .above, .grey] {
+        for tint in Self.inks {
             let color = try #require(StatusItemController.color(tint))
             for (name, dark) in [(NSAppearance.Name.aqua, false), (.darkAqua, true)] {
                 var got: NSColor?
@@ -130,8 +161,10 @@ import Testing
         #expect(late.value == "112" && !late.strike && late.tint == .plain)
         let stale = title(minutesAgo: 10, mgdl: 60)
         #expect(stale.strike && stale.tint == .grey, "a stale value is grey even when low")
-        #expect(title(minutesAgo: 1, mgdl: 60).tint == .below)
-        #expect(title(minutesAgo: 1, mgdl: 240).tint == .above)
+        #expect(title(minutesAgo: 1, mgdl: 60).tint == .range(.low))
+        #expect(title(minutesAgo: 1, mgdl: 240).tint == .range(.high))
+        #expect(title(minutesAgo: 1, mgdl: 276).tint == .range(.veryHigh))
+        #expect(title(minutesAgo: 1, mgdl: 320).tint == .range(.extremelyHigh))
         // the range in words too, never by colour alone (#26)
         let low = title(minutesAgo: 1, mgdl: 60)
         #expect(low.tooltip.hasPrefix("Sukrara · Low · reading at "))
