@@ -46,6 +46,7 @@ import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.GarminUpdateTip
+import app.mauri.sukrara.feature.home.banners.SharingUpdateTip
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.RoundedFont
 import app.mauri.sukrara.protocol.event.Avatar
@@ -193,6 +194,11 @@ class HomeGallery {
             "garmin-update-banner-newer" to
                 ui(Samples.wearer(), banner = BannerKind.GarminUpdate)
                     .copy(garminUpdate = GarminUpdateTip("Descent Mk3i 43mm", "app", DsR.string.ds_source_short_sukrara, newer = true)),
+            // docs/48: a follower's Sukrara is newer than this wearer's (its version notice), or someone joining's
+            "sharing-update-banner" to
+                ui(Samples.wearer(), banner = BannerKind.SharingUpdate).copy(sharingUpdate = SharingUpdateTip(listOf("Mom"), false)),
+            "sharing-update-banner-invitee" to
+                ui(Samples.wearer(), banner = BannerKind.SharingUpdate).copy(sharingUpdate = SharingUpdateTip(emptyList(), true)),
             "widget-banner" to ui(Samples.wearer(), banner = BannerKind.AddWidget),
             // the launcher can't place it from the app: the hand-made way, no button (Close is the exit)
             "widget-banner-manual" to ui(Samples.wearer(), banner = BannerKind.AddWidget).copy(widgetPinnable = false),

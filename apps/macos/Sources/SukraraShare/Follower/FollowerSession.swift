@@ -174,6 +174,12 @@ public struct FollowerSession: Sendable {
             FollowerMessages.leaveBody(), identity: state.identity, ttl: Wire.ttlLeave, now: now)
     }
 
+    /// The `version` notice to the wearer (docs/48: their events are older than this app reads).
+    public func versionNotice(now: Int) throws(CryptoError) -> SignedEvent {
+        try messages.toOwner(
+            FollowerMessages.versionBody(), identity: state.identity, ttl: Wire.ttlVersion, now: now)
+    }
+
     public func historyRequest(since hourStart: Int, now: Int) throws(CryptoError) -> SignedEvent {
         try messages.toOwner(
             FollowerMessages.historyBody(since: hourStart), identity: state.identity, ttl: Wire.ttlHistory, now: now)

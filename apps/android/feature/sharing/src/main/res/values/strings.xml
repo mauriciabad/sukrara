@@ -286,11 +286,6 @@
     <string name="sh_followers_since">Following since %1$s</string>
     <string name="sh_followers_newer">Has a newer Sukrara</string>
     <string name="sh_followers_older">Needs to update Sukrara</string>
-    <string name="sh_followers_update_one">Until then, %1$s can\'t see your new readings.</string>
-    <plurals name="sh_followers_update_many">
-        <item quantity="one">Until then, %d follower can\'t see your new readings.</item>
-        <item quantity="other">Until then, %d followers can\'t see your new readings.</item>
-    </plurals>
     <!-- Followers: footer -->
     <string name="sh_followers_footer">Each follower sees your glucose, alerts and treatments. Remove a device you no longer use here.</string>
     <!-- Follower dialog: close -->

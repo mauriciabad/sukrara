@@ -4,6 +4,7 @@
 package app.mauri.sukrara.designsystem.banner
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import app.mauri.sukrara.core.designsystem.R
 
@@ -55,3 +56,24 @@ fun updateBanner(
         onDismiss = null,
         tone = NoticeTone.Warning,
     )
+
+/**
+ * *Update Sukrara* on the wearer's phone (Settings › Sharing and home's banner, docs/48): followers whose Sukrara is
+ * newer can't read this phone's readings: the one [newer] named, or how many; else someone with a newer Sukrara tried
+ * to join ([invitee]). null when neither.
+ */
+@Composable
+fun sharingUpdateBanner(
+    newer: List<String>,
+    invitee: Boolean,
+    onUpdate: () -> Unit,
+): Banner? {
+    val text =
+        when {
+            newer.size == 1 && newer[0].isNotBlank() -> stringResource(R.string.ds_update_followers_one, newer[0])
+            newer.isNotEmpty() -> pluralStringResource(R.plurals.ds_update_followers_many, newer.size, newer.size)
+            invitee -> stringResource(R.string.ds_update_invitee)
+            else -> return null
+        }
+    return updateBanner("sharing", stringResource(R.string.ds_update_sukrara), text, onUpdate)
+}

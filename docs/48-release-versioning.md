@@ -292,6 +292,18 @@ A change that must move one of these is a new format beside the old one, not a v
   updated." + *Update*, or *They need to update Sukrara* · "Their Sukrara is older than this one. Open the invite
   again once they update it." (the invite's name is inside what can't be read: *They*).
 
+- **The older side learns it is older** (the owner, 2026-11-23: "how does an outdated app [know it] needs to be
+  updated so their peers can read the data?"). Watch and phone already tell each other (the fetch's `v=`, a write's
+  `r: v`); sharing is one-way, so a follower or someone joining whose Sukrara is newer sends the frozen **version
+  notice** (PROTOCOL-v2 "Version notice": `{"v":n,"type":"version"}` in a gift wrap to the wearer's identity; a
+  week's expiry; once a run then daily; an invitee from a one-time key). Every version reads it, so it ships in v2 for
+  the one v2 → v3 move expected before 1.0. The wearer's phone shows it on Settings › Sharing (the row and the
+  notice) and in **home's banner place** (`BannerKind.SharingUpdate`, `sharingUpdateBanner`: *Update Sukrara* ·
+  "Until then, Mom can't see your new readings." / "… 2 followers …" / "… someone with a newer Sukrara can't follow
+  you." + *Update*); a wrap of another version stays unhandled so a restart reads it again. One message, no settings,
+  no notification. The older follower needs nothing new: it gets the newer wearer's events and says *Update Sukrara*
+  already; over Bluetooth the HELLO's and INFO's `v` cover the same.
+
 ### Draft: States and exits (for FEATURES.md when built)
 
 **States and exits**: *versions match* → nothing shown. *A device can't read the other's format* → the device in view

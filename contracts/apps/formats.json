@@ -8,12 +8,13 @@
       "spec": "contracts/protocol/PROTOCOL-v2.md",
       "apps": ["android", "mac"],
       "reads": "current",
-      "carries": "live readings, hour chunks, settings, roster, owner backup, alerts, the 30500 / 30501 rumors (request, profile, rekey, history, leave, key, revoked, invite-used, declined, pair), Bluetooth's HELLO / INFO and backlog",
+      "carries": "live readings, hour chunks, settings, roster, owner backup, alerts, the 30500 / 30501 rumors (request, profile, rekey, history, leave, version, key, revoked, invite-used, declined, pair), Bluetooth's HELLO / INFO and backlog",
       "frozen": {
         "kinds": [21078, 21079, 30078, 1059, 30500, 30501],
         "tag": "gk",
         "content": ["v"],
-        "hello": ["v"]
+        "hello": ["v"],
+        "notice": "{\"v\":<version>,\"type\":\"version\"}"
       }
     },
     {

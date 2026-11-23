@@ -979,7 +979,11 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
       On the wearer (the gallery's `followers-update`): a follower on another version that changes its profile or
       asks for history shows *Has a newer Sukrara* (and the page's *Update Sukrara* notice, its *Update* opening About
       / the Play listing) or *Needs to update Sukrara* on its row; the same over Bluetooth with the relay stopped; the
-      row says *Following since* again at that follower's first readable message.
+      row says *Following since* again at that follower's first readable message. With the wearer's build older:
+      within a minute of the follower's first refused event home shows *Update Sukrara* · "Until then, <name> can't
+      see your new readings." (no close; *Update* opens About / the Play listing), still there after force-stopping
+      and reopening the wearer's app; an invite opened by a newer phone shows "… someone with a newer Sukrara can't
+      follow you." while the invite is open; the relay log shows one `version` wrap per run, not more.
       An invite link from a wearer on another version (debug: `Wire.INVITE_V` changed on one side): the join step /
       the Mac's Follow says *Update Sukrara* with *Update* (newer invite) or *They need to update Sukrara* (older),
       nothing is saved; the Mac's pictures `follow-error-update` / `follow-error-inviter-update`.

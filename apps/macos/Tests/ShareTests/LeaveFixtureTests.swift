@@ -159,6 +159,14 @@ struct LeaveFixtureTests {
         #expect(await eventually { await h.stores.leaves.load() == nil })
         await h.runtime.stop()
     }
+
+    /// PROTOCOL-v2 "Version notice": frozen in every version, `{"v":n,"type":"version"}` and nothing else.
+    @Test func theVersionNoticeIsFrozen() throws {
+        let body = try JSONSerialization.jsonObject(with: Data(JSONText.encode(FollowerMessages.versionBody()).utf8))
+        let o = try #require(body as? [String: Any])
+        #expect(Set(o.keys) == ["v", "type"])
+        #expect(o["v"] as? Int == Wire.version && o["type"] as? String == "version")
+    }
 }
 
 extension Array {

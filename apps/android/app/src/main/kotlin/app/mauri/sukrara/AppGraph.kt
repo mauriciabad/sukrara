@@ -43,6 +43,7 @@ import app.mauri.sukrara.feature.home.PenRead
 import app.mauri.sukrara.feature.home.PhoneAppProblem
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
+import app.mauri.sukrara.feature.home.banners.SharingUpdateTip
 import app.mauri.sukrara.feature.sensor.SensorUiModule
 import app.mauri.sukrara.feature.settings.AlertPlayback
 import app.mauri.sukrara.feature.settings.AlertSettingsStore
@@ -1326,6 +1327,15 @@ class AppGraph(
                 integrations.aura.state
                     .map(AppGarmin::update)
                     .distinctUntilChanged()
+            },
+            // this phone's Sukrara is older than its followers' (docs/48)
+            sharingUpdate = {
+                shareOwner.ownerEngine.state
+                    .map { s ->
+                        (s as? OwnerShareState.Sharing)
+                            ?.takeIf { it.updateNeeded }
+                            ?.let { SharingUpdateTip(it.newerFollowers.map { f -> f.name }, it.newerInvitee) }
+                    }.distinctUntilChanged()
             },
         )
     }

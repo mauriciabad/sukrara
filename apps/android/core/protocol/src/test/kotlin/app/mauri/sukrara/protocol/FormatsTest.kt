@@ -55,6 +55,16 @@ class FormatsTest {
             listOf(Wire.KIND_LIVE, Wire.KIND_ALERT, Wire.KIND_DATA, Wire.KIND_WRAP, Wire.KIND_TO_OWNER, Wire.KIND_TO_FOLLOWER),
             kinds,
         )
+        // the version notice: its shape never changes, so every version reads it (PROTOCOL-v2 "Version notice")
+        assertEquals(
+            format("sharing")
+                .frozen()
+                .getValue("notice")
+                .jsonPrimitive.content
+                .replace("<version>", Wire.V.toString()),
+            app.mauri.sukrara.protocol.event.RumorCodec
+                .encode(app.mauri.sukrara.protocol.event.Rumor.Version),
+        )
         val invite = format("invite").frozen()
         assertEquals(InviteLink.INVITE_BASE, invite.getValue("link").jsonPrimitive.content)
         assertEquals(Wire.KIND_INVITE, invite.getValue("kind").jsonPrimitive.int)

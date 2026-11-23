@@ -10,4 +10,5 @@ kind: feature
   the reason names it (*Update Sukrara*, with one button to this copy's update, or *Ana needs to update Sukrara*) over
   the last value, and clears itself once the readings come again. Its *No data* alarm says the same, with *Update*,
   and the wearer's Settings › Sharing says it on that follower's row. An invite from a Sukrara of another version says
-  which one to update instead of failing.
+  which one to update instead of failing. A wearer whose Sukrara is older than a follower's is told so on home, with
+  *Update*.

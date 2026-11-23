@@ -106,6 +106,7 @@ import app.mauri.sukrara.designsystem.banner.Banner
 import app.mauri.sukrara.designsystem.banner.BannerChoice
 import app.mauri.sukrara.designsystem.banner.BannerSlot
 import app.mauri.sukrara.designsystem.banner.NoticeTone
+import app.mauri.sukrara.designsystem.banner.sharingUpdateBanner
 import app.mauri.sukrara.designsystem.banner.updateBanner
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
@@ -1212,6 +1213,7 @@ private fun banner(
             BannerKind.LibreAppStopped,
             BannerKind.ClinicUploadBehind,
             BannerKind.GarminUpdate,
+            BannerKind.SharingUpdate,
             -> NoticeTone.Warning
 
             else -> if (kind.safety) NoticeTone.Error else NoticeTone.Info
@@ -1402,6 +1404,12 @@ private fun banner(
             updateBanner(stringResource(tip.name), tip.watch, tip.newer) {
                 callbacks.onAction(HomeAction.UpdateGarmin(tip.app, tip.newer))
             }
+        }
+
+        // Settings › Sharing's own notice; no close: it ends by itself
+        BannerKind.SharingUpdate -> {
+            val tip = state.sharingUpdate ?: return null
+            sharingUpdateBanner(tip.newer, tip.invitee) { callbacks.onAction(HomeAction.UpdateSukrara) }
         }
 
         // one tap turns sending on (the tip leaves, the snackbar says where it changes); the close is remembered per app

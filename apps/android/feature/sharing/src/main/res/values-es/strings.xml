@@ -152,12 +152,6 @@
     <string name="sh_followers_since">Te sigue desde el %1$s</string>
     <string name="sh_followers_newer">Tiene un Sukrara más nuevo</string>
     <string name="sh_followers_older">Tiene que actualizar Sukrara</string>
-    <string name="sh_followers_update_one">Hasta entonces, %1$s no puede ver tus lecturas nuevas.</string>
-    <plurals name="sh_followers_update_many">
-        <item quantity="one">Hasta entonces, %d seguidor no puede ver tus lecturas nuevas.</item>
-        <item quantity="many">Hasta entonces, %d seguidores no pueden ver tus lecturas nuevas.</item>
-        <item quantity="other">Hasta entonces, %d seguidores no pueden ver tus lecturas nuevas.</item>
-    </plurals>
     <string name="sh_followers_footer">Cada seguidor ve tu glucosa, alertas y tratamientos. Quita aquí un dispositivo que ya no uses.</string>
     <string name="sh_followers_close">Cerrar</string>
     <string name="sh_followers_remove">Quitar</string>

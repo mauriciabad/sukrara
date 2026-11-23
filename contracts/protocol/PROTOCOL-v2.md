@@ -54,7 +54,8 @@ request) arrive already expired ("invalid: event expired", found 2026-10-17). Fo
 request only with a valid, unexpired invite token (and the owner still confirms it in the UI).
 
 TTLs (Android and Mac, both from now): access request, profile update, rekey request, invite used and declined **7 d**;
-history request **1 d**; key delivery and revoked **30 d**; leave **365 d**; the invite wrap until the invite expires. A key delivery
+history request **1 d**; key delivery and revoked **30 d**; leave **365 d**; version notice **7 d**; the invite wrap
+until the invite expires. A key delivery
 whose `sid` differs from the one the follower already has is rejected: a stream's `sid` never changes.
 
 ### Relay rules (learned while testing, 2026-10-16)
@@ -303,6 +304,28 @@ per-place windows and sensor time, the alerts main switch) is per device and nev
   `type == "settings"`; the **newest `u` wins** (an older or equal one is ignored). A follower that stops following
   forgets it (the next wearer's `u` may be older). Android `WearerSettings.received`, Mac `WearerSettings.received`.
 - Privacy: followers already see the readings; the settings are encrypted to the group key like every other event.
+
+## Version notice — frozen, 2026-11-23 (#262)
+
+Sharing is one-way: a wearer whose Sukrara is older than a follower's would never learn it (its followers rarely
+write, and it can't read their newer messages), so the older side tells nobody to update. The newer side tells it, in
+one message whose shape **never changes in any version** (THE VERSION RULE,
+[docs/48](../../docs/48-release-versioning.md#when-versions-differ)): every version reads its `v`.
+
+| Event | kind | signed by | tags | content (decrypted) |
+|---|---|---|---|---|
+| **version** | rumor kind 30500 in NIP-59 gift wrap (1059) to `I` | seal by `F` (or a one-time key, below) | `["p", I]`, `["expiration", now + 7 d]` | `{"v":2,"type":"version"}`: the sender's version, nothing else |
+
+- **A follower** whose wearer's events are of an older `v` sends it once a run as soon as it sees one, then at most
+  daily while it lasts (Android `FollowerEngine.tellVersion`, Mac `FollowerRuntime.tellVersion`).
+- **Someone opening an invite** of an older invite `v` (from the link's own identity) sends it from a one-time key:
+  nothing of theirs exists before *Follow* (Android `FollowerEngine.lookUp`, Mac `lookUpInvite`).
+- **The wearer** reads it like any gift wrap to `I`: of its own `v` it only ends an earlier mismatch of that sender; of
+  another `v` it is a message of another version (Another version, above): a follower's row and, when the sender's is
+  newer, the update notice on Settings › Sharing and home's banner; from someone not following, the notice while an
+  invite is open. A wrap of another version is **not marked as handled**, so it is read again at every start while
+  the relays keep it and the notice survives a restart; the follower's daily resend covers a longer one.
+- Quiet: no notification, no alert; it ends by itself at that sender's first readable message.
 
 ## Leave — v2 addition, 2026-11-18 (#213)
 

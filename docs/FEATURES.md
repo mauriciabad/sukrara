@@ -3137,7 +3137,11 @@ each reads only the current version, but every mismatch is detected and **the de
   history, leave, an entry it adds, or its Bluetooth HELLO) is of another version is read no further and its row says
   who updates instead of *Following since*: *Has a newer Sukrara* (then the page's notice: *Update Sukrara* · "Until
   then, Mom can't see your new readings." + **Update**; several: "… 2 followers can't …") or *Needs to update
-  Sukrara*. Not saved: their next readable message clears it.
+  Sukrara*. Not saved: their next readable message clears it. **The older side learns it**: a follower (or someone
+  opening an invite) whose Sukrara is newer sends the frozen *version notice* (PROTOCOL-v2), so the wearer's phone
+  says it on Settings › Sharing and in **home's banner place** (*Update Sukrara* · "Until then, Mom can't see your
+  new readings." / "… someone with a newer Sukrara can't follow you." + **Update**; no close, it ends by itself); a
+  restart reads it again while the relays keep it, the follower resends daily.
 - **Invites** (Android's join step, the Mac's Follow): an invite link whose invite is of another version (from the
   inviter's own identity) opens nothing and says who updates, in the notice's pattern: *Update Sukrara* · "This invite
   needs a newer Sukrara. Open it again once this one is updated." + **Update**, or *They need to update Sukrara* ·
@@ -3148,8 +3152,8 @@ each reads only the current version, but every mismatch is detected and **the de
 (Android home, the Mac's panel, widgets) names the app to update; *Update* opens this copy's update (this one older),
 nothing to tap when the wearer's is older; the stored readings stay, ageing, and alerts go on over them (the No data
 alarm names the app to update, *Update* among its buttons when it is this one). *The wearer gets a follower's message of
-another version* → that follower's row on Settings › Sharing says who updates, and the page's notice has *Update* when
-it is this phone. *An invite of another version* → the join step / Follow says who updates (*Update* when this app);
+another version* → that follower's row on Settings › Sharing says who updates, and the page's notice and home's banner
+have *Update* when it is this phone. *An invite of another version* → the join step / Follow says who updates (*Update* when this app);
 nothing saved or sent; Cancel / another link as always. Out: updating
 either app, which clears it at the first event read (no tap). *The watch reads another version* → the Garmin page's notice,
 the watch's line and the app's row name the app to update, with one button to that update; on the watch the face's

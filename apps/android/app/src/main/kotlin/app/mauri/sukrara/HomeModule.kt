@@ -39,6 +39,7 @@ import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.home.banners.GarminTip
 import app.mauri.sukrara.feature.home.banners.GarminUpdateTip
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
+import app.mauri.sukrara.feature.home.banners.SharingUpdateTip
 import app.mauri.sukrara.feature.treatments.TreatmentLog
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.share.owner.OwnerShareState
@@ -129,6 +130,8 @@ class HomeModule(
     /** Sukrara's apps on a watch while sending to it is off (the Garmin tip); a function: integrations start later. */
     private val garminOff: () -> Flow<GarminTip?> = { flowOf(null) },
     private val garminUpdate: () -> Flow<GarminUpdateTip?> = { flowOf(null) },
+    /** The wearer's Sukrara is older than its followers' (docs/48). */
+    private val sharingUpdate: () -> Flow<SharingUpdateTip?> = { flowOf(null) },
 ) : HomeDeps {
     override val treatments: TreatmentsRepository get() = data.treatments
 
@@ -189,6 +192,7 @@ class HomeModule(
         scope.launch { maintenanceAhead().collect { w -> env.update { it.copy(maintenanceAhead = w) } } }
         scope.launch { garminOff().collect { t -> env.update { it.copy(garminOff = t) } } }
         scope.launch { garminUpdate().collect { t -> env.update { it.copy(garminUpdate = t) } } }
+        scope.launch { sharingUpdate().collect { t -> env.update { it.copy(sharingUpdate = t) } } }
         // LibreView maintenance's *Read the sensor in Sukrara*: only where MoveRules allow it
         scope.launch {
             combine(moveFamily(), loopApp) { family, loop -> MoveRules.mayOffer(yours = family, testedFamily = family, loopApp = loop) }

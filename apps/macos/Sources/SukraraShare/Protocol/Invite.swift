@@ -91,6 +91,13 @@ public struct InviteOpener: Sendable {
                 profile: body.object("profile").flatMap(Profile.init(wire:))))
     }
 
+    /// Who sealed `wrap` (the inviter's identity), when it opens with the link's key: the older inviter gets the
+    /// `version` notice (docs/48).
+    public func inviter(_ wrap: SignedEvent, link: InviteLink) -> String? {
+        guard crypto.verify(wrap), let rumor = try? crypto.unwrap(wrap, with: link.inviteKey) else { return nil }
+        return rumor.sender
+    }
+
     /// The first wrap that opens; otherwise the most telling failure (another version > fingerprint > expired > not an
     /// invite).
     public func open(_ wraps: [SignedEvent], link: InviteLink, now: Int) -> Result<Invite, InviteFailure> {

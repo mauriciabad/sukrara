@@ -138,8 +138,14 @@ class InviteVectorsTest {
                     ).replace("\"v\":${Wire.INVITE_V}", "\"v\":$v")
             return crypto.giftWrap(i, key.public, Wire.KIND_INVITE, rumor, ogs.now, ogs.now + 3600)
         }
-        assertEquals(Invites.Result.Failed(InviteFailure.Newer), Invites.open(crypto, link, listOf(wrap(Wire.INVITE_V + 1)), ogs.now))
-        assertEquals(Invites.Result.Failed(InviteFailure.Older), Invites.open(crypto, link, listOf(wrap(Wire.INVITE_V - 1)), ogs.now))
+        assertEquals(
+            Invites.Result.Failed(InviteFailure.Newer, i.public),
+            Invites.open(crypto, link, listOf(wrap(Wire.INVITE_V + 1)), ogs.now),
+        )
+        assertEquals(
+            Invites.Result.Failed(InviteFailure.Older, i.public),
+            Invites.open(crypto, link, listOf(wrap(Wire.INVITE_V - 1)), ogs.now),
+        )
         // another identity's invite of another version is still the wrong wearer, not an update
         val other = InviteLink.of(ogs.key("F").public, secret)
         assertEquals(

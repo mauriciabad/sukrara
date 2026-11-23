@@ -27,6 +27,8 @@ public enum Wire {
     // Gift-wrap TTLs (absolute expiration = now + TTL), seconds.
     public static let ttlRequest = 7 * 86_400
     public static let ttlHistory = 86_400
+    /// A follower's `version` notice (PROTOCOL-v2 "Version notice"): a week, sent again at most daily while it lasts.
+    public static let ttlVersion = 7 * 86_400
     public static let ttlTreatment = 30 * 86_400
     /// A follower's `leave` (PROTOCOL-v2 "Leave"): a year on the relays, so a wearer's phone off for long still gets it.
     public static let ttlLeave = 365 * 86_400

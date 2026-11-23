@@ -180,6 +180,11 @@ class HandleInbox(private val ctx: OwnerContext) {
                 leave(s, sender, createdAt, now) ?: none
             }
 
+            // the same version as this phone: nothing to do but end an earlier mismatch (readFrom)
+            Rumor.Version -> {
+                none
+            }
+
             else -> {
                 none
             }

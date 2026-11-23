@@ -59,6 +59,16 @@ sealed interface Rumor {
         override val type = "leave"
     }
 
+    /**
+     * Follower → owner (30500): "this is the version I speak", `{"v":n,"type":"version"}` and nothing else, frozen in
+     * every version (PROTOCOL-v2 "Version notice"): sent by a follower that can't read the wearer's older events, so
+     * the wearer's phone learns that it is the one to update.
+     */
+    data object Version : Rumor {
+        override val kind = Wire.KIND_TO_OWNER
+        override val type = "version"
+    }
+
     /** Owner → follower (30501): the read key of [epoch] (as nsec), the stream id and the publishing devices. */
     data class KeyDelivery(
         val sid: String,
@@ -150,7 +160,7 @@ object RumorCodec {
                 put("profile", r.profile?.toJson() ?: JsonNull)
             }
 
-            Rumor.Revoked, Rumor.InviteUsed, Rumor.Declined, Rumor.Leave -> {
+            Rumor.Revoked, Rumor.InviteUsed, Rumor.Declined, Rumor.Leave, Rumor.Version -> {
                 Unit
             }
         }
@@ -210,6 +220,10 @@ object RumorCodec {
 
             "leave" -> {
                 Rumor.Leave
+            }
+
+            "version" -> {
+                Rumor.Version
             }
 
             else -> {

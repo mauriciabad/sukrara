@@ -63,4 +63,15 @@ class OtherVersionInboxTest {
                 .name,
         )
     }
+
+    /** PROTOCOL-v2 "Version notice": frozen in every version, `{"v":n,"type":"version"}` and nothing else. */
+    @Test fun theVersionNoticeIsFrozenAndSaysWhoUpdates() {
+        assertEquals("{\"v\":${Wire.V},\"type\":\"version\"}", RumorCodec.encode(Rumor.Version))
+        val newer = HandleInbox(ctx)(s, wrap(Rumor.Version, Wire.V + 1), NOW)
+        assertEquals(InboxSignal.OtherVersion(follower.public.hex, newer = true), newer.signal)
+        val same = HandleInbox(ctx)(s, wrap(Rumor.Version, Wire.V), NOW)
+        assertEquals(follower.public.hex, same.readFrom)
+        assertEquals(s, same.step.state)
+        assertNull(same.signal)
+    }
 }

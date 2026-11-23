@@ -320,5 +320,11 @@
     <string name="ds_update_sukrara">Update Sukrara</string>
     <string name="ds_update_text">Until then, it shows only your glucose on %1$s.</string>
     <string name="ds_update_newer_text">Until then, %1$s on %2$s shows only your glucose.</string>
+    <string name="ds_update_followers_one">Until then, %1$s can\'t see your new readings.</string>
+    <plurals name="ds_update_followers_many">
+        <item quantity="one">Until then, %d follower can\'t see your new readings.</item>
+        <item quantity="other">Until then, %d followers can\'t see your new readings.</item>
+    </plurals>
+    <string name="ds_update_invitee">Until then, someone with a newer Sukrara can\'t follow you.</string>
     <string name="ds_update">Update</string>
 </resources>

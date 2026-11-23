@@ -32,6 +32,13 @@ struct FormatsTests {
         #expect(
             (sharing["kinds"] as! [Int]).map(UInt16.init)
                 == [Wire.kindLive, Wire.kindAlert, Wire.kindData, Wire.kindWrap, Wire.kindToOwner, Wire.kindToFollower])
+        // the version notice: its shape never changes, so every version reads it (PROTOCOL-v2 "Version notice")
+        let notice = (sharing["notice"] as! String).replacingOccurrences(of: "<version>", with: "\(Wire.version)")
+        let frozen = try! JSONSerialization.jsonObject(with: Data(notice.utf8)) as! [String: Any]
+        let sent =
+            try! JSONSerialization.jsonObject(with: Data(JSONText.encode(FollowerMessages.versionBody()).utf8))
+            as! [String: Any]
+        #expect(NSDictionary(dictionary: frozen).isEqual(to: sent))
         let invite = Self.format("invite")["frozen"] as! [String: Any]
         #expect(invite["link"] as? String == Wire.inviteBase)
         #expect(UInt16(invite["kind"] as! Int) == Wire.kindInvite)

@@ -51,7 +51,15 @@ sealed interface OwnerShareState {
          * message says it again): key → true when theirs is newer (this phone updates), false when they update.
          */
         val otherVersions: Map<String, Boolean> = emptyMap(),
+        /** Someone with a newer Sukrara tried to join while an invite is open (their `version` notice, docs/48). */
+        val newerInvitee: Boolean = false,
     ) : OwnerShareState {
+        /** The active followers whose Sukrara is newer than this phone's (it updates). */
+        val newerFollowers: List<FollowerRecord> get() = followers.filter { it.active && otherVersions[it.key] == true }
+
+        /** This phone is the one to update for someone (a follower, or one who tried to join). */
+        val updateNeeded: Boolean get() = newerInvitee || newerFollowers.isNotEmpty()
+
         /** The identity is somewhere besides this phone: the password manager, a recovery code kept, or where it came from. */
         val backedUp: Boolean get() = passwordManagerSavedAt > 0 || recoveryExportedAt > 0 || restoredAt > 0
     }

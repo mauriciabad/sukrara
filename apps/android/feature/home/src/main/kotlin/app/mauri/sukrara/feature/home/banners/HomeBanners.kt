@@ -70,6 +70,13 @@ enum class BannerKind(val safety: Boolean) {
      */
     GarminUpdate(safety = false),
 
+    /**
+     * The wearer's followers (or someone joining) have a newer Sukrara ([HomeEnvironment.sharingUpdate], docs/48): the
+     * designsystem's update notice, Settings › Sharing's own, with *Update*. It can't be closed: it ends by itself at
+     * those followers' first readable message.
+     */
+    SharingUpdate(safety = false),
+
     /** First-run setup isn't finished: the next step. "Later" hides it for [SETUP_LATER]. */
     FinishSetup(safety = false),
 
@@ -125,6 +132,8 @@ data class HomeEnvironment(
     val garminOff: GarminTip? = null,
     /** One of Sukrara's apps on a watch reads another payload version; null = every one reads this phone's. */
     val garminUpdate: GarminUpdateTip? = null,
+    /** This phone's Sukrara is older than its followers'; null = it isn't. */
+    val sharingUpdate: SharingUpdateTip? = null,
 ) {
     /** The Garmin tip while one of the apps found isn't closed ([GarminTip.keys]). */
     fun garminShown(memory: BannerMemory): GarminTip? = garminOff?.takeIf { t -> t.keys.any { !memory.dismissedKey(it) } }
@@ -170,6 +179,12 @@ data class GarminUpdateTip(
     val app: String,
     @param:StringRes val name: Int,
     val newer: Boolean,
+)
+
+/** What home's sharing update banner names ([BannerKind.SharingUpdate]): the newer followers, or someone joining. */
+data class SharingUpdateTip(
+    val newer: List<String>,
+    val invitee: Boolean,
 )
 
 /**
@@ -251,6 +266,7 @@ private val KEYED =
         BannerKind.RestartSystemUi,
         BannerKind.GarminOff,
         BannerKind.GarminUpdate,
+        BannerKind.SharingUpdate,
     )
 
 /** "Later" on Finish setup: it comes back after a day until setup is done. */
@@ -281,6 +297,7 @@ object HomeBanners {
                     BannerKind.ClinicUploadBehind -> env.behindKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.RestartSystemUi -> env.restartKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.GarminUpdate -> env.garminUpdate != null
+                    BannerKind.SharingUpdate -> env.sharingUpdate != null
                     BannerKind.FinishSetup -> env.nextSetupStep != null
                     BannerKind.TurnOnUpdates -> env.updateChecksOff == true
                     BannerKind.GarminOff -> env.garminShown(memory) != null

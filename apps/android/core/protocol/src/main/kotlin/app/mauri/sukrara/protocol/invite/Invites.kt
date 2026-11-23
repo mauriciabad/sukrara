@@ -112,6 +112,7 @@ object Invites {
     fun open(crypto: NostrCrypto, link: InviteLink, wraps: List<SignedEvent>, now: Long): Result {
         val key = inviteKey(crypto, link)
         var failure = InviteFailure.NothingFound
+        var inviter: PublicKeyHex? = null
         for (w in wraps) {
             if (!crypto.verify(w)) continue
             val u = crypto.unwrap(key.secret, w)
@@ -140,6 +141,7 @@ object Invites {
                     }
 
                     version != null -> {
+                        inviter = u.sender
                         worst(failure, if (version.newer) InviteFailure.Newer else InviteFailure.Older)
                     }
 
@@ -160,7 +162,7 @@ object Invites {
                     }
                 }
         }
-        return Result.Failed(failure)
+        return Result.Failed(failure, inviter.takeIf { failure == InviteFailure.Newer || failure == InviteFailure.Older })
     }
 
     private fun worst(a: InviteFailure, b: InviteFailure) = if (b.ordinal > a.ordinal) b else a
@@ -168,7 +170,8 @@ object Invites {
     sealed interface Result {
         data class Opened(val invite: Invite) : Result
 
-        data class Failed(val reason: InviteFailure) : Result
+        /** [inviter]: with another version, the identity whose invite it is (the older one gets the `version` notice). */
+        data class Failed(val reason: InviteFailure, val inviter: PublicKeyHex? = null) : Result
     }
 
     /** The 4 digits the follower shows and the owner types: `int(sha256(F.pub_hex + token)) mod 10000`, zero-padded. */

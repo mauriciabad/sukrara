@@ -35,6 +35,9 @@ object Wire {
     const val TTL_HISTORY_REQUEST = DAY
     const val TTL_KEY_DELIVERY = 30 * DAY
 
+    /** A follower's `version` notice (PROTOCOL-v2 "Version notice"): a week, sent again at most daily while it lasts. */
+    const val TTL_VERSION = 7 * DAY
+
     /** A follower's `leave` (PROTOCOL-v2 "Leave"): kept on the relays a year, so a wearer's phone off for long still gets it. */
     const val TTL_LEAVE = 365 * DAY
 

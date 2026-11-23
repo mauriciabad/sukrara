@@ -36,9 +36,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
-import app.mauri.sukrara.designsystem.banner.Banner
 import app.mauri.sukrara.designsystem.banner.BannerSlot
-import app.mauri.sukrara.designsystem.banner.updateBanner
+import app.mauri.sukrara.designsystem.banner.sharingUpdateBanner
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
@@ -113,7 +112,7 @@ fun FollowersPage(
     val removed = state.followers.filter { !it.active }.sortedByDescending { it.revoked }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         // docs/48: followers with a newer Sukrara can't read this phone's readings until it updates
-        BannerSlot(updateNotice(active.filter { state.otherVersions[it.key] == true }, actions.updateSukrara))
+        BannerSlot(sharingUpdateBanner(state.newerFollowers.map { it.name }, state.newerInvitee, actions.updateSukrara))
         SettingsGroup {
             YouRow(state.profile, active.size, actions.profile)
             NavigationRow(
@@ -288,20 +287,3 @@ internal fun PersonRow(
 }
 
 private fun date(epochS: Long): String = followerDate(epochS)
-
-/** *Update Sukrara* for [newer], the followers whose Sukrara is newer: the one named, or how many. */
-@Composable
-private fun updateNotice(
-    newer: List<FollowerRecord>,
-    onUpdate: () -> Unit,
-): Banner? {
-    if (newer.isEmpty()) return null
-    val one = newer.singleOrNull()?.let { Profile.shownName(it.name) }?.takeIf { it.isNotBlank() }
-    val text =
-        if (one != null) {
-            stringResource(R.string.sh_followers_update_one, one)
-        } else {
-            pluralStringResource(R.plurals.sh_followers_update_many, newer.size, newer.size)
-        }
-    return updateBanner("followers", stringResource(DsR.string.ds_update_sukrara), text, onUpdate)
-}

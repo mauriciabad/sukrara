@@ -36,6 +36,11 @@ public struct FollowerMessages: Sendable {
         ["v": Wire.version, "type": "history", "since": hourStart]
     }
 
+    /// "This is the version I speak" and nothing else, frozen in every version (PROTOCOL-v2 "Version notice").
+    public static func versionBody() -> [String: Any] {
+        ["v": Wire.version, "type": "version"]
+    }
+
     /// This follower stopped following, or cancelled its waiting request (PROTOCOL-v2 "Leave"). Final for this key.
     public static func leaveBody() -> [String: Any] {
         ["v": Wire.version, "type": "leave"]

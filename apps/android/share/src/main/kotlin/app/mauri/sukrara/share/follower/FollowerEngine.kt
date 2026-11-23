@@ -355,6 +355,14 @@ class FollowerEngine(
                 waited += JOIN_RETRY_MS
             }
             opened = result
+            // docs/48: the inviter's Sukrara is older: the frozen `version` notice tells its phone (from a key of its
+            // own: nothing of this phone's is made before Follow)
+            val older = (result as? Invites.Result.Failed)?.takeIf { it.reason == InviteFailure.Older }?.inviter
+            if (older != null) {
+                val now = now()
+                lookup.publish(events.gift(crypto.generate(), older, Rumor.Version, now, now + Wire.TTL_VERSION))
+                delay(VERSION_PUBLISH_MS)
+            }
         } finally {
             lookup.stop()
         }
@@ -1239,6 +1247,23 @@ class FollowerEngine(
         setLink(
             LinkState(r.wearer?.name, r.lastHeardAt?.let(Instant::ofEpochSecond), revoked, r.stream.status == FollowStatus.Active, update),
         )
+        tellVersion(r)
+    }
+
+    /** When this follower last sent its `version` notice (in memory: once a run, then at most daily). */
+    private var versionToldAt = Long.MIN_VALUE / 2
+
+    /**
+     * docs/48: the wearer's events are older than this app reads, and the wearer's phone can't read this app's: the
+     * frozen `version` notice (PROTOCOL-v2 "Version notice") tells it, so its own Sharing page says to update.
+     */
+    private fun tellVersion(r: FollowerRecord) {
+        if (r.stream.update != FollowUpdate.Wearer) return
+        val identity = r.stream.identity ?: return
+        val now = now()
+        if (now - versionToldAt < Wire.DAY) return
+        versionToldAt = now
+        send(events.gift(r.stream.follower, identity, Rumor.Version, now, now + Wire.TTL_VERSION))
     }
 
     private fun sensorState(life: SensorLife?): SensorState =
@@ -1252,6 +1277,9 @@ class FollowerEngine(
     companion object {
         const val JOIN_TIMEOUT_MS = 25_000L
         private const val JOIN_RETRY_MS = 3_000L
+
+        /** How long the lookup stays connected for its `version` notice to reach the relays. */
+        private const val VERSION_PUBLISH_MS = 2_000L
         private const val FETCH_TIMEOUT_MS = 8_000L
         private const val HISTORY_DELAY_MS = 90_000L
 

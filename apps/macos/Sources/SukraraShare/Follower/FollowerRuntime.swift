@@ -114,6 +114,8 @@ public actor FollowerRuntime: FollowerService {
     /// Ends the wait for the wearer's answer at the invite's expiry (#181).
     private var expiryTask: Task<Void, Never>?
     private var lastHistoryRequest: Int?
+    /// When this follower last sent its `version` notice (once a run, then at most daily).
+    private var versionToldAt: Int?
     private var persisted: FollowerState?
     private var persistedAt = Date.distantPast
     private var started = false
@@ -395,7 +397,18 @@ public actor FollowerRuntime: FollowerService {
                         case .failure(.expired): heard.found(.expired)
                         case .failure(.fingerprintMismatch): heard.found(.fingerprintMismatch)
                         case .failure(.newer): heard.found(.updateToJoin)
-                        case .failure(.older): heard.found(.inviterUpdates)
+                        case .failure(.older):
+                            heard.found(.inviterUpdates)
+                            // docs/48: the inviter's Sukrara is older: the frozen `version` notice tells its phone
+                            // (from a key of its own: nothing of this Mac's is made before Follow)
+                            let at = Int(clock.now.timeIntervalSince1970)
+                            if heard.tell(), let inviter = opener.inviter(wrap, link: link),
+                                let notice = try? crypto.giftWrap(
+                                    kind: Wire.kindToOwner, content: JSONText.encode(FollowerMessages.versionBody()),
+                                    from: crypto.generateSecret(), to: inviter, expiration: at + Wire.ttlVersion)
+                            {
+                                await relays.publish(notice)
+                            }
                         case .failure(.notAnInvite): break
                         }
                     default: break
@@ -803,6 +816,16 @@ public actor FollowerRuntime: FollowerService {
 
     private func historyCheckDone() { historyTask = nil }
 
+    /// docs/48: the wearer's events are older than this app reads, and the wearer's phone can't read this app's: the
+    /// frozen `version` notice (PROTOCOL-v2 "Version notice") tells it, so its own Sharing page says to update.
+    private func tellVersion() async {
+        guard let session, session.update == .wearer, now - (versionToldAt ?? Int.min / 2) >= 86_400,
+            let notice = try? session.versionNotice(now: now)
+        else { return }
+        versionToldAt = now
+        await publish(notice)
+    }
+
     private func checkHistory() async {
         guard let session, session.state.status == .active else { return }
         let stored = (try? await stores.readings.load(since: clock.now.addingTimeInterval(-13 * 3600))) ?? []
@@ -870,6 +893,7 @@ public actor FollowerRuntime: FollowerService {
             me: session?.state.me ?? me, wearer: session?.state.wearer,
             untoldLeave: await leaver.outbox().untold.map(\.wearer), identity: session?.state.identity)
         snapshot.update = session?.update
+        await tellVersion()
         guard snapshot != current else { return }
         current = snapshot
         for continuation in snapshotSubscribers.values { continuation.yield(snapshot) }
@@ -909,6 +933,16 @@ private final class LookupState: Sendable {
 
     func answered() { state.withLock { $0.answered = true } }
     func found(_ failure: FollowerJoinError) { state.withLock { $0.failure = failure } }
+
+    private let told = OSAllocatedUnfairLock(initialState: false)
+
+    /// true the first time: the `version` notice goes once a lookup.
+    func tell() -> Bool {
+        told.withLock {
+            defer { $0 = true }
+            return !$0
+        }
+    }
 
     /// expired / mismatched when such an invite came, else not found when a relay answered, else offline.
     var failure: FollowerJoinError {

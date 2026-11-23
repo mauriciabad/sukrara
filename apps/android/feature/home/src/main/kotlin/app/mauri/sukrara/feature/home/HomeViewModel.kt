@@ -36,6 +36,7 @@ import app.mauri.sukrara.feature.home.banners.GarminTip
 import app.mauri.sukrara.feature.home.banners.GarminUpdateTip
 import app.mauri.sukrara.feature.home.banners.HomeBanners
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
+import app.mauri.sukrara.feature.home.banners.SharingUpdateTip
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.protocol.event.Avatar
@@ -275,6 +276,8 @@ data class HomeUiState(
     val garminTip: GarminTip? = null,
     /** The app on a watch to update, or Sukrara ([BannerKind.GarminUpdate]). */
     val garminUpdate: GarminUpdateTip? = null,
+    /** This phone's Sukrara is older than its followers' ([BannerKind.SharingUpdate]). */
+    val sharingUpdate: SharingUpdateTip? = null,
     /**
      * The next LibreView maintenance window of LibreLinkUp's region while it begins within
      * [MAINTENANCE_AHEAD] (contracts/sources/librelinkup/status.json `warnHome_s`): home's quiet line under the card.
@@ -364,6 +367,7 @@ class HomeViewModel(
                 libreAppStopped = env.libreAppStopped,
                 garminTip = env.garminShown(memory),
                 garminUpdate = env.garminUpdate,
+                sharingUpdate = env.sharingUpdate,
                 dataProblems = problems,
                 treatments = listed,
                 history = history,

@@ -405,8 +405,8 @@ class OwnerEngine(
      */
     private suspend fun inboxOnce(s: OwnerState, wrap: SignedEvent) {
         if (seen.seen(wrap.id) || !ctx.crypto.verify(wrap)) return
-        inbox(s, wrap)
-        seen.mark(wrap.id, now())
+        // another version is read again at every start while the relays keep it (the row then survives a restart)
+        if (!inbox(s, wrap)) seen.mark(wrap.id, now())
     }
 
     /** A writer's entry: merged and echoed, or its other version said on the follower's row. */
@@ -428,7 +428,8 @@ class OwnerEngine(
         render()
     }
 
-    private suspend fun inbox(s: OwnerState, wrap: SignedEvent) {
+    /** true when [wrap] was of another version (it stays unseen). */
+    private suspend fun inbox(s: OwnerState, wrap: SignedEvent): Boolean {
         val handled = HandleInbox(ctx)(s, wrap, now())
         apply(handled.step)
         handled.readFrom?.let { version(it, null) }
@@ -466,6 +467,7 @@ class OwnerEngine(
                 Unit
             }
         }
+        return handled.signal is InboxSignal.OtherVersion
     }
 
     /** Roster and backup again when older than [CONTROL_REFRESH] (they expire after 30 / 90 days); never during a conflict. */
@@ -895,6 +897,9 @@ class OwnerEngine(
             nearbyPaired = s.nearbyPaired,
             invites = s.invites,
             otherVersions = otherVersions.filterKeys { k -> s.followers.any { it.key == k && it.active } },
+            newerInvitee =
+                s.invites.any { it.expiry > now() && !it.done } &&
+                    otherVersions.any { (k, newer) -> newer && s.followers.none { it.key == k } },
         )
     }
 
