@@ -551,8 +551,8 @@ class GarminTest(unittest.TestCase):
             os.makedirs(store)
             os.makedirs(os.path.join(root, "img"))
             with open(os.path.join(store, "listing.json"), "w") as f:
-                json.dump({"title": {"en": "Sukrara for Garmin", "es": "Sukrara"}, "tagline": {"en": ["a", "b"]},
-                           "category": "c", "images": "img", "screenshots": ["s"], "price": "Free",
+                json.dump({"title": {"en": "Sukrara for Garmin", "es": "Sukrara" * 8}, "tagline": {"en": ["a", "b"]},
+                           "category": "c", "images": "img", "screenshots": ["s", "t", "u", "v", "w", "z"], "price": "Free",
                            "privacy": {"en": "https://p/", "es": "https://p/es/"}, "support": {"en": "s", "es": "s"}},
                           f)
             en = "**Sukrara** shows it. Android, Garmin Connect. iPhone is not supported. https://p/\n" + "x" * 4000
@@ -567,7 +567,8 @@ class GarminTest(unittest.TestCase):
             for want in ["the en title is missing or names Garmin", "description-en.txt is 4", "doesn't say 'not a "
                          "medical device'", "has Markdown", "no apps/garmin/x/store/description-es.txt",
                          "img/icon-500.png is 400 KB (at most 300)", "img/hero-en.png isn't a 1440 × 720 PNG",
-                         "no hero es", "no screenshot s"]:
+                         "no hero es", "no screenshot s", "6 screenshots (the store takes at most 5)",
+                         "the es title is over 50 characters"]:
                 self.assertIn(want, problems)
         finally:
             shutil.rmtree(root)

@@ -15,7 +15,7 @@ change the concept in `brand.py` and re-export.
 | `android/Brand.kt` | name, URL, brand + range colours for Compose |
 | `android/play-store-512.png` | store / about-screen icon: full bleed, cropped to the 72 units launchers show. Not from `brand.py` (it renders the whole 108 canvas, glyph at 2/3 size): `python3 -I tools/brand/store_icons.py` renders it and `web/apple-touch-icon.png` from `brand.py`'s shapes |
 | (Garmin) | Not from here: the Connect IQ launcher icons are drawn from `glyph.svg` by `uv run apps/garmin/tools/launcher_icons.py`, one per watch size |
-| `connectiq/render.mjs` | The Connect IQ store images of the three Garmin apps (Aura, the watch app, the data field): icon (500 × 500), hero (1440 × 720, en / es) and screenshots (500 × 500 or 1000 × 500, in a watch of our own without marks, some with their parts named; `png8.mjs` keeps them under the store's 150 KB) from `tools/watchface` with synthetic data → `docs/img/<app>/store/ciq/`. Not from `brand.py`: `node assets/brand/sukrara/connectiq/render.mjs` (Chrome), again after a screen changes |
+| `connectiq/render.mjs` | The Connect IQ store images of the three Garmin apps (Aura, the watch app, the data field): icon (500 × 500), hero (1440 × 720, en / es) and up to 5 screenshots (1000 × 500, in a watch of our own without marks, the first with its parts named; `png8.mjs` keeps them under the store's 150 KB) from `tools/watchface` with synthetic data → `docs/img/<app>/store/ciq/`. Not from `brand.py`: `node assets/brand/sukrara/connectiq/render.mjs` (Chrome), again after a screen changes |
 | `web/` | `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png` (PWA manifest), `og.png` (link previews) |
 
 Ids: application / bundle id `app.mauri.sukrara`.

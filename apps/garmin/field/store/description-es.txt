@@ -1,4 +1,4 @@
-Sukrara Glucosa muestra tu glucosa durante una actividad, en cualquier pantalla de datos y en cualquier tamaño de hueco, y la guarda con la actividad para que Garmin Connect la dibuje junto a tu frecuencia cardiaca y tu ritmo. Cada lectura va directa de Sukrara en tu móvil a tu reloj en cuanto llega, sin nube y sin internet. Es parte de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
+Sukrara Glucosa muestra tu glucosa durante una actividad, en cualquier pantalla de datos y en cualquier tamaño de hueco, y la guarda con la actividad para que Garmin Connect la dibuje junto a tu frecuencia cardiaca y tu ritmo. Cada lectura va directa de Sukrara en tu móvil a tu reloj en cuanto llega: no hace falta internet. Es parte de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
 
 Qué necesitas
 • La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil, contigo durante la actividad. Sukrara envía cada lectura al campo a través de Garmin Connect.

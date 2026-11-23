@@ -1,4 +1,4 @@
-Sukrara puts your glucose in your watch's glance list and on watch faces, with its chart and your numbers a press away, and lets you log insulin and carbs from the wrist. Each reading goes straight from Sukrara on your phone to your watch as it arrives, with no cloud and no internet. It is the watch app of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+Sukrara puts your glucose in your watch's glance list and on watch faces, with its chart and your numbers a press away, and lets you log insulin and carbs from the wrist. Each reading goes straight from Sukrara on your phone to your watch as it arrives: no internet needed. It is the watch app of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
 
 What you need
 • The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone.

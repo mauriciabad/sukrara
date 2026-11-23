@@ -103,6 +103,7 @@ BARREL_LATEST_URL = REPO_URL + "/releases/latest/download/SukraraFace.barrel"
 GARMIN_LANGS = ["en", "es"]
 GARMIN_DESCRIPTION_MAX = 4000
 GARMIN_ICON_MAX, GARMIN_HERO_MAX, GARMIN_SCREEN_MAX = 300 * 1024, 2 * 1024 * 1024, 150 * 1024
+GARMIN_SCREENSHOTS_MAX, GARMIN_TITLE_MAX = 5, 50  # the upload form's limits (2026-11-23)
 GARMIN_MUST_SAY = {"en": ["not a medical device", "Android", "Garmin Connect", "iPhone is not supported",
                           "not affiliated with Garmin"],
                    "es": ["no es un producto sanitario", "Android", "Garmin Connect", "No funciona con iPhone",
@@ -352,9 +353,14 @@ def listing_problems(root, app):
             problems.append("%s: listing.json has no %s" % (app, key))
     if problems:
         return problems
+    if len(listing["screenshots"]) > GARMIN_SCREENSHOTS_MAX:
+        problems.append("%s: %d screenshots (the store takes at most %d)" % (app, len(listing["screenshots"]),
+                                                                            GARMIN_SCREENSHOTS_MAX))
     for lang in GARMIN_LANGS:
         if "garmin" in listing["title"].get(lang, "garmin").lower():
             problems.append("%s: the %s title is missing or names Garmin" % (app, lang))
+        if len(listing["title"].get(lang, "")) > GARMIN_TITLE_MAX:
+            problems.append("%s: the %s title is over %d characters" % (app, lang, GARMIN_TITLE_MAX))
         path = os.path.join(base, "description-%s.txt" % lang)
         if not os.path.exists(path):
             problems.append("%s: no %s" % (app, os.path.relpath(path, root)))

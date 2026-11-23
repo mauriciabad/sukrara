@@ -8,7 +8,7 @@
   },
   "category": "Watch face (the manifest's type; any category the form asks for: Health & Fitness, or the closest it offers)",
   "images": "docs/img/aura/store/ciq",
-  "screenshots": ["parts", "values", "no-cloud", "face", "contours", "waterline", "lasers", "glow", "fields", "modes"],
+  "screenshots": ["parts", "ranges", "dial", "no-internet", "sensor"],
   "privacy": { "en": "https://sukrara.mauri.app/privacy/", "es": "https://sukrara.mauri.app/es/privacy/" },
   "support": { "en": "https://sukrara.mauri.app/garmin/aura/", "es": "https://sukrara.mauri.app/es/garmin/aura/" },
   "price": "Free"
