@@ -20,6 +20,7 @@ import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.AlertButton
+import app.mauri.sukrara.monitor.notify.AppActivities
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
@@ -66,7 +67,26 @@ internal class AlertActions(
             is AlertButton.Mute -> {
                 if (promoted) muteSheet(kind) else muteReply(kind, button.minutes, words)
             }
+
+            AlertButton.Update -> {
+                update()
+            }
         }
+
+    /**
+     * *Update*: Sukrara opens and does what home's *Update* does ([NavTargets.ACTION_UPDATE_SUKRARA]: About's updater,
+     * or the Play listing). The launcher activity by name, so it opens before the first unlock too ([AppActivities]).
+     */
+    private fun update(): Notification.Action {
+        val pi =
+            PendingIntent.getActivity(
+                ctx,
+                UPDATE_REQUEST,
+                AppActivities.launch(ctx).setAction(NavTargets.ACTION_UPDATE_SUKRARA),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+        return Notification.Action.Builder(icon(DsR.drawable.ds_ic_update), ctx.getString(R.string.alert_action_update), pi).build()
+    }
 
     /**
      * *Mute* as a direct reply with the lengths as one-tap chips, shortest first, in the card's compact words ("15m",
@@ -185,6 +205,9 @@ internal class AlertActions(
 
         /** The lengths sheet's request codes, one per kind. */
         private const val SHEET_REQUEST = 3100
+
+        /** *Update*'s request code (one: it does the same for every kind). */
+        private const val UPDATE_REQUEST = 3200
 
         fun requestCode(
             kind: AlertKind,

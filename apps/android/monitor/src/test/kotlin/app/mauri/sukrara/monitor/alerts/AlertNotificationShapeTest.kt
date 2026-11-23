@@ -15,6 +15,7 @@ import app.mauri.sukrara.alerts.AlertReading
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
+import app.mauri.sukrara.core.model.LinkUpdate
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
@@ -227,6 +228,32 @@ class AlertNotificationShapeTest {
         assertEquals(listOf(log, label(R.string.alert_action_unmute)), posted(AlertGroup.LEVEL).titles())
         notifier.showMuted(AlertGroup.LEVEL, Side.HIGH, AlertKind.HIGH, now + 1800, settings, now)
         assertEquals(listOf(log, label(R.string.alert_action_unmute)), posted(AlertGroup.LEVEL).titles())
+    }
+
+    @Test fun `a follower's no data names the app to update, with Update first when it is this one (docs 48)`() {
+        var update: LinkUpdate? = LinkUpdate.ThisApp
+        val notifier = AlertNotifier(ctx, canLog = { true }, followUpdate = { update })
+        val button = label(R.string.alert_action_update)
+        notifier.show(fire(AlertKind.NO_DATA, 0), settings, silent = false, who = "Ana", relaxedMin = 0)
+        val mine = posted(AlertGroup.NO_DATA)
+        assertEquals("No data · update Sukrara", mine.extras.getString(Notification.EXTRA_TITLE))
+        assertEquals(button, mine.titles().first())
+        val pi = shadowOf(mine.action(button).actionIntent)
+        assertTrue("opens Sukrara, which does what home's Update does", pi.isActivity)
+        assertTrue(pi.flags and PendingIntent.FLAG_IMMUTABLE != 0)
+        assertEquals(NavTargets.ACTION_UPDATE_SUKRARA, pi.savedIntent.action)
+
+        // the wearer's is older: the words only, nothing to tap here
+        update = LinkUpdate.Wearer
+        notifier.show(fire(AlertKind.NO_DATA, 0), settings, silent = false, who = "Ana", relaxedMin = 0)
+        val theirs = posted(AlertGroup.NO_DATA)
+        assertEquals("No data · their Sukrara needs an update", theirs.extras.getString(Notification.EXTRA_TITLE))
+        assertFalse(button in theirs.titles())
+
+        // a level alert never: its own words and buttons
+        update = LinkUpdate.ThisApp
+        notifier.show(fire(AlertKind.LOW, 62), settings, silent = false, who = "Ana", relaxedMin = 0)
+        assertFalse(button in posted(AlertGroup.LEVEL).titles())
     }
 
     @Test fun `Mute's chips are short and say their whole meaning to TalkBack`() {

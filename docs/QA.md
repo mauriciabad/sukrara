@@ -973,6 +973,9 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
       of a newer version shows *Update Sukrara* over the last value with *Update* (the GitHub version: About; Google
       Play: its listing; the Mac: *Check for Updates…* or the App Store page); of an older version, *<name> needs to
       update Sukrara* with nothing to tap; the first readable event clears it. Light, dark, largest font, Spanish.
+      Leave it 20 min: the No data alarm rings on time, titled *No data · update Sukrara* with **Update** first (it
+      opens About / the Play listing / Sparkle's check / the App Store page), or *No data · their Sukrara needs an
+      update* without it; Spanish *Sin datos · actualiza Sukrara* / *Actualizar*.
 
 ## Q23 Import history
 

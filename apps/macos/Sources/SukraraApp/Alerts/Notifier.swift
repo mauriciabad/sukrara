@@ -97,7 +97,9 @@ final class Notifier: AlertNotifying {
         var words = text
         words.unit = unit()
         content.body = words.body(f, now: clock.now, why: why)
-        content.categoryIdentifier = category
+        // this Mac is the one to update: *Update* comes first (copy.json `why: update`)
+        content.categoryIdentifier =
+            f.kind == .noData && why == .update(thisApp: true) ? category + AlertNotificationIDs.updateSuffix : category
         content.threadIdentifier = AlertNotificationIDs.alertCategory
         content.userInfo = [Self.sideKey: f.kind.side.rawValue, Self.firingKey: f.id]
         // a post without sound (its value updated, shown again silently, after an action or a relaunch, #195) never
@@ -299,7 +301,8 @@ final class Notifier: AlertNotifying {
     /// The categories (SPEC §2), actions in this order: *Remind Less* / *Remind as Usual*, then *Mute* (typed length,
     /// empty = the default); one whose repeats Remind Less wouldn't slow has Mute alone. The muted note: *Unmute* only
     /// (the person unmutes and mutes again for another length). Each also with *Treatment* first (`treatmentSuffix`: a
-    /// kind a treatment answers, on a Mac that can add entries), which brings Sukrara forward with Add Treatment. No title
+    /// kind a treatment answers, on a Mac that can add entries), which brings Sukrara forward with Add Treatment, or with
+    /// *Update* first (`updateSuffix`: a follower's no data while this Mac must update, docs/48). No title
     /// has an ellipsis (the owner's review, 2026-11-14).
     static func categories(_ text: AlertText) -> Set<UNNotificationCategory> {
         let treatment = UNNotificationAction(
@@ -311,6 +314,8 @@ final class Notifier: AlertNotifying {
         let usual = UNNotificationAction(
             identifier: AlertNotificationIDs.remindAsUsualAction, title: text.remindAsUsual)
         let unmute = UNNotificationAction(identifier: AlertNotificationIDs.unmuteAction, title: text.unmute)
+        let update = UNNotificationAction(
+            identifier: AlertNotificationIDs.updateAction, title: text.update, options: [.foreground])
         let plain: [(String, [UNNotificationAction])] = [
             (AlertNotificationIDs.alertCategory, [less, mute]),
             (AlertNotificationIDs.alertRelaxedCategory, [usual, mute]),
@@ -322,13 +327,14 @@ final class Notifier: AlertNotifying {
                 // an alert's dismissal reaches the app (#195: dismissed, it stays away until its next ring)
                 let options: UNNotificationCategoryOptions =
                     id == AlertNotificationIDs.mutedCategory ? [] : [.customDismissAction]
-                return [
+                let firsts: [(String, UNNotificationAction?)] =
+                    [("", nil), (AlertNotificationIDs.treatmentSuffix, treatment)]
+                    + (id == AlertNotificationIDs.mutedCategory ? [] : [(AlertNotificationIDs.updateSuffix, update)])
+                return firsts.map { suffix, first in
                     UNNotificationCategory(
-                        identifier: id, actions: actions, intentIdentifiers: [], options: options),
-                    UNNotificationCategory(
-                        identifier: id + AlertNotificationIDs.treatmentSuffix, actions: [treatment] + actions,
-                        intentIdentifiers: [], options: options),
-                ]
+                        identifier: id + suffix, actions: [first].compactMap { $0 } + actions,
+                        intentIdentifiers: [], options: options)
+                }
             })
     }
 

@@ -39,6 +39,8 @@
     <string name="alert_text_no_data">Aún no hay lecturas</string>
     <string name="alert_text_no_data_maintenance">Hasta las %1$s · última lectura %2$s · %3$s</string>
     <string name="alert_context_maintenance">mantenimiento de LibreView</string>
+    <string name="alert_context_update">actualiza Sukrara</string>
+    <string name="alert_context_update_wearer">su Sukrara necesita actualizarse</string>
     <string name="alert_text_no_data_last">Última lectura %1$s · %2$s</string>
     <string name="alert_relaxed_subtext">Avisos cada %1$s</string>
 
@@ -49,6 +51,7 @@
     <string name="alert_action_remind_less">Avisar menos</string>
     <string name="alert_action_remind_usual">Avisar como siempre</string>
     <string name="alert_action_unmute">Reactivar</string>
+    <string name="alert_action_update">Actualizar</string>
 
     <string name="sensor_end_today">El sensor termina hoy a las %1$s</string>
     <string name="sensor_end_tomorrow">El sensor termina mañana a las %1$s</string>

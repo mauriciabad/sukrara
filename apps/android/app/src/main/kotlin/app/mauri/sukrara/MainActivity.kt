@@ -62,6 +62,7 @@ class MainActivity : ComponentActivity() {
             openPen = penPage(intent)
             openHealth = healthRationale(intent)
             openAbout = intent?.action == NavTargets.ACTION_ABOUT_PAGE
+            updateSukrara(intent)
         }
         val graph = graph
         setContent {
@@ -94,6 +95,13 @@ class MainActivity : ComponentActivity() {
         penPage(intent)?.let { openPen = it }
         if (healthRationale(intent)) openHealth = true
         if (intent.action == NavTargets.ACTION_ABOUT_PAGE) openAbout = true
+        updateSukrara(intent)
+    }
+
+    /** A follower's *No data* alarm's *Update* ([NavTargets.ACTION_UPDATE_SUKRARA]): what home's *Update* does. */
+    private fun updateSukrara(i: Intent?) {
+        if (i?.action != NavTargets.ACTION_UPDATE_SUKRARA) return
+        AppUpdate.open(this, graph.updates != null) { openAbout = true }
     }
 
     /**

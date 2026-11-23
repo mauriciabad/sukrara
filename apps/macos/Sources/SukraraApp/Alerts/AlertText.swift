@@ -26,16 +26,28 @@ struct AlertText: Equatable {
     }
 
     /// Why no data comes, when the source knows it and it isn't an error (contracts/alerts/copy.json `why`): LibreView's
-    /// maintenance, `ends` its end as the clock writes it (nil = none known). The alert still rings on time.
-    enum Why: Equatable, Sendable { case maintenance(ends: String?) }
+    /// maintenance, `ends` its end as the clock writes it (nil = none known); a follower reading another version than
+    /// the wearer's (docs/48), `thisApp` = this Mac updates (*Update*), else the wearer's. The alert still rings on time.
+    enum Why: Equatable, Sendable {
+        case maintenance(ends: String?)
+        case update(thisApp: Bool)
+    }
 
     /// The notification title: the headline only (the same words on every platform, contracts/alerts/SPEC.md §1).
     func title(_ f: AlertFiring) -> String { headline(f) }
 
-    /// The title with why no data comes: "No data · LibreView maintenance".
+    /// The title with why no data comes: "No data · LibreView maintenance", "No data · update Sukrara".
     func title(_ f: AlertFiring, escalated: Bool, why: Why?) -> String {
-        guard f.kind == .noData, why != nil else { return title(f, escalated: escalated) }
-        return headline(f) + (language == .en ? " · LibreView maintenance" : " · mantenimiento de LibreView")
+        guard f.kind == .noData, let why else { return title(f, escalated: escalated) }
+        let en = language == .en
+        let context =
+            switch why {
+            case .maintenance: en ? "LibreView maintenance" : "mantenimiento de LibreView"
+            case .update(thisApp: true): en ? "update Sukrara" : "actualiza Sukrara"
+            case .update(thisApp: false):
+                en ? "their Sukrara needs an update" : "su Sukrara necesita actualizarse"
+            }
+        return headline(f) + " · " + context
     }
 
     /// The body with why no data comes: the maintenance's end first when known ("Until 23:00 · last reading 22:04 ·
@@ -149,4 +161,5 @@ struct AlertText: Equatable {
     var remindAsUsual: String { language == .en ? "Remind as Usual" : "Avisar como siempre" }
     var unmute: String { language == .en ? "Unmute" : "Reactivar" }
     var treatment: String { language == .en ? "Treatment" : "Tratamiento" }
+    var update: String { language == .en ? "Update" : "Actualizar" }
 }

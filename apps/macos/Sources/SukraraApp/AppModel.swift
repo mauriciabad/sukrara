@@ -1084,8 +1084,11 @@ public final class AppModel {
     @ObservationIgnored private var maintenanceScheduled: Date?
 
     /// Why no data comes when it isn't an error (the no-data alert's words, contracts/alerts/copy.json `why`):
-    /// LibreLinkUp is the source and LibreView is down for maintenance, its end when Abbott's status page gives one.
+    /// LibreLinkUp is the source and LibreView is down for maintenance, its end when Abbott's status page gives one; a
+    /// follower reading another version than the wearer's (docs/48), which app updates.
     var alertWhy: AlertText.Why? {
+        // a follower reading another version than the wearer's: which app updates (docs/48)
+        if followMonitoring, let followUpdate { return .update(thisApp: followUpdate == .thisApp) }
         guard libreLinkUpActive, libreLinkUpSnapshot.health(at: clock.now) == .maintenance else { return nil }
         return .maintenance(
             ends: libreLinkUpSnapshot.maintenanceUntil(at: clock.now).map { SukraraCore.Clock.time($0) })

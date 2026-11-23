@@ -51,7 +51,7 @@ final class FakeCenter: NotificationPosting {
             "app.mauri.sukrara.alert", "app.mauri.sukrara.alert.relaxed", "app.mauri.sukrara.alert.muteOnly",
             "app.mauri.sukrara.muted",
         ]
-        #expect(ids == Set(plain + plain.map { $0 + ".treatment" }))
+        #expect(ids == Set(plain + plain.map { $0 + ".treatment" } + plain.dropLast().map { $0 + ".update" }))
         let categories = Notifier.categories(AlertText(language: .en))
         func actions(_ id: String) -> [String]? { categories.first { $0.identifier == id }?.actions.map(\.identifier) }
         // the order everywhere: Remind less / as usual, then Mute; the muted note only Unmute (no Change time)
@@ -96,6 +96,26 @@ final class FakeCenter: NotificationPosting {
         let es = Notifier.categories(AlertText(language: .es)).first { $0.identifier == alert.identifier }
         #expect(es?.actions.first?.title == "Tratamiento")
         #expect(es?.actions.last?.title == "Silenciar")
+    }
+
+    /// docs/48: a follower's no data while this Mac reads an older version than the wearer's says so and has *Update*
+    /// first (Sukrara forward); the wearer's older: the words only.
+    @Test func aFollowersNoDataNamesTheAppToUpdate() throws {
+        let n = notifier()
+        n.why = { .update(thisApp: true) }
+        n.post(firing(.noData), sound: true, category: AlertNotificationIDs.alertCategory, escalated: false)
+        let mine = try #require(center.added.last?.content)
+        #expect(mine.title == "No data · update Sukrara")
+        #expect(mine.categoryIdentifier == "app.mauri.sukrara.alert.update")
+        n.why = { .update(thisApp: false) }
+        n.post(firing(.noData), sound: true, category: AlertNotificationIDs.alertCategory, escalated: false)
+        let theirs = try #require(center.added.last?.content)
+        #expect(theirs.title == "No data · their Sukrara needs an update")
+        #expect(theirs.categoryIdentifier == AlertNotificationIDs.alertCategory)
+        let update = try #require(
+            Notifier.categories(AlertText(language: .es)).first { $0.identifier == "app.mauri.sukrara.alert.update" })
+        #expect(update.actions.first?.identifier == AlertNotificationIDs.updateAction)
+        #expect(update.actions.first?.title == "Actualizar" && update.actions[0].options.contains(.foreground))
     }
 
     /// Every kind a treatment answers (both sides, not no data), only on a Mac that can add entries; the answer maps

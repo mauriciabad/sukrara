@@ -136,6 +136,11 @@ class AlertsModule(
             canLog = canLogTreatments,
             // LibreView's maintenance, from the source: no data says why (docs/45; the timing is the engine's, unchanged)
             maintenance = { hub.state.value.source.maintenance },
+            // a follower reading another version than the wearer's: no data says which app updates (docs/48)
+            followUpdate = {
+                hub.state.value.link
+                    ?.update
+            },
         )
 
     /** Settings' sound preview and *Send a test alert*. */

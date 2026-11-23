@@ -268,6 +268,14 @@ A change that must move one of these is a new format beside the old one, not a v
   `sync_crosscheck.py`. The Mac's *Update…* is Sparkle's check (`Updates.checkNow`), or the App Store
   version's page.
 
+- **The follower's No data alarm** keeps the alert copy's pattern (`why`, like LibreView's maintenance), not the
+  table's *No readings from Ana: update Sukrara*: the title stays *No data* and adds the reason, *No data · update
+  Sukrara* / *No data · their Sukrara needs an update* (the sub text, or the Mac's, already names the person, so
+  *their*); the body stays *Last reading 14:05 · 120 mg/dL*. **Update** comes first in its buttons only when this
+  app updates (Android: an activity intent, `NavTargets.ACTION_UPDATE_SUKRARA`, that does home's *Update*; Mac: the
+  `.update` categories, Sparkle's check or the App Store page). copy.json `why: update` / `update_wearer`, action
+  `update`.
+
 ### Draft: States and exits (for FEATURES.md when built)
 
 **States and exits**: *versions match* → nothing shown. *A device can't read the other's format* → the device in view

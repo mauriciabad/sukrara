@@ -33,6 +33,8 @@
     <string name="alert_context_after_more_insulin">still after more insulin</string>
     <!-- no data while LibreView is down for maintenance (docs/45): "No data · LibreView maintenance" -->
     <string name="alert_context_maintenance">LibreView maintenance</string>
+    <string name="alert_context_update">update Sukrara</string>
+    <string name="alert_context_update_wearer">their Sukrara needs an update</string>
     <string name="alert_text_value">%1$s %2$s</string>
     <!-- a late reading (#195): %1$s = the value as alert_text_value (and the rate), %2$s = the reading's time (14:05, Tue 14:05) -->
     <string name="alert_text_value_at">%1$s · %2$s</string>
@@ -63,6 +65,7 @@
     <string name="alert_action_remind_less">Remind less</string>
     <string name="alert_action_remind_usual">Remind as usual</string>
     <string name="alert_action_unmute">Unmute</string>
+    <string name="alert_action_update">Update</string>
 
     <!-- Sensor end. -->
     <string name="sensor_end_today">Sensor ends today at %1$s</string>

@@ -27,7 +27,7 @@ data class GlucoseAlert(
     val alarm: Boolean,
     /** The notification category of a ring ([app.mauri.sukrara.monitor.alerts.AlertCategory]). */
     val category: String,
-    /** Its buttons, in order (Treatment, Remind less / as usual, Mute; muted: Treatment, Unmute). */
+    /** Its buttons, in order (Treatment or Update, Remind less / as usual, Mute; muted: Treatment, Unmute). */
     val buttons: List<AlertButton>,
     /** The muted note's end (epoch s): its countdown. */
     val mutedUntil: Long? = null,
@@ -52,4 +52,7 @@ sealed interface AlertButton {
     data class Mute(val minutes: List<Int>) : AlertButton
 
     data object Unmute : AlertButton
+
+    /** *Update*: a follower's no data while this app reads an older version than the wearer's (docs/48). */
+    data object Update : AlertButton
 }

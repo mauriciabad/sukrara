@@ -20,6 +20,23 @@ import app.mauri.sukrara.monitor.R
 import java.util.Locale
 
 /**
+ * Why no data comes, when the app knows and it isn't an error (contracts/alerts/copy.json `why`); the alert still rings
+ * on time, only its words say it.
+ */
+enum class NoDataWhy(
+    internal val context: String,
+) {
+    /** LibreView is down for maintenance (docs/45). */
+    Maintenance("alert_context_maintenance"),
+
+    /** The followed person's readings are of a newer version: this app is the one to update (docs/48); *Update*. */
+    UpdateThisApp("alert_context_update"),
+
+    /** The followed person's Sukrara is the older one: they update (nothing to tap here). */
+    UpdateWearer("alert_context_update_wearer"),
+}
+
+/**
  * An alert notification's words in the app's language (the mute lines are [MuteText]'s): every case of
  * contracts/alerts/copy.json, the same words the Mac writes (AlertCopyTest).
  */
@@ -46,6 +63,8 @@ object AlertCopy {
             "alert_context_after_more_insulin" to R.string.alert_context_after_more_insulin,
             "alert_context_no_response" to R.string.alert_context_no_response,
             "alert_context_maintenance" to R.string.alert_context_maintenance,
+            "alert_context_update" to R.string.alert_context_update,
+            "alert_context_update_wearer" to R.string.alert_context_update_wearer,
             "alert_text_no_data_maintenance" to R.string.alert_text_no_data_maintenance,
             "alert_text_value" to R.string.alert_text_value,
             "alert_text_value_at" to R.string.alert_text_value_at,
@@ -77,14 +96,12 @@ object AlertCopy {
         w: AlertWords,
         /** #39: a follower's very low nobody answered on the wearer's phone ("Very low glucose · no response"). */
         escalated: Boolean = false,
-        /** LibreView is down for maintenance (docs/45): no data says why ("No data · LibreView maintenance"). */
-        maintenance: Boolean = false,
+        /** Why no data comes, when known (copy.json `why`): "No data · LibreView maintenance", "No data · update Sukrara". */
+        why: NoDataWhy? = null,
     ): String {
         val base = w.get("alert_headline_${kind.wire}")
         if (escalated) return w.get("alert_headline_with_context").format(base, w.get("alert_context_no_response"))
-        if (maintenance && kind == AlertKind.NO_DATA) {
-            return w.get("alert_headline_with_context").format(base, w.get("alert_context_maintenance"))
-        }
+        if (why != null && kind == AlertKind.NO_DATA) return w.get("alert_headline_with_context").format(base, w.get(why.context))
         val context =
             when {
                 treated <= 0 || !kind.isLevel -> return base

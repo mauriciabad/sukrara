@@ -53,4 +53,10 @@ object NavTargets {
 
     /** Settings › About (the update notification's tap, #188): MainActivity opens it on top of what is open. */
     const val ACTION_ABOUT_PAGE = "app.mauri.sukrara.action.ABOUT_PAGE"
+
+    /**
+     * *Update Sukrara* from a notification (a follower's *No data* alarm, docs/48 "When versions differ"): MainActivity
+     * does what home's *Update* does (the GitHub version: About and its updater; Google Play: Sukrara's listing).
+     */
+    const val ACTION_UPDATE_SUKRARA = "app.mauri.sukrara.action.UPDATE_SUKRARA"
 }

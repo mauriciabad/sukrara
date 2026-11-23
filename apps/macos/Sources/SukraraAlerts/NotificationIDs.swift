@@ -25,6 +25,11 @@ public enum AlertNotificationIDs {
     public static let treatmentAction = "app.mauri.sukrara.alert.treatment"
     /// A category whose first action is *Treatment*.
     public static let treatmentSuffix = ".treatment"
+    /// *Update*: a follower's no data while this Mac reads an older version than the wearer's (docs/48 "When versions
+    /// differ"): Sparkle's check, or the App Store page.
+    public static let updateAction = "app.mauri.sukrara.alert.update"
+    /// A category whose first action is *Update* (no data has no *Treatment*, so the two never meet).
+    public static let updateSuffix = ".update"
 
     /// One delivered notification per group (a new alert of the group replaces the previous one).
     public static func notificationID(_ group: AlertGroup) -> String { "app.mauri.sukrara.alert.\(group.rawValue)" }

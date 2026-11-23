@@ -3129,13 +3129,16 @@ each reads only the current version, but every mismatch is detected and **the de
   "Until then, Ana's new readings can't be shown here." + **Update** (Android: the GitHub version's About and updater,
   Google Play's listing; Mac: Sparkle's check, the App Store version's page), or *Ana needs to update Sukrara* ·
   "Their Sukrara is older than this one. New readings come once they update it." (nothing to tap); the following line
-  on Android's home says it too, the Mac's widgets in their words. The first readable event clears it.
-- Still to come (#262): the follower's *No data* alarm naming it, the wearer's Share rows, Bluetooth's hello, invites
-  (docs/48's table).
+  on Android's home says it too, the Mac's widgets in their words. The first readable event clears it. The **No data
+  alarm** rings as always (its timing never changes) and its title says why: *No data · update Sukrara* with
+  **Update** first in its buttons (what home's *Update* does), or *No data · their Sukrara needs an update*
+  (contracts/alerts/copy.json `why: update`).
+- Still to come (#262): the wearer's Share rows, Bluetooth's hello, invites (docs/48's table).
 
 **States and exits**: *versions match* → nothing shown. *A follower reads another version* → the no-data reason
 (Android home, the Mac's panel, widgets) names the app to update; *Update* opens this copy's update (this one older),
-nothing to tap when the wearer's is older; the stored readings stay, ageing, and alerts go on over them. Out: updating
+nothing to tap when the wearer's is older; the stored readings stay, ageing, and alerts go on over them (the No data
+alarm names the app to update, *Update* among its buttons when it is this one). Out: updating
 either app, which clears it at the first event read (no tap). *The watch reads another version* → the Garmin page's notice,
 the watch's line and the app's row name the app to update, with one button to that update; on the watch the face's
 update line, the watch app's page (*Open on phone* → *Look at your phone* 5 s → the button again; BACK leaves the app),

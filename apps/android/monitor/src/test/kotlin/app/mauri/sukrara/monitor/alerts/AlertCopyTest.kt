@@ -105,6 +105,15 @@ class AlertCopyTest {
                 "remind_as_usual" to "alert_action_remind_usual",
                 "unmute" to "alert_action_unmute",
                 "mute_input" to "alert_action_mute_for_label",
+                "update" to "alert_action_update",
+            )
+
+        /** copy.json's `why` → the reason the no-data alert names. */
+        val WHYS =
+            mapOf(
+                "maintenance" to NoDataWhy.Maintenance,
+                "update" to NoDataWhy.UpdateThisApp,
+                "update_wearer" to NoDataWhy.UpdateWearer,
             )
     }
 
@@ -226,7 +235,7 @@ class AlertCopyTest {
         fun kind() = AlertKind.fromWire(c.str("kind"))!!
         return when (c.str("state")) {
             "headline" -> {
-                AlertCopy.headline(kind(), c.long("treated").toInt(), w, maintenance = c.has("why", "maintenance"))
+                AlertCopy.headline(kind(), c.long("treated").toInt(), w, why = c["why"]?.jsonPrimitive?.content?.let(WHYS::getValue))
             }
 
             "headline_escalated" -> {
@@ -268,11 +277,6 @@ class AlertCopyTest {
             }
         }
     }
-
-    private fun JsonObject.has(
-        k: String,
-        v: String,
-    ): Boolean = this[k]?.jsonPrimitive?.content == v
 
     private fun JsonObject.rate(): Double? = get("rate")?.jsonPrimitive?.content?.toDouble()
 

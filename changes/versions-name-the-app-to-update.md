@@ -8,4 +8,4 @@ kind: feature
   home and on its Garmin page, with one button to that update (the Connect IQ listing, or Sukrara's own). Entries from the watch wait until both match.
 - **A follower whose Sukrara and the wearer's differ says which to update**: on Android's home and the Mac's panel,
   the reason names it (*Update Sukrara*, with one button to this copy's update, or *Ana needs to update Sukrara*) over
-  the last value, and clears itself once the readings come again.
+  the last value, and clears itself once the readings come again. Its *No data* alarm says the same, with *Update*.

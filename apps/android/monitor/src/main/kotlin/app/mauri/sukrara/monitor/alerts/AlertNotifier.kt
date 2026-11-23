@@ -22,6 +22,7 @@ import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseRange
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.LinkUpdate
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
@@ -65,6 +66,11 @@ class AlertNotifier(
      * alert's words say so (contracts/alerts/copy.json `why: maintenance`); when it rings is the engine's, unchanged.
      */
     private val maintenance: () -> SourceStatus.Interrupted? = { null },
+    /**
+     * A follower's link reads another version than the wearer's (docs/48 "When versions differ"): which app updates. The
+     * no-data alert's words say so, with *Update* when it is this one (copy.json `why: update`); its timing is unchanged.
+     */
+    private val followUpdate: () -> LinkUpdate? = { null },
 ) : AlertPresenter {
     private val nm get() = ctx.getSystemService(NotificationManager::class.java)
 
@@ -126,9 +132,10 @@ class AlertNotifier(
             relaxedMin
                 .takeIf { it > 0 }
                 ?.let { ctx.getString(R.string.alert_relaxed_subtext, Durations.text(it.toLong(), words.durations)) }
+        val why = why()
         val buttons =
             listOfNotNull(
-                treatment(kind),
+                treatment(kind) ?: AlertButton.Update.takeIf { kind == AlertKind.NO_DATA && why == NoDataWhy.UpdateThisApp },
                 when {
                     relaxedMin > 0 -> AlertButton.RemindAsUsual
                     settings.canRelax(kind) -> AlertButton.RemindLess
@@ -140,7 +147,7 @@ class AlertNotifier(
             group = kind.group,
             kind = kind,
             firingId = firing.id,
-            title = AlertCopy.headline(kind, firing.treated, words, firing.escalated, maintenance = maintenance() != null),
+            title = AlertCopy.headline(kind, firing.treated, words, firing.escalated, why),
             body = AlertCopy.bodyOf(firing, words, unit(), now = now, maintenanceEnds = maintenanceEnds(now)).text,
             channel = AlertChannels.id(ctx, kind, alarm),
             alarm = alarm,
@@ -150,6 +157,22 @@ class AlertNotifier(
             rangeSaid = kind.isLevel,
         )
     }
+
+    /** Why no data comes now, when known: LibreView's maintenance, else a follower's version mismatch. */
+    private fun why(): NoDataWhy? =
+        when {
+            maintenance() != null -> {
+                NoDataWhy.Maintenance
+            }
+
+            else -> {
+                when (runCatching(followUpdate).getOrNull()) {
+                    LinkUpdate.ThisApp -> NoDataWhy.UpdateThisApp
+                    LinkUpdate.Wearer -> NoDataWhy.UpdateWearer
+                    null -> null
+                }
+            }
+        }
 
     /** LibreView's maintenance end as the card writes a time (*23:00*), null = not in one or no end known. */
     private fun maintenanceEnds(now: Long): String? =

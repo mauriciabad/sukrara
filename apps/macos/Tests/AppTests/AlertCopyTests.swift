@@ -81,7 +81,13 @@ import Testing
                 id: "e1", kind: kind, at: at, reading: reading, threshold: kind == .noData ? 20 : 70, n: 1,
                 treated: c.treated ?? 0)
         }
-        let why: AlertText.Why? = c.why == "maintenance" ? .maintenance(ends: c.ends) : nil
+        let why: AlertText.Why? =
+            switch c.why {
+            case "maintenance": .maintenance(ends: c.ends)
+            case "update": .update(thisApp: true)
+            case "update_wearer": .update(thisApp: false)
+            default: nil
+            }
         switch c.state {
         case "headline": return firing().map { text.title($0, escalated: false, why: why) }
         case "headline_escalated": return firing().map { text.title($0, escalated: true) }
@@ -95,6 +101,7 @@ import Testing
             case "remind_as_usual": return text.remindAsUsual
             case "unmute": return text.unmute
             case "treatment": return text.treatment
+            case "update": return text.update
             case "mute_input": return text.mutePlaceholder
             case "mute_send": return text.muteButton
             default: return nil

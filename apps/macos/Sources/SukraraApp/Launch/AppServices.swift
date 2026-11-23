@@ -43,6 +43,8 @@ final class AppServices: ServiceStarting {
     var permissionChanged: (() -> Void)?
     /// A tap on a notification's body: open the panel.
     var openPanel: (() -> Void)?
+    /// A follower's *No data* alarm's *Update* (docs/48): what the panel's *Update…* does.
+    var updateSukrara: (() -> Void)?
     let defaults: UserDefaults
     /// What this build's provisioning profile grants (none without one): Time Sensitive alarms and the
     /// data-protection keychain.
@@ -153,6 +155,10 @@ final class AppServices: ServiceStarting {
                 if actionID == UNNotificationDismissActionIdentifier { return }
                 if actionID == UNNotificationDefaultActionIdentifier {
                     self?.openPanel?()
+                    return
+                }
+                if actionID == AlertNotificationIDs.updateAction {
+                    self?.updateSukrara?()
                     return
                 }
                 guard let alerts = self?.alerts else { return }
