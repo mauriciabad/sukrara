@@ -93,6 +93,9 @@ https://sukrara.mauri.app/join#<base64url( I.pub[0:8] ‖ s )>        s = 16 ran
   1. Decode the link and derive `invite_key(s)`.
   2. `REQ {"kinds":[1059], "#p":[invite_key.pub]}`, answering NIP-42 AUTH as `invite_key` where needed.
   3. Unwrap. Accept the wrap only if the seal's signer starts with the fingerprint and `x` is still in the future.
+     A wrap from that signer whose `v` is a whole number other than 3 is another version (THE VERSION RULE,
+     [docs/48](../../docs/48-release-versioning.md#when-versions-differ)): nothing else of it is read, and the follower
+     says which side updates (this app when its `v` is newer, else the inviter's); this outranks every other failure.
   4. The result is `{i, t, x, r}` plus the wearer's `profile`: everything the access request needs.
 - **Access request:** the v2 request gains `"profile": P.pub`. The wearer shows the follower's own name and picture
   from kind 0, and uses the request's `name` only if that kind 0 can't be fetched.

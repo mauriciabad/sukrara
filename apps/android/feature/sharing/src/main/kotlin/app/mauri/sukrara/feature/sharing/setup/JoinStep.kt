@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
+import app.mauri.sukrara.designsystem.banner.NoticeAction
 import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
@@ -45,6 +46,7 @@ import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.share.follower.FollowState
 import app.mauri.sukrara.share.follower.JoinResult
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * The follower's join step: paste the wearer's invite link (an invite opened on this phone fills it in and is looked up
@@ -153,7 +155,7 @@ internal fun ColumnScope.JoinStep(
         },
     )
     NameField(name, { name = it }, enabled = !busy)
-    (u.join as? JoinUi.Failed)?.let { NoticeCard(stringResource(joinError(it.result)), tone = NoticeTone.Error) }
+    (u.join as? JoinUi.Failed)?.let { JoinFailed(it.result, actions.updateSukrara) }
     if (busy) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -230,6 +232,41 @@ private fun ColumnScope.InviteConfirm(
 
 private val WAITING = setOf(FollowStatus.New, FollowStatus.Requested, FollowStatus.Active)
 
+/**
+ * Why the invite didn't open. Another version (docs/48) in the update notice's pattern: the title names the app to
+ * update, the text what then; *Update* only when it is this one.
+ */
+@Composable
+private fun JoinFailed(
+    r: JoinResult,
+    onUpdate: () -> Unit,
+) {
+    when (r) {
+        JoinResult.UpdateToJoin -> {
+            NoticeCard(
+                stringResource(R.string.sh_join_update_text),
+                title = stringResource(DsR.string.ds_update_sukrara),
+                tone = NoticeTone.Warning,
+                icon = DsR.drawable.ds_ic_update,
+                action = NoticeAction(stringResource(DsR.string.ds_update), onUpdate),
+            )
+        }
+
+        JoinResult.InviterUpdates -> {
+            NoticeCard(
+                stringResource(R.string.sh_join_inviter_update_text),
+                title = stringResource(R.string.sh_join_inviter_update_title),
+                tone = NoticeTone.Warning,
+                icon = DsR.drawable.ds_ic_update,
+            )
+        }
+
+        else -> {
+            NoticeCard(stringResource(joinError(r)), tone = NoticeTone.Error)
+        }
+    }
+}
+
 private fun joinError(r: JoinResult): Int =
     when (r) {
         JoinResult.InvalidLink -> R.string.sh_join_err_invalid
@@ -239,5 +276,5 @@ private fun joinError(r: JoinResult): Int =
         JoinResult.WrongWearer -> R.string.sh_join_err_wrong
         JoinResult.AlreadyFollowing -> R.string.sh_join_err_already
         JoinResult.CodesDiffered -> R.string.sh_join_err_mismatch
-        JoinResult.KeyStoreFailed, JoinResult.Joined -> R.string.sh_join_err_store
+        JoinResult.KeyStoreFailed, JoinResult.Joined, JoinResult.UpdateToJoin, JoinResult.InviterUpdates -> R.string.sh_join_err_store
     }

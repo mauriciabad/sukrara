@@ -62,6 +62,10 @@ public enum InviteFailure: String, Error, Equatable, Sendable {
     /// Sealed by a key that doesn't start with the link's fingerprint (someone pointing at their own identity).
     case fingerprintMismatch = "fingerprint-mismatch"
     case expired
+    /// The inviter's invite is of a newer version (docs/48 "When versions differ"): this app updates.
+    case newer
+    /// The inviter's invite is of an older version: the inviter updates.
+    case older
 }
 
 /// Opens invite gift wraps (fetched from relays for `#p = inviteKey.pub` by the caller).
@@ -74,9 +78,12 @@ public struct InviteOpener: Sendable {
         guard wrap.kind == Wire.kindWrap, crypto.verify(wrap),
             let rumor = try? crypto.unwrap(wrap, with: link.inviteKey), rumor.kind == Wire.kindInvite,
             let body = try? JSONObject(json: rumor.content), body.string("type") == "invite",
-            (try? body.int("v")) == Wire.inviteVersion, let expiry = try? body.int("x")
+            let v = try? body.int("v")
         else { return .failure(.notAnInvite) }
         guard rumor.sender.hasPrefix(link.fingerprint) else { return .failure(.fingerprintMismatch) }
+        // another version (the `v` never moves): which side updates, nothing else of it read
+        guard v == Wire.inviteVersion else { return .failure(v > Wire.inviteVersion ? .newer : .older) }
+        guard let expiry = try? body.int("x") else { return .failure(.notAnInvite) }
         guard expiry > now else { return .failure(.expired) }
         return .success(
             Invite(
@@ -84,7 +91,8 @@ public struct InviteOpener: Sendable {
                 profile: body.object("profile").flatMap(Profile.init(wire:))))
     }
 
-    /// The first wrap that opens; otherwise the most telling failure (fingerprint > expired > not an invite).
+    /// The first wrap that opens; otherwise the most telling failure (another version > fingerprint > expired > not an
+    /// invite).
     public func open(_ wraps: [SignedEvent], link: InviteLink, now: Int) -> Result<Invite, InviteFailure> {
         var failures: Set<InviteFailure> = []
         for wrap in wraps {
@@ -93,7 +101,9 @@ public struct InviteOpener: Sendable {
             case .failure(let why): failures.insert(why)
             }
         }
-        for why in [InviteFailure.fingerprintMismatch, .expired] where failures.contains(why) { return .failure(why) }
+        for why in [InviteFailure.newer, .older, .fingerprintMismatch, .expired] where failures.contains(why) {
+            return .failure(why)
+        }
         return .failure(.notAnInvite)
     }
 }

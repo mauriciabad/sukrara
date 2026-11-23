@@ -22,9 +22,8 @@ fun updateBanner(
     newer: Boolean,
     onUpdate: () -> Unit,
 ): Banner =
-    Banner(
-        id = "update:$app:$newer",
-        icon = R.drawable.ds_ic_update,
+    updateBanner(
+        id = "$app:$newer",
         title = if (newer) stringResource(R.string.ds_update_sukrara) else stringResource(R.string.ds_update_app, app),
         text =
             if (newer) {
@@ -32,6 +31,25 @@ fun updateBanner(
             } else {
                 stringResource(R.string.ds_update_text, device)
             },
+        onUpdate = onUpdate,
+    )
+
+/**
+ * The same notice in a place's own words (the wearer's followers page: *Update Sukrara* · "Until then, Mom can't see
+ * your new readings."): [title] names the app to update, [text] what happens until then; one *Update*, no close.
+ */
+@Composable
+fun updateBanner(
+    id: String,
+    title: String,
+    text: String,
+    onUpdate: () -> Unit,
+): Banner =
+    Banner(
+        id = "update:$id",
+        icon = R.drawable.ds_ic_update,
+        title = title,
+        text = text,
         action = stringResource(R.string.ds_update),
         onAction = onUpdate,
         onDismiss = null,

@@ -121,4 +121,30 @@ class InviteVectorsTest {
         assertEquals("Alex", opened.invite.profile?.name)
         assertEquals((ogs.now + 86_400).toString(), wrap.tag("expiration"))
     }
+
+    /** docs/48: the inviter's invite of another version says which side updates (its `v` never moves). */
+    @Test fun anInviteOfAnotherVersionSaysWhoUpdates() {
+        val i = ogs.key("I")
+        val secret = ByteArray(16) { (it + 1).toByte() }
+        val link = InviteLink.of(i.public, secret)
+        val key = Invites.inviteKey(crypto, link)
+
+        fun wrap(v: Int): SignedEvent {
+            val rumor =
+                app.mauri.sukrara.protocol.event.RumorCodec
+                    .encode(
+                        app.mauri.sukrara.protocol.event.Rumor
+                            .Invite(ogs.now + 3600, listOf("wss://nos.lol"), Profile("Alex", null)),
+                    ).replace("\"v\":${Wire.INVITE_V}", "\"v\":$v")
+            return crypto.giftWrap(i, key.public, Wire.KIND_INVITE, rumor, ogs.now, ogs.now + 3600)
+        }
+        assertEquals(Invites.Result.Failed(InviteFailure.Newer), Invites.open(crypto, link, listOf(wrap(Wire.INVITE_V + 1)), ogs.now))
+        assertEquals(Invites.Result.Failed(InviteFailure.Older), Invites.open(crypto, link, listOf(wrap(Wire.INVITE_V - 1)), ogs.now))
+        // another identity's invite of another version is still the wrong wearer, not an update
+        val other = InviteLink.of(ogs.key("F").public, secret)
+        assertEquals(
+            Invites.Result.Failed(InviteFailure.FingerprintMismatch),
+            Invites.open(crypto, other, listOf(wrap(Wire.INVITE_V + 1)), ogs.now),
+        )
+    }
 }

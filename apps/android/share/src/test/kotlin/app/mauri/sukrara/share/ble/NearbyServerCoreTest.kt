@@ -83,7 +83,7 @@ class NearbyServerCoreTest {
                         disconnected += e.peer
                     }
 
-                    is NearbyServerCore.Effect.Incoming -> {
+                    is NearbyServerCore.Effect.Incoming, is NearbyServerCore.Effect.Version -> {
                         Unit
                     }
                 }
@@ -141,6 +141,28 @@ class NearbyServerCoreTest {
         assertEquals(1, core.named().size)
         assertEquals(listOf(NearbyServerCore.Effect.Disconnect("a")), core.forget(mom.public.hex))
         assertTrue(core.named().isEmpty())
+    }
+
+    /** docs/48: a named follower's HELLO says its version (its row says another one); an unnamed one says nothing. */
+    @Test fun aNamedHelloSaysItsVersion() {
+        fun hello(peer: String, v: Int, proof: Boolean): List<NearbyServerCore.Effect> {
+            core.connected(peer)
+            core.subscribed(peer, true)
+            val nonce = "0c0${peer.length}"
+            val id = if (proof) HelloProof.sign(crypto, mom, sid, nonce, "phone") else null
+            val frame =
+                BleMessages
+                    .hello(nonce, id)
+                    .decodeToString()
+                    .replace("\"v\":${Wire.V}", "\"v\":$v")
+                    .toByteArray()
+            return BleFraming.frames(1, frame, 185).flatMap { core.write(peer, it, true, false, 0).second }
+        }
+        assertEquals(
+            listOf(NearbyServerCore.Effect.Version(mom.public.hex, Wire.V + 1L)),
+            hello("a", Wire.V + 1, proof = true).filterIsInstance<NearbyServerCore.Effect.Version>(),
+        )
+        assertTrue(hello("bb", Wire.V + 1, proof = false).none { it is NearbyServerCore.Effect.Version })
     }
 
     @Test fun liveAndAlertPushesGoAheadOfALongBacklog() {

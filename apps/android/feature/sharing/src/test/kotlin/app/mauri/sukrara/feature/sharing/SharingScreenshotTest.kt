@@ -458,6 +458,8 @@ class SharingScreenshotTest {
             "share-denied" to { ShareScreen(readyInvite, { _, _ -> }, {}, {}, progress = InviteProgress.Denied("Dad")) },
             "share-expired" to { ShareScreen(readyInvite, { _, _ -> }, {}, {}, progress = InviteProgress.Expired) },
             "followers" to { FollowersPage(sharing, FollowersActions()) },
+            // docs/48: Anna's Sukrara is newer (this phone updates), the MacBook's older (it updates)
+            "followers-update" to { FollowersPage(sharing.copy(otherVersions = mapOf("k1" to true, "k2" to false)), FollowersActions()) },
             // who is paired nearby: Anna's phone connected now, the MacBook paired and out of range
             "followers-nearby" to {
                 FollowersPage(
@@ -533,6 +535,19 @@ class SharingScreenshotTest {
             "setup-join-pair-differed" to {
                 SetupContent(
                     ui(SetupStep.Join, 2, facts.copy(spec = SourceSpec.TheirSukrara)).copy(join = JoinUi.Failed(JoinResult.CodesDiffered)),
+                    a,
+                )
+            },
+            // docs/48: an invite of a newer version (this phone updates) and of an older one (the inviter does)
+            "setup-join-update" to {
+                SetupContent(
+                    ui(SetupStep.Join, 2, facts.copy(spec = SourceSpec.TheirSukrara)).copy(join = JoinUi.Failed(JoinResult.UpdateToJoin)),
+                    a,
+                )
+            },
+            "setup-join-inviter-update" to {
+                SetupContent(
+                    ui(SetupStep.Join, 2, facts.copy(spec = SourceSpec.TheirSukrara)).copy(join = JoinUi.Failed(JoinResult.InviterUpdates)),
                     a,
                 )
             },

@@ -36,6 +36,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
+import app.mauri.sukrara.designsystem.banner.Banner
+import app.mauri.sukrara.designsystem.banner.BannerSlot
+import app.mauri.sukrara.designsystem.banner.updateBanner
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
@@ -83,6 +86,8 @@ class FollowersActions(
     val pairNearby: (Boolean) -> Unit = {},
     /** Settings › Sharing › Over Bluetooth nearby. */
     val openNearby: () -> Unit = {},
+    /** *Update* when a follower's Sukrara is newer than this one (the GitHub version: About; Google Play: its listing). */
+    val updateSukrara: () -> Unit = {},
 )
 
 /**
@@ -107,6 +112,8 @@ fun FollowersPage(
     val active = state.followers.filter { it.active }
     val removed = state.followers.filter { !it.active }.sortedByDescending { it.revoked }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // docs/48: followers with a newer Sukrara can't read this phone's readings until it updates
+        BannerSlot(updateNotice(active.filter { state.otherVersions[it.key] == true }, actions.updateSukrara))
         SettingsGroup {
             YouRow(state.profile, active.size, actions.profile)
             NavigationRow(
@@ -139,7 +146,12 @@ fun FollowersPage(
             }
             for (f in active) {
                 // the exception only, as a mark on the picture (the treatment list's way); TalkBack reads it as words
-                val since = stringResource(R.string.sh_followers_since, date(f.since))
+                val since =
+                    when (state.otherVersions[f.key]) {
+                        true -> stringResource(R.string.sh_followers_newer)
+                        false -> stringResource(R.string.sh_followers_older)
+                        null -> stringResource(R.string.sh_followers_since, date(f.since))
+                    }
                 PersonRow(f.avatarJson, f.name, since, writer = f.key in state.writers, mark = nearby.mark(f.key, state.nearbyPaired)) {
                     open = f.key
                 }
@@ -276,3 +288,20 @@ internal fun PersonRow(
 }
 
 private fun date(epochS: Long): String = followerDate(epochS)
+
+/** *Update Sukrara* for [newer], the followers whose Sukrara is newer: the one named, or how many. */
+@Composable
+private fun updateNotice(
+    newer: List<FollowerRecord>,
+    onUpdate: () -> Unit,
+): Banner? {
+    if (newer.isEmpty()) return null
+    val one = newer.singleOrNull()?.let { Profile.shownName(it.name) }?.takeIf { it.isNotBlank() }
+    val text =
+        if (one != null) {
+            stringResource(R.string.sh_followers_update_one, one)
+        } else {
+            pluralStringResource(R.plurals.sh_followers_update_many, newer.size, newer.size)
+        }
+    return updateBanner("followers", stringResource(DsR.string.ds_update_sukrara), text, onUpdate)
+}

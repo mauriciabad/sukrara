@@ -621,6 +621,9 @@ fun SukraraNavigation(
                                 onNearby = { backStack.push(NearbyRoute) },
                                 onClose = close,
                                 links = { DataLinks(DataPage.Sharing, wearer = true) { openData(it, backStack) } },
+                                onUpdate = {
+                                    AppUpdate.open(context, context.graph.updates != null) { backStack.push(SettingsKey("about")) }
+                                },
                             )
                         }
                     }
@@ -704,6 +707,9 @@ fun SukraraNavigation(
                                 backStack.push(ImportRoute)
                             },
                             onUpdateGarmin = { app, newer -> updateGarmin(context, backStack, app, newer) },
+                            onUpdateSukrara = {
+                                AppUpdate.open(context, context.graph.updates != null) { backStack.push(SettingsKey("about")) }
+                            },
                         )
                     }
                     entry<SetupStepRoute> { key ->
@@ -727,6 +733,9 @@ fun SukraraNavigation(
                                 backStack.push(ImportRoute)
                             },
                             onUpdateGarmin = { app, newer -> updateGarmin(context, backStack, app, newer) },
+                            onUpdateSukrara = {
+                                AppUpdate.open(context, context.graph.updates != null) { backStack.push(SettingsKey("about")) }
+                            },
                         )
                     }
                     entry<NewSensorKey> {

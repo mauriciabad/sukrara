@@ -115,8 +115,23 @@ sealed interface FollowState {
  */
 data class PairingCheck(val code: String?, val confirmed: Boolean)
 
-/** How a join went. [CodesDiffered]: a *Pair nearby* join the person ended because the two phones showed different codes. */
-enum class JoinResult { Joined, InvalidLink, NotFound, Offline, Expired, WrongWearer, AlreadyFollowing, KeyStoreFailed, CodesDiffered }
+/**
+ * How a join went. [CodesDiffered]: a *Pair nearby* join the person ended because the two phones showed different codes;
+ * [UpdateToJoin] / [InviterUpdates]: the invite is of a newer / older version (docs/48 "When versions differ").
+ */
+enum class JoinResult {
+    Joined,
+    InvalidLink,
+    NotFound,
+    Offline,
+    Expired,
+    WrongWearer,
+    AlreadyFollowing,
+    KeyStoreFailed,
+    CodesDiffered,
+    UpdateToJoin,
+    InviterUpdates,
+}
 
 /**
  * What looking up an invite link found: the invite, with who is inviting (shown with *Follow* / *Cancel* before
@@ -353,6 +368,8 @@ class FollowerEngine(
                     when (opened.reason) {
                         InviteFailure.Expired -> JoinResult.Expired
                         InviteFailure.FingerprintMismatch -> JoinResult.WrongWearer
+                        InviteFailure.Newer -> JoinResult.UpdateToJoin
+                        InviteFailure.Older -> JoinResult.InviterUpdates
                         else -> if (anyAnswered) JoinResult.NotFound else JoinResult.Offline
                     },
                 )

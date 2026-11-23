@@ -587,7 +587,10 @@ all unmerged as of 2026-10.)
   author and decryption (so a stranger can't cause it), is rejected as `version`, and the follower keeps which app to
   update: this one when the `v` is newer, else the wearer's. The next event it accepts clears it; it isn't persisted
   (the relays bring the wearer's events again). The app shows it as the no-data reason, over the last value too
-  ([sync/other-version.json](sync/other-version.json)).
+  ([sync/other-version.json](sync/other-version.json)). The wearer the same for a follower's messages: a gift wrap to
+  the identity (request, profile, rekey, history, leave), a writer's entry, or a Bluetooth HELLO whose proof names an
+  active follower, of another `v`, changes nothing and marks that follower's row (newer: this phone updates); the
+  follower's next readable message clears it.
 - Key delivery: sealed by `I`, and its `sid` equal to the one already known (if any).
 - Settings: author ∈ `roster.devices`, known `gk`, decrypts, `d == H("cgm2:settings:"+sid)`, `type == "settings"`,
   newest `u` wins ([Settings](#settings--v2-addition-2026-10-21-round-f28)).

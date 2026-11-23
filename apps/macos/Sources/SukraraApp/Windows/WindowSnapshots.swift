@@ -209,6 +209,15 @@
             let noQR = follow(.notFollowing)
             Task { await noQR.lookUp(qrText: nil) }
             out.append(("follow-error-noqr", AnyView(FollowStep(follow: noQR).padding().frame(width: 520))))
+            // docs/48: an invite of a newer version (this Mac updates) or an older one (the inviter does)
+            for (name, failure) in [
+                ("follow-error-update", FollowFailure.updateToJoin), ("follow-error-inviter-update", .inviterUpdates),
+            ] {
+                let m = follow(.notFollowing)
+                m.linkText = "https://sukrara.mauri.app/join#c3ludGhldGljLWludml0ZS1mb3ItdGVzdHM"
+                m.failure = failure
+                out.append((name, AnyView(FollowStep(follow: m).padding().frame(width: 520))))
+            }
             let invited = follow(.notFollowing)
             invited.invite = Invite(
                 identity: String(repeating: "ab", count: 32), token: "t", expiry: Int.max, relays: [],

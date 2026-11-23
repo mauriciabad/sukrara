@@ -12,6 +12,28 @@ public enum FollowFailure: Error, Equatable, Sendable {
     case invalidLink, notFound, expired, offline, fingerprintMismatch, alreadyFollowing, keychain, noQRCode
     /// A nearby join the person ended because the two devices showed different pairing codes.
     case codesDiffered
+    /// The invite is of a newer version (docs/48 "When versions differ"): this Mac updates (*Update…*).
+    case updateToJoin
+    /// The invite is of an older version: the inviter updates.
+    case inviterUpdates
+
+    /// The update notice's pattern for another version (the title names the app to update, the text what then), nil
+    /// for every other failure (`message` alone).
+    public var update: (title: String, text: String)? {
+        switch self {
+        case .updateToJoin:
+            (
+                L10n.t("Update Sukrara"),
+                L10n.t("This invite needs a newer Sukrara. Open it again once this one is updated.")
+            )
+        case .inviterUpdates:
+            (
+                L10n.t("They need to update Sukrara"),
+                L10n.t("Their Sukrara is older than this one. Open the invite again once they update it.")
+            )
+        default: nil
+        }
+    }
 
     /// The text the follow window shows; every one says what to do next.
     public var message: String {
@@ -29,6 +51,7 @@ public enum FollowFailure: Error, Equatable, Sendable {
         case .noQRCode: L10n.t("No Sukrara invite QR code found in that image.")
         case .codesDiffered:
             L10n.t("The codes didn't match, so nothing was shared. Try again next to their phone.")
+        case .updateToJoin, .inviterUpdates: update.map { "\($0.title). \($0.text)" } ?? ""
         }
     }
 }
@@ -101,7 +124,7 @@ public final class FollowModel {
     public internal(set) var invite: Invite?
     /// `linkText` came from a link opened on this Mac (not typed or pasted): *Cancel* removes it again.
     @ObservationIgnored private var opened = false
-    public private(set) var failure: FollowFailure?
+    public internal(set) var failure: FollowFailure?
     public var nearby: NearbyPhone?
     /// The name the wearer sees for this Mac (typed when following): the computer's name by default.
     public var macName: String
@@ -125,6 +148,8 @@ public final class FollowModel {
     @ObservationIgnored private weak var actions: (any FollowActions)?
     /// Look for phones offering nearby pairing (on while a follow step is on screen and not following).
     @ObservationIgnored public var searchNearby: (Bool) -> Void = { _ in }
+    /// *Update…* for an invite of a newer version: Sparkle's check, or the App Store page (the panel's).
+    @ObservationIgnored public var updateSukrara: () -> Void = {}
     /// The QR scanner while it's open in the follow step (`startScanning`), nil otherwise.
     var scanner: QRScanner?
     /// Makes the scanner's camera (`AppServices.scannerCamera`); nil = this run doesn't use a camera.

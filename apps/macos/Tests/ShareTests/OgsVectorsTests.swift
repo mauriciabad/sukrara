@@ -83,6 +83,25 @@ struct OgsVectorsTests {
         }
     }
 
+    /// docs/48: the inviter's invite of another version says which side updates (its `v` never moves); another
+    /// identity's is still the wrong wearer.
+    @Test func anInviteOfAnotherVersionSaysWhoUpdates() throws {
+        let invite = v.derivations["invite"] as! [String: Any]
+        let link = try #require(InviteLink.parse(invite["link"] as! String))
+        let opener = InviteOpener(crypto: crypto)
+        func wrap(_ version: Int, from sender: String = "I") throws -> SignedEvent {
+            let body = #"{"v":\#(version),"type":"invite","x":\#(v.now + 3600),"r":["wss://nos.lol"]}"#
+            return try crypto.giftWrap(
+                kind: Wire.kindInvite, content: body, from: v.secret(sender), to: invite["invite_key_pub"] as! String,
+                expiration: v.now + 3600)
+        }
+        #expect(opener.open([try wrap(Wire.inviteVersion + 1)], link: link, now: v.now) == .failure(.newer))
+        #expect(opener.open([try wrap(Wire.inviteVersion - 1)], link: link, now: v.now) == .failure(.older))
+        #expect(
+            opener.open([try wrap(Wire.inviteVersion + 1, from: "F")], link: link, now: v.now)
+                == .failure(.fingerprintMismatch))
+    }
+
     private func recipientSecret(_ pub: String) -> SecretKeyHex? {
         if let name = ["I", "D", "F", "W", "X", "G1", "G2"].first(where: { v.pub($0) == pub }) {
             return v.secret(name)

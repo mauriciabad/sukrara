@@ -3133,12 +3133,24 @@ each reads only the current version, but every mismatch is detected and **the de
   alarm** rings as always (its timing never changes) and its title says why: *No data · update Sukrara* with
   **Update** first in its buttons (what home's *Update* does), or *No data · their Sukrara needs an update*
   (contracts/alerts/copy.json `why: update`).
-- Still to come (#262): the wearer's Share rows, Bluetooth's hello, invites (docs/48's table).
+- **The wearer's followers** (Android, Settings › Sharing): a follower whose message (a request, profile, rekey,
+  history, leave, an entry it adds, or its Bluetooth HELLO) is of another version is read no further and its row says
+  who updates instead of *Following since*: *Has a newer Sukrara* (then the page's notice: *Update Sukrara* · "Until
+  then, Mom can't see your new readings." + **Update**; several: "… 2 followers can't …") or *Needs to update
+  Sukrara*. Not saved: their next readable message clears it.
+- **Invites** (Android's join step, the Mac's Follow): an invite link whose invite is of another version (from the
+  inviter's own identity) opens nothing and says who updates, in the notice's pattern: *Update Sukrara* · "This invite
+  needs a newer Sukrara. Open it again once this one is updated." + **Update**, or *They need to update Sukrara* ·
+  "Their Sukrara is older than this one. Open the invite again once they update it." Nothing is saved or sent.
+- Still to come (#262): nearby pairing of another version (docs/48's table).
 
 **States and exits**: *versions match* → nothing shown. *A follower reads another version* → the no-data reason
 (Android home, the Mac's panel, widgets) names the app to update; *Update* opens this copy's update (this one older),
 nothing to tap when the wearer's is older; the stored readings stay, ageing, and alerts go on over them (the No data
-alarm names the app to update, *Update* among its buttons when it is this one). Out: updating
+alarm names the app to update, *Update* among its buttons when it is this one). *The wearer gets a follower's message of
+another version* → that follower's row on Settings › Sharing says who updates, and the page's notice has *Update* when
+it is this phone. *An invite of another version* → the join step / Follow says who updates (*Update* when this app);
+nothing saved or sent; Cancel / another link as always. Out: updating
 either app, which clears it at the first event read (no tap). *The watch reads another version* → the Garmin page's notice,
 the watch's line and the app's row name the app to update, with one button to that update; on the watch the face's
 update line, the watch app's page (*Open on phone* → *Look at your phone* 5 s → the button again; BACK leaves the app),
@@ -3146,7 +3158,8 @@ its glance and the data field's label say it; the watch keeps showing the curren
 steps), its entries wait in its outbox. Out: updating, which clears it at the first report or payload of the same
 version (no tap; the watch app's pages come back by themselves); Back leaves the page; nothing to close or mute because
 it ends by itself. Reachable without a notification: home's banner, the Garmin page (Settings › Share with apps ›
-Garmin), setup's Garmin step, the watch face, the watch app and its glance; a follower's home and the Mac's panel. TalkBack reads the notice's title, text and button like any notice.
+Garmin), setup's Garmin step, the watch face, the watch app and its glance; a follower's home and the Mac's panel; the
+wearer's Settings › Sharing. TalkBack reads the notice's title, text and button like any notice.
 
 ## Sukrara on Garmin watches: the app and the data field (the watch)
 

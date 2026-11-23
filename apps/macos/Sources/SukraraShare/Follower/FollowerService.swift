@@ -87,6 +87,10 @@ public enum FollowerJoinError: Error, Equatable, Sendable {
     case expired
     /// The invite was sealed by someone else than the link names.
     case fingerprintMismatch
+    /// The invite is of a newer version (docs/48): this app updates first.
+    case updateToJoin
+    /// The invite is of an older version: the inviter updates first.
+    case inviterUpdates
     /// A follow waits or runs (one that ended, declined, used elsewhere or removed, is replaced by a new join).
     case alreadyFollowing
     case cancelled

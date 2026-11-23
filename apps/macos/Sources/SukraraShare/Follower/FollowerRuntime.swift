@@ -394,6 +394,8 @@ public actor FollowerRuntime: FollowerService {
                         case .success(let invite): return .success(invite)
                         case .failure(.expired): heard.found(.expired)
                         case .failure(.fingerprintMismatch): heard.found(.fingerprintMismatch)
+                        case .failure(.newer): heard.found(.updateToJoin)
+                        case .failure(.older): heard.found(.inviterUpdates)
                         case .failure(.notAnInvite): break
                         }
                     default: break

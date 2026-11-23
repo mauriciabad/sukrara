@@ -46,6 +46,11 @@ sealed interface OwnerShareState {
         val nearbyPaired: Set<String> = emptySet(),
         /** The single-use invites not yet pruned: who claimed each and whether it was answered (the share screen moves on). */
         val invites: List<InviteRecord> = emptyList(),
+        /**
+         * Followers whose last message was of another version (docs/48 "When versions differ"; not saved: their next
+         * message says it again): key → true when theirs is newer (this phone updates), false when they update.
+         */
+        val otherVersions: Map<String, Boolean> = emptyMap(),
     ) : OwnerShareState {
         /** The identity is somewhere besides this phone: the password manager, a recovery code kept, or where it came from. */
         val backedUp: Boolean get() = passwordManagerSavedAt > 0 || recoveryExportedAt > 0 || restoredAt > 0
@@ -112,6 +117,9 @@ interface OwnerNearby {
     /** The engine side: the stream id and followers for INFO and the identity proof, and incoming events. */
     interface Host : NearbyServerCore.Host {
         fun onEvent(event: SignedEvent, peer: String)
+
+        /** A named follower's HELLO said the version it speaks (docs/48). */
+        fun onVersion(follower: String, v: Long) = Unit
     }
 
     object None : OwnerNearby {

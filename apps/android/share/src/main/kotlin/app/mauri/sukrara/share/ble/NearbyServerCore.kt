@@ -13,6 +13,8 @@ import app.mauri.sukrara.protocol.ble.HelloProof
 import app.mauri.sukrara.protocol.ble.RateLimit
 import app.mauri.sukrara.protocol.ble.Reassembler
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import java.io.ByteArrayOutputStream
 
 /**
@@ -48,6 +50,9 @@ class NearbyServerCore(
 
         /** Call [helloDue] for [peer] after [delayMs] (a HELLO that came too soon after the last backlog). */
         data class HelloLater(val peer: String, val delayMs: Long) : Effect
+
+        /** A HELLO whose proof named [follower] says the version it speaks, [v] (docs/48: its row says another one). */
+        data class Version(val follower: String, val v: Long) : Effect
     }
 
     /** A connected follower device whose HELLO proof named an active follower ([device] = `phone` / `mac`). */
@@ -262,11 +267,16 @@ class NearbyServerCore(
         val parsed = body?.let(BleMessages::parseHello)
         val nonce = parsed?.nonce ?: NearbyLink.nonce()
         parsed?.id?.let { identify(p, nonce, it) }
+        // the HELLO's `v` never moves (docs/48): a named follower's other version goes to its row
+        val version =
+            listOfNotNull(
+                p.follower?.let { f -> (body?.get("v") as? JsonPrimitive)?.longOrNull?.let { Effect.Version(f, it) } },
+            )
         val wait = p.backlogAt + BACKLOG_GAP_MS - nowMs()
-        if (wait <= 0) return backlog(peer, p, nonce)
+        if (wait <= 0) return version + backlog(peer, p, nonce)
         val first = p.helloPending == null
         p.helloPending = nonce
-        return if (first) listOf(Effect.HelloLater(peer, wait)) else emptyList()
+        return version + if (first) listOf(Effect.HelloLater(peer, wait)) else emptyList()
     }
 
     /** B§6 "Who's connected": a proof for a nonce not accepted before that names an active follower names the link. */

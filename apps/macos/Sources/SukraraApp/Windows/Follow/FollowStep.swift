@@ -30,7 +30,15 @@ struct FollowStep: View {
                 form
             }
             if let failure = follow.failure {
-                Notice(failure.message, tone: .error)
+                if let update = failure.update {
+                    Notice(title: update.title, text: update.text, tone: .warning) {
+                        if failure == .updateToJoin {
+                            Button(L10n.t("Update…")) { follow.updateSukrara() }
+                        }
+                    }
+                } else {
+                    Notice(failure.message, tone: .error)
+                }
             }
         }
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.invite)

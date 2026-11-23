@@ -43,6 +43,8 @@ fun SharingScreen(
     modifier: Modifier = Modifier,
     /** The followers page's foot: *See also* the other data pages (the app draws them). */
     links: @Composable () -> Unit = {},
+    /** *Update Sukrara* (a follower's Sukrara is newer, docs/48). */
+    onUpdate: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val writerRefused by viewModel.writerRefused.collectAsStateWithLifecycle()
@@ -93,6 +95,7 @@ fun SharingScreen(
                         refreshNearby = viewModel::refreshNearby,
                         pairNearby = viewModel::pairNearby,
                         openNearby = onNearby,
+                        updateSukrara = onUpdate,
                     ),
                     writerRefused = writerRefused,
                     nearby = nearby,

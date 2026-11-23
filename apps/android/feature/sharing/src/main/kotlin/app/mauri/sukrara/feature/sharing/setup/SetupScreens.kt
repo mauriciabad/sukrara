@@ -119,6 +119,8 @@ fun SetupScreen(
     onOpenHistoryImport: () -> Unit = {},
     /** The Garmin step's update notice's *Update*: the watch app's Connect IQ listing, or Sukrara's own update. */
     onUpdateGarmin: (app: String, newer: Boolean) -> Unit = { _, _ -> },
+    /** *Update Sukrara* (an invite of a newer version): the GitHub version's About, or the Play listing. */
+    onUpdateSukrara: () -> Unit = {},
 ) {
     LifecycleResumeEffect(viewModel) {
         viewModel.onResume()
@@ -142,7 +144,8 @@ fun SetupScreen(
         return
     }
     PageBackHandler { viewModel.back(onDone) }
-    val actions = viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone, onOpenHistoryImport, onUpdateGarmin)
+    val actions =
+        viewModel.actions(onOpenSensorSetup, thresholdRows, onExportHistory, onDone, onOpenHistoryImport, onUpdateGarmin, onUpdateSukrara)
     SetupContent(u, actions.copy(sendTestAlert = sendTestAlert), modifier)
 }
 
@@ -246,6 +249,8 @@ data class SetupActions(
     val completeGarmin: () -> Unit = {},
     /** The Garmin step's update notice's *Update* (the app's key, newer than this phone's Sukrara). */
     val updateGarmin: (String, Boolean) -> Unit = { _, _ -> },
+    /** *Update* for an invite of a newer version (docs/48): this copy's update. */
+    val updateSukrara: () -> Unit = {},
 )
 
 @Composable
@@ -256,6 +261,7 @@ private fun SetupViewModel.actions(
     onDone: () -> Unit,
     onOpenHistoryImport: () -> Unit,
     onUpdateGarmin: (String, Boolean) -> Unit,
+    onUpdateSukrara: () -> Unit,
 ): SetupActions {
     val context = LocalContext.current
     return remember(this) {
@@ -320,6 +326,7 @@ private fun SetupViewModel.actions(
             setGarmin = ::setGarmin,
             completeGarmin = ::completeGarmin,
             updateGarmin = onUpdateGarmin,
+            updateSukrara = onUpdateSukrara,
         )
     }
 }

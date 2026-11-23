@@ -150,6 +150,14 @@
     <string name="sh_followers_waiting">Esperando tu respuesta</string>
     <string name="sh_followers_review">Toca para revisar</string>
     <string name="sh_followers_since">Te sigue desde el %1$s</string>
+    <string name="sh_followers_newer">Tiene un Sukrara más nuevo</string>
+    <string name="sh_followers_older">Tiene que actualizar Sukrara</string>
+    <string name="sh_followers_update_one">Hasta entonces, %1$s no puede ver tus lecturas nuevas.</string>
+    <plurals name="sh_followers_update_many">
+        <item quantity="one">Hasta entonces, %d seguidor no puede ver tus lecturas nuevas.</item>
+        <item quantity="many">Hasta entonces, %d seguidores no pueden ver tus lecturas nuevas.</item>
+        <item quantity="other">Hasta entonces, %d seguidores no pueden ver tus lecturas nuevas.</item>
+    </plurals>
     <string name="sh_followers_footer">Cada seguidor ve tu glucosa, alertas y tratamientos. Quita aquí un dispositivo que ya no uses.</string>
     <string name="sh_followers_close">Cerrar</string>
     <string name="sh_followers_remove">Quitar</string>
@@ -411,6 +419,9 @@
     <string name="sh_join_err_offline">No hay conexión a internet. Revisa la conexión y vuelve a intentarlo.</string>
     <string name="sh_join_err_expired">Esta invitación ha caducado. Pide un enlace nuevo.</string>
     <string name="sh_join_err_wrong">Esta invitación no coincide con su enlace. Pide un enlace nuevo.</string>
+    <string name="sh_join_update_text">Esta invitación necesita un Sukrara más nuevo. Ábrela de nuevo cuando lo hayas actualizado.</string>
+    <string name="sh_join_inviter_update_title">Tiene que actualizar Sukrara</string>
+    <string name="sh_join_inviter_update_text">Su Sukrara es más antiguo que este. Abre la invitación de nuevo cuando lo actualice.</string>
     <string name="sh_join_err_already">Este teléfono ya sigue a alguien. Deja de seguirle primero en Ajustes › Compartir.</string>
     <string name="sh_join_err_store">No se ha podido guardar la clave en este teléfono. Vuelve a intentarlo.</string>
     <!-- The invite was found: who is inviting, before anything is sent -->

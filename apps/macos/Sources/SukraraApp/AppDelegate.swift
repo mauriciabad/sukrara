@@ -173,6 +173,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         contextMenu.updates = model.updates
         services.openPanel = { [weak statusItem] in statusItem?.showPanel() }
         services.updateSukrara = links.updateSukrara
+        windows.follow.updateSukrara = links.updateSukrara
         windows.openPanel = { [weak statusItem] in statusItem?.showPanel() }
         // a notification's Treatment: only where Add Treatment can open, an answer to that side's alert (THE kinds' order
         // counts it as ringing: carbs focused for the alerts carbs answer)

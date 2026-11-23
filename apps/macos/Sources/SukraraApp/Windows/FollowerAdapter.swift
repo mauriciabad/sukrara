@@ -110,6 +110,8 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
         case .offline: .offline
         case .expired: .expired
         case .fingerprintMismatch: .fingerprintMismatch
+        case .updateToJoin: .updateToJoin
+        case .inviterUpdates: .inviterUpdates
         case .alreadyFollowing: .alreadyFollowing
         case .keychain, .keyFailed: .keychain
         case .cancelled: nil

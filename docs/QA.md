@@ -976,6 +976,13 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
       Leave it 20 min: the No data alarm rings on time, titled *No data · update Sukrara* with **Update** first (it
       opens About / the Play listing / Sparkle's check / the App Store page), or *No data · their Sukrara needs an
       update* without it; Spanish *Sin datos · actualiza Sukrara* / *Actualizar*.
+      On the wearer (the gallery's `followers-update`): a follower on another version that changes its profile or
+      asks for history shows *Has a newer Sukrara* (and the page's *Update Sukrara* notice, its *Update* opening About
+      / the Play listing) or *Needs to update Sukrara* on its row; the same over Bluetooth with the relay stopped; the
+      row says *Following since* again at that follower's first readable message.
+      An invite link from a wearer on another version (debug: `Wire.INVITE_V` changed on one side): the join step /
+      the Mac's Follow says *Update Sukrara* with *Update* (newer invite) or *They need to update Sukrara* (older),
+      nothing is saved; the Mac's pictures `follow-error-update` / `follow-error-inviter-update`.
 
 ## Q23 Import history
 

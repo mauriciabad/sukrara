@@ -116,6 +116,9 @@ class OwnerEngine(
 
     @Volatile private var owner: OwnerState? = null
 
+    /** [OwnerShareState.Sharing.otherVersions]: followers whose last message was of another version. */
+    @Volatile private var otherVersions = emptyMap<String, Boolean>()
+
     /** How readings travel over the internet now ([relayPolicy]'s latest value while running). */
     @Volatile private var policy = RelayPolicy()
 
@@ -203,6 +206,10 @@ class OwnerEngine(
 
             override fun onEvent(event: SignedEvent, peer: String) {
                 runScope?.launch(serial) { locked { onNearby(event, peer) } }
+            }
+
+            override fun onVersion(follower: String, v: Long) {
+                runScope?.launch(serial) { locked { version(follower, if (v == Wire.V.toLong()) null else v > Wire.V) } }
             }
         }
 
@@ -380,7 +387,7 @@ class OwnerEngine(
                 when (m.subscription) {
                     OWN -> conflicts.check(s, m.event, now())?.let { commit(it) }
                     INBOX -> if (s.conflict == null) inboxOnce(owner ?: s, m.event)
-                    WRITERS -> treatments.receive(s, m.event, now(), m.relay).echo?.let(::send)
+                    WRITERS -> writer(s, m.event, m.relay)
                 }
             }
 
@@ -402,9 +409,29 @@ class OwnerEngine(
         seen.mark(wrap.id, now())
     }
 
+    /** A writer's entry: merged and echoed, or its other version said on the follower's row. */
+    private suspend fun writer(s: OwnerState, event: SignedEvent, via: String?) {
+        val r = treatments.receive(s, event, now(), via)
+        r.echo?.let(::send)
+        when (r.verdict) {
+            SyncTreatments.Verdict.OtherVersion -> version(event.pubkey, r.newer)
+            SyncTreatments.Verdict.Accepted -> version(event.pubkey, null)
+            else -> Unit
+        }
+    }
+
+    /** [follower]'s messages are of another version ([newer]), or again of this one (null): the row says it. */
+    private fun version(follower: String, newer: Boolean?) {
+        val next = if (newer == null) otherVersions - follower else otherVersions + (follower to newer)
+        if (next == otherVersions) return
+        otherVersions = next
+        render()
+    }
+
     private suspend fun inbox(s: OwnerState, wrap: SignedEvent) {
         val handled = HandleInbox(ctx)(s, wrap, now())
         apply(handled.step)
+        handled.readFrom?.let { version(it, null) }
         when (val signal = handled.signal) {
             is InboxSignal.NewRequest -> {
                 // single use: the first request closes *Pair nearby* (the next INFO no longer offers it)
@@ -429,6 +456,10 @@ class OwnerEngine(
                 publish(readings.republish(handled.step.state, now()))
                 nearby.forget(signal.follower.key)
                 onLeft(signal.follower)
+            }
+
+            is InboxSignal.OtherVersion -> {
+                version(signal.sender, signal.newer)
             }
 
             null -> {
@@ -863,6 +894,7 @@ class OwnerEngine(
             restoredAt = s.restoredAt,
             nearbyPaired = s.nearbyPaired,
             invites = s.invites,
+            otherVersions = otherVersions.filterKeys { k -> s.followers.any { it.key == k && it.active } },
         )
     }
 

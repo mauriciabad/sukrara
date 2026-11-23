@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.protocol.Wire
+import app.mauri.sukrara.protocol.event.OtherVersion
 import app.mauri.sukrara.protocol.event.TreatmentCodec
 import app.mauri.sukrara.protocol.event.TreatmentPayload
 import app.mauri.sukrara.protocol.event.WriterScope
@@ -35,9 +36,10 @@ import java.time.Instant
  */
 class SyncTreatments(private val ctx: OwnerContext, private val repository: TreatmentsRepository) {
     /** Why a writer event wasn't merged (tests and diagnostics; never logged with its content). */
-    enum class Verdict { Accepted, Older, NotWriter, UnknownEpoch, Undecryptable, Invalid, NotCreator }
+    enum class Verdict { Accepted, Older, NotWriter, UnknownEpoch, Undecryptable, Invalid, NotCreator, OtherVersion }
 
-    data class Received(val verdict: Verdict, val echo: SignedEvent? = null)
+    /** [newer]: with [Verdict.OtherVersion], whether the writer's entry is of a newer version (this phone updates). */
+    data class Received(val verdict: Verdict, val echo: SignedEvent? = null, val newer: Boolean? = null)
 
     private val createdAt = HashMap<String, Long>()
 
@@ -80,7 +82,14 @@ class SyncTreatments(private val ctx: OwnerContext, private val repository: Trea
         val plain =
             ctx.crypto.decrypt(s.readKey(ctx.crypto, epoch).secret, PublicKeyHex(author), ev.content)
                 ?: return Received(Verdict.Undecryptable)
-        val tr = runCatching { TreatmentCodec.decode(plain) }.getOrNull() ?: return Received(Verdict.Invalid)
+        val tr =
+            try {
+                TreatmentCodec.decode(plain)
+            } catch (e: OtherVersion) {
+                return Received(Verdict.OtherVersion, newer = e.newer)
+            } catch (_: Exception) {
+                return Received(Verdict.Invalid)
+            }
         if (ev.tag("d") != Wire.treatmentD(s.sid, tr.id)) return Received(Verdict.Invalid)
         val stored = repository.get(tr.id)
         if (!WriterScope.ownerAllows(author, stored?.creator, inOwnLog = stored != null)) return Received(Verdict.NotCreator)

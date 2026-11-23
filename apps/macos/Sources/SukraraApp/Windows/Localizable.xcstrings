@@ -4421,6 +4421,22 @@
         }
       }
     },
+    "Their Sukrara is older than this one. Open the invite again once they update it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their Sukrara is older than this one. Open the invite again once they update it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su Sukrara es más antiguo que este. Abre la invitación de nuevo cuando lo actualice."
+          }
+        }
+      }
+    },
     "Their phone is told." : {
       "localizations" : {
         "en" : {
@@ -4465,6 +4481,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Su Sukrara es más antigua que esta. Las lecturas nuevas llegarán cuando la actualice."
+          }
+        }
+      }
+    },
+    "They need to update Sukrara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They need to update Sukrara"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiene que actualizar Sukrara"
           }
         }
       }
@@ -4545,6 +4577,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Este Sukrara ya envía a este Mac la glucosa que lee, de la fuente que use, con tratamientos, dosis de bolígrafo, alertas y ajustes. Leer %@ aquí en su lugar hace que este Mac deje de seguirlo."
+          }
+        }
+      }
+    },
+    "This invite needs a newer Sukrara. Open it again once this one is updated." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This invite needs a newer Sukrara. Open it again once this one is updated."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta invitación necesita un Sukrara más nuevo. Ábrela de nuevo cuando lo hayas actualizado."
           }
         }
       }

@@ -244,6 +244,7 @@ class AndroidNearbyServer(
                 is NearbyServerCore.Effect.Disconnect -> devices[e.peer]?.let { d -> guarded { server?.cancelConnection(d) } }
                 is NearbyServerCore.Effect.Incoming -> host?.onEvent(e.event, e.peer)
                 is NearbyServerCore.Effect.HelloLater -> later(e.delayMs) { core?.let { run(it.helloDue(e.peer)) } }
+                is NearbyServerCore.Effect.Version -> host?.onVersion(e.follower, e.v)
             }
         }
         renderLinks()

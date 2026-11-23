@@ -276,6 +276,22 @@ A change that must move one of these is a new format beside the old one, not a v
   `.update` categories, Sparkle's check or the App Store page). copy.json `why: update` / `update_wearer`, action
   `update`.
 
+- **The wearer's followers page** (Android; the Mac only follows): a follower's row says *Has a newer Sukrara* or
+  *Needs to update Sukrara* in place of *Following since*, instead of the table's *Mom's Sukrara needs an update* (the
+  row's title already names Mom: nothing said twice). The *Update* sits once at the page's top in the approved notice
+  (`updateBanner(id, title, text)`, the Garmin notice's base): *Update Sukrara* · "Until then, Mom can't see your new
+  readings." (several: how many), not on each row. Read from the inbox rumors (`InboxSignal.OtherVersion`, a readable
+  one's `readFrom` clears it), a writer's entry (`Verdict.OtherVersion`) and the Bluetooth HELLO's `v` of a named
+  follower (`Effect.Version`); kept in memory only (`OwnerShareState.Sharing.otherVersions`), like the follower's.
+
+- **Invites**: an invite wrap that opens with the link's key, sealed by the link's identity, whose `v` isn't the
+  invite version is `InviteFailure.Newer` / `Older` (`.newer` / `.older`), the most telling failure; another identity's
+  stays *wrong wearer*. The join step (`JoinResult.UpdateToJoin` / `InviterUpdates`) and the Mac's Follow
+  (`FollowFailure.updateToJoin` / `inviterUpdates`) say it in the notice's pattern, not the table's *This invite needs
+  a newer Sukrara* as a title: *Update Sukrara* · "This invite needs a newer Sukrara. Open it again once this one is
+  updated." + *Update*, or *They need to update Sukrara* · "Their Sukrara is older than this one. Open the invite
+  again once they update it." (the invite's name is inside what can't be read: *They*).
+
 ### Draft: States and exits (for FEATURES.md when built)
 
 **States and exits**: *versions match* → nothing shown. *A device can't read the other's format* → the device in view

@@ -6,6 +6,7 @@ package app.mauri.sukrara.share.owner.usecase
 import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.protocol.Wire
+import app.mauri.sukrara.protocol.event.OtherVersion
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.event.RumorCodec
@@ -90,6 +91,12 @@ sealed interface InboxSignal {
 
     /** [follower] stopped following (`leave`): the epoch rotated; the engine republishes the last 24 h and tells the wearer. */
     data class FollowerLeft(val follower: FollowerRecord) : InboxSignal
+
+    /**
+     * [sender]'s message is of another version (docs/48): nothing in it is read; [newer] = theirs is newer (this phone
+     * updates), else they update.
+     */
+    data class OtherVersion(val sender: String, val newer: Boolean) : InboxSignal
 }
 
 /**
@@ -97,15 +104,34 @@ sealed interface InboxSignal {
  * `rekey`, `history`, `leave`. Unknown senders and stale or invalid requests change nothing.
  */
 class HandleInbox(private val ctx: OwnerContext) {
-    data class Handled(val step: Step, val signal: InboxSignal? = null)
+    /** [readFrom]: the sender of a message this phone could read (its version matches: an earlier mismatch ends). */
+    data class Handled(val step: Step, val signal: InboxSignal? = null, val readFrom: String? = null)
 
     operator fun invoke(s: OwnerState, wrap: SignedEvent, now: Long): Handled {
         val none = Handled(Step(s))
         if (wrap.kind != Wire.KIND_WRAP || !ctx.crypto.verify(wrap)) return none
         val u = ctx.crypto.unwrap(s.identity(ctx.crypto).secret, wrap) ?: return none
         if (u.kind != Wire.KIND_TO_OWNER) return none
-        val rumor = runCatching { RumorCodec.decode(u.kind, u.content) }.getOrNull() ?: return none
         val sender = u.sender.hex
+        val rumor =
+            try {
+                RumorCodec.decode(u.kind, u.content)
+            } catch (e: OtherVersion) {
+                return Handled(Step(s), InboxSignal.OtherVersion(sender, e.newer))
+            } catch (_: Exception) {
+                null
+            } ?: return none
+        return handle(s, rumor, sender, u.createdAt, now).copy(readFrom = sender)
+    }
+
+    private fun handle(
+        s: OwnerState,
+        rumor: Rumor,
+        sender: String,
+        createdAt: Long,
+        now: Long,
+    ): Handled {
+        val none = Handled(Step(s))
         val known = s.followers.lastOrNull { it.key == sender }
         return when (rumor) {
             is Rumor.Request -> {
@@ -115,7 +141,7 @@ class HandleInbox(private val ctx: OwnerContext) {
             is Rumor.ProfileUpdate -> {
                 // never an older one over a newer one: wraps come in any order (their created_at is randomised); the same
                 // second: the later to arrive
-                if (known?.active == true && u.createdAt >= known.profileAt) {
+                if (known?.active == true && createdAt >= known.profileAt) {
                     val updated =
                         known.copy(
                             name = rumor.profile.name.ifBlank { known.name },
@@ -123,7 +149,7 @@ class HandleInbox(private val ctx: OwnerContext) {
                                 rumor.profile.avatar
                                     ?.json
                                     ?.toString(),
-                            profileAt = u.createdAt,
+                            profileAt = createdAt,
                         )
                     val next = s.copy(followers = s.followers.map { if (it.key == sender) updated else it })
                     Handled(ControlEvents.backup(ctx, next, now))
@@ -142,7 +168,7 @@ class HandleInbox(private val ctx: OwnerContext) {
 
             is Rumor.History -> {
                 if (known?.active == true &&
-                    now - u.createdAt <= Wire.HOUR
+                    now - createdAt <= Wire.HOUR
                 ) {
                     Handled(Step(s), InboxSignal.HistoryWanted(rumor.since))
                 } else {
@@ -151,7 +177,7 @@ class HandleInbox(private val ctx: OwnerContext) {
             }
 
             Rumor.Leave -> {
-                leave(s, sender, u.createdAt, now) ?: none
+                leave(s, sender, createdAt, now) ?: none
             }
 
             else -> {

@@ -284,6 +284,13 @@
     <string name="sh_followers_review">Tap to review</string>
     <!-- Followers: since; %1$s = date -->
     <string name="sh_followers_since">Following since %1$s</string>
+    <string name="sh_followers_newer">Has a newer Sukrara</string>
+    <string name="sh_followers_older">Needs to update Sukrara</string>
+    <string name="sh_followers_update_one">Until then, %1$s can\'t see your new readings.</string>
+    <plurals name="sh_followers_update_many">
+        <item quantity="one">Until then, %d follower can\'t see your new readings.</item>
+        <item quantity="other">Until then, %d followers can\'t see your new readings.</item>
+    </plurals>
     <!-- Followers: footer -->
     <string name="sh_followers_footer">Each follower sees your glucose, alerts and treatments. Remove a device you no longer use here.</string>
     <!-- Follower dialog: close -->
@@ -553,6 +560,9 @@
     <string name="sh_join_err_offline">Can\'t reach the internet. Check the connection and try again.</string>
     <string name="sh_join_err_expired">This invite has expired. Ask for a new link.</string>
     <string name="sh_join_err_wrong">This invite doesn\'t match its link. Ask for a new link.</string>
+    <string name="sh_join_update_text">This invite needs a newer Sukrara. Open it again once this one is updated.</string>
+    <string name="sh_join_inviter_update_title">They need to update Sukrara</string>
+    <string name="sh_join_inviter_update_text">Their Sukrara is older than this one. Open the invite again once they update it.</string>
     <string name="sh_join_err_already">This phone already follows someone. Stop following first in Settings › Sharing.</string>
     <string name="sh_join_err_store">Couldn\'t save the key on this phone. Try again.</string>
     <!-- The invite was found: who is inviting, before anything is sent -->
