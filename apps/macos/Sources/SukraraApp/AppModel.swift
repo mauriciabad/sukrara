@@ -169,7 +169,7 @@ public final class AppModel {
     private(set) var keychainUnreadable = false
     /// The wearer's readings are of another version (THE VERSION RULE): which app to update; nil while they match.
     private(set) var followUpdate: FollowerSession.FollowUpdate?
-    /// Sukrara's page in the Mac App Store, in the app's language (the App Store version's *Update Sukrara…*; the
+    /// Sukrara's page in the Mac App Store, in the app's language (the App Store version's *Update…*; the
     /// website's `STORES.appStore`).
     static var appStorePage: URL {
         let es = (L10n.language ?? Bundle.module.preferredLocalizations.first) == "es"

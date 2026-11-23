@@ -80,7 +80,7 @@ struct NoDataText: Equatable {
                     title: L10n.t("Update Sukrara"),
                     body: name.map { L10n.t("Until then, \($0)'s new readings can't be shown here.") }
                         ?? L10n.t("Until then, new readings can't be shown here."),
-                    action: L10n.t("Update Sukrara…"))
+                    action: L10n.t("Update…"))
             }
             return NoDataText(
                 title: name.map { L10n.t("\($0) needs to update Sukrara") }

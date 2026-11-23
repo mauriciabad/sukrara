@@ -70,7 +70,7 @@ import Testing
         snapshot.update = .thisApp
         model.apply(snapshot)
         #expect(model.noDataReason == .updateToFollow(thisApp: true) && model.noDataReason?.action == .update)
-        #expect(NoDataText.of(.updateToFollow(thisApp: true), now: 0, wearer: "Ana").action == "Update Sukrara…")
+        #expect(NoDataText.of(.updateToFollow(thisApp: true), now: 0, wearer: "Ana").action == "Update…")
         snapshot.update = .wearer
         model.apply(snapshot)
         #expect(model.noDataReason == .updateToFollow(thisApp: false) && model.noDataReason?.action == nil)

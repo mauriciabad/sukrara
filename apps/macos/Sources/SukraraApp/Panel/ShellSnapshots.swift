@@ -91,7 +91,7 @@
                 mode: LaunchMode = .normal, scroll: ChartScroll = ChartScroll(),
                 keychainUnreadable: Bool = false, update: Updates.Reminder = .none, nearby: NearbyState? = nil,
                 relays: Int? = 3, nightscout: NightscoutSnapshot? = nil, libreLinkUp: LibreLinkUpSnapshot? = nil,
-                act: (AlertController) -> Void = { _ in }
+                followUpdate: FollowerSession.FollowUpdate? = nil, act: (AlertController) -> Void = { _ in }
             ) -> Scene {
                 var own = AlertSettings()
                 own.source = .own
@@ -128,6 +128,7 @@
                 snapshot.keychainUnreadable = keychainUnreadable
                 snapshot.nearby = nearby
                 snapshot.relaysConnected = relays
+                snapshot.update = followUpdate
                 let start = Int(now.timeIntervalSince1970) - 6 * 86400
                 snapshot.sensor = WearerSensor(start: start, end: start + 14 * 86400, warmupEnd: start + 3600)
                 if nightscout == nil && libreLinkUp == nil { model.apply(snapshot) }
@@ -290,6 +291,12 @@
                 ("panel-declined", scene(link: .declined, readings: [])),
                 ("panel-broken", scene(link: .broken(.stateDamaged), readings: [])),
                 ("panel-wearer-silent", scene(readings: ending(131, rate: 0, age: 45 * 60))),
+                // THE VERSION RULE: the wearer's readings of another version (this Mac's older / the wearer's)
+                ("panel-follow-update", scene(readings: ending(131, rate: 0, age: 3 * 60), followUpdate: .thisApp)),
+                (
+                    "panel-follow-update-wearer",
+                    scene(readings: ending(131, rate: 0, age: 3 * 60), followUpdate: .wearer)
+                ),
                 (
                     "panel-keychain-retrying",
                     scene(

@@ -48,7 +48,8 @@ struct PanelView: View {
                         text: NoDataText.of(
                             reason, now: context.date.timeIntervalSince1970, lastData: retrying, wearer: model.linkName),
                         act: links.flatMap { reasonAction(reason.action, $0) },
-                        symbol: reason.action == .follow ? "person.badge.plus" : "gearshape",
+                        symbol: reason.action == .follow
+                            ? "person.badge.plus" : reason.action == .update ? "arrow.down.circle" : "gearshape",
                         icon: retrying
                             ? "arrow.triangle.2.circlepath"
                             : reason.isMaintenance ? "clock" : GlucoseCard.noReadingsSymbol)
@@ -404,7 +405,7 @@ struct PanelLinks {
     let openSettings: () -> Void
     /// Settings on one pane (a no-data reason's way out: Following, Juggluco in General).
     let openSettingsPane: (SettingsModel.Pane) -> Void
-    /// THE VERSION RULE's *Update Sukrara…*: Sparkle's check (the GitHub version) or Sukrara's App Store page.
+    /// THE VERSION RULE's *Update…*: Sparkle's check (the GitHub version) or Sukrara's App Store page.
     var updateSukrara: () -> Void = {}
 }
 

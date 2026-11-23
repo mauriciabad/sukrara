@@ -265,7 +265,7 @@ A change that must move one of these is a new format beside the old one, not a v
   then): *Update Sukrara* · "Until then, Ana's new readings can't be shown here." + *Update*, or *Ana needs to update
   Sukrara* · "Their Sukrara is older than this one. New readings come once they update it." Fixture
   `contracts/protocol/sync/other-version.json` (a step's `update`, the expected state's `update`), cross-checked by
-  `sync_crosscheck.py`. The Mac's *Update Sukrara…* is Sparkle's check (`Updates.checkNow`), or the App Store
+  `sync_crosscheck.py`. The Mac's *Update…* is Sparkle's check (`Updates.checkNow`), or the App Store
   version's page.
 
 ### Draft: States and exits (for FEATURES.md when built)

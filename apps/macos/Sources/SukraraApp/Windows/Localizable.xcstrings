@@ -4709,18 +4709,18 @@
         }
       }
     },
-    "Update Sukrara…" : {
+    "Update…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Update Sukrara…"
+            "value" : "Update…"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Actualizar Sukrara…"
+            "value" : "Actualizar…"
           }
         }
       }
