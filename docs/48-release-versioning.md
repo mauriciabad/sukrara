@@ -144,9 +144,10 @@ Decisions:
 
 1. **The device you look at names the app to update**, the smaller version: *Update Sukrara on your phone* or
    *Update this app*, never "versions differ".
-2. **Nothing new is shown as current**: what was last read stays and ages by the freshness rules (late, struck, gone
-   at 20 min); the update line comes at once, not after 20 min. Nothing guesses at a payload it can't read (the
-   owner's rule; question 1 below).
+2. **The glucose stays on the wrist** (the owner, 2026-11-23): the payload's glucose `g` (its `t` and `v`) never moves,
+   so a watch that can't read the rest still shows the current value, ageing by the freshness rules, with the update
+   line at once; nothing else of a payload it can't read is shown. A phone or follower that can't read a format keeps
+   what it last read, ageing (late, struck, gone at 20 min), never shown as current.
 3. **One button to the right update** for that copy: Android GitHub version → the updater's *Check now* (its *Install*
    follows); Google Play → Sukrara's Play listing; Mac GitHub → Sparkle's *Check for Updates…*; Mac App Store → the App
    Store page; a Garmin app → its Connect IQ listing (`apps.json` `store`, the link the Garmin page's *Get* already
@@ -154,6 +155,8 @@ Decisions:
 4. **The newer side waits for the older one's store**: a release that changes a format makes the new versions
    public in order: the Connect IQ apps first (Connect IQ publishes on approval), then Play and the App Store
    (managed publishing / manual release) and the GitHub releases. So when a device says *update*, the update exists.
+   The owner, 2026-11-23: hold the phone for Connect IQ's review (up to 3 days, only when the watch payload changes)
+   rather than ask for an update that isn't out yet.
 5. **No new notification.** The watch says it on the wrist; the wearer's phone puts it on home's one banner place;
    a follower's *No data* alarm, which already rings when readings stop, names the reason and the button. A new alarm
    would ring for something the person can't act on at night.
@@ -164,9 +167,9 @@ Decisions:
 
 | Surface | What it shows | Can do | Meanwhile | Ends |
 |---|---|---|---|---|
-| **Sukrara Aura** (and any face on the barrel) | the line where *No reading since* goes: *Update Sukrara on phone* / *Actualiza Sukrara en el móvil*, or *Update face in Connect IQ* / *Actualiza la esfera en Connect IQ* | nothing on the watch (a face can't open anything); the phone's banner has the button | the last reading it read, ageing; after the face itself updated, none (its stored payload is the old version): the line alone | the first payload it reads |
-| **Watch app** | a screen in place of the value: the same line and **Open on phone** (`openWebPage`: Garmin Connect shows a notification that opens the Connect IQ listing, or the website's Android page `/android/#versions`); the glance: the line alone | *Open on phone*, Back | the last value, ageing; logging still works: entries wait in the outbox (*Waiting: update Sukrara* / *En espera: actualiza Sukrara*), sent once the phone reads them | the first payload it reads; the outbox empties |
-| **Data field**, in an activity | its value place: `--` and *UPDATE PHONE* / *UPDATE FIELD* (es *ACTUALIZA MÓVIL* / *ACTUALIZA CAMPO*), the slot's size | nothing during the activity (a data field has no input); after it, the phone's banner | `--`; never a number it can't read | the first payload it reads |
+| **Sukrara Aura** (and any face on the barrel) | the line where *No reading since* goes: *Update Sukrara on phone* / *Actualiza Sukrara en el móvil*, or *Update face in Connect IQ* / *Actualiza la esfera en Connect IQ* | nothing on the watch (a face can't open anything); the phone's banner has the button | the current glucose from `g` with its value colour and age, as with a late reading; nothing else of the payload | the first payload it reads |
+| **Watch app** | a screen in place of the value: the same line and **Open on phone** (`openWebPage`: Garmin Connect shows a notification that opens the Connect IQ listing, or the website's Android page `/android/#versions`); the glance: the line alone | *Open on phone*, Back | the current value from `g`, ageing; logging still works: entries wait in the outbox (*Waiting: update Sukrara* / *En espera: actualiza Sukrara*), sent once the phone reads them | the first payload it reads; the outbox empties |
+| **Data field**, in an activity | its value place: `--` and *UPDATE PHONE* / *UPDATE FIELD* (es *ACTUALIZA MÓVIL* / *ACTUALIZA CAMPO*), the slot's size | nothing during the activity (a data field has no input); after it, the phone's banner | the current value from `g` where the slot has room for it beside the line, else `--`; never a number it can't read | the first payload it reads |
 | Complications | `---`, as with no reading (Latin letters only) | — | — | the same |
 | **Phone, Garmin page and setup** | the watch's line: *Sukrara Aura on Descent needs an update* / *Sukrara Aura en Descent necesita actualizarse* + **Update** (Connect IQ listing), or *Sukrara Aura on Descent is newer than this phone's Sukrara* / *…es más nueva que Sukrara en este móvil* + **Update Sukrara** (decision 3); the app's row the same; error colour | the button; Back | the delivered reading is never named as shown | the next report with the same version |
 | **Phone, home** | the one banner place (beside *Garmin sending off*): *Update Sukrara Aura on Descent* / *Actualiza Sukrara Aura en Descent* · "It can't read this phone's readings." + **Update** | the button; no close (it ends by itself), the Garmin page from the banner | the card as usual | as above |
@@ -192,27 +195,21 @@ change already finds both sides able to say it: the old side must carry the dete
 
 **Never moves**, so any version reads it (`formats.json` names it per format, tests hold it):
 
-- **Watch payload**: the top-level `v` (a whole number) beside `p` and `sent` in the dictionary; the port and fetch
-  paths; the fetch's `v=` query; a write's `v` and the answer's `r` / `v`.
+- **Watch payload**: the top-level `v` (a whole number) beside `p` and `sent` in the dictionary; the glucose `g` (`t`,
+  `v`); the port and fetch paths; the fetch's `v=` query; a write's `v` and the answer's `r` / `v`.
 - **Sharing**: the envelope (event kinds, the `gk` tag, NIP-44 under the group key, the gift-wrap kinds) and `v` at the
   top of the decrypted content; Bluetooth's frames and the hello's `v`.
 - **Identity**: the invite link's shape (`/join#` + 63 characters) and the invite's `v`.
 
 A change that must move one of these is a new format beside the old one, not a version.
 
-### Open (owner)
-
-1. A watch that can't read the payload shows no number (decision 2). Freezing `g` (`t`, `v`) as well would let it show
-   the value with the update line, a second frozen field. Keep the rule, or freeze `g`?
-2. Decision 4 delays the phone's update by Connect IQ's review (usually 1–3 days) whenever the watch payload changes.
-   Hold it, or ship the phone first and let the watch say *update* until Connect IQ approves?
-
 ### Draft: States and exits (for FEATURES.md when built)
 
 **States and exits**: *versions match* → nothing shown. *A device can't read the other's format* → the device in view
 says which app to update (the smaller version) and, where it can, one button to that copy's update (watch app: *Open on
-phone*; phone: the Connect IQ listing or Sukrara's own updater / store; Mac: Sparkle or the App Store); the last reading
-it read stays and ages (never shown as current), a watch app's entries wait in its outbox. Out: updating, which clears
+phone*; phone: the Connect IQ listing or Sukrara's own updater / store; Mac: Sparkle or the App Store); a watch keeps
+showing the current glucose (the frozen `g`), a phone or follower the last reading it read, ageing (never shown as
+current); a watch app's entries wait in its outbox. Out: updating, which clears
 it at the first message read (no tap needed); Back / Cancel leave each screen; nothing to mute or close because it ends
 by itself. Reachable without a notification: the watch, the phone's Garmin page and home banner, a follower's card,
 the wearer's Share rows; a follower's *No data* alarm names it. TalkBack / VoiceOver read the lines and buttons.
