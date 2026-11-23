@@ -56,7 +56,7 @@ module SukraraFace {
     // sent, unit, bands and the glucose's t and v) as a payload of this version, so the current value stays on the
     // watch, ageing; nothing else of it (no trend, history, status or anything newer).
     function glucoseOnly(p as Dictionary) as Dictionary {
-        var out = {"v" => VERSION, "p" => p.get("p"), "sent" => p.get("sent")} as Dictionary<String, Object?>;
+        var out = {"v" => VERSION, "p" => p.get("p"), "sent" => p.get("sent")} as Dictionary;
         var u = p.get("unit");
         if (u instanceof String) {
             out.put("unit", u);
