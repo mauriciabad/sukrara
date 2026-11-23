@@ -64,7 +64,7 @@ The same dictionary, two ways (both carry it whole, so either alone keeps the ap
    **never with `key`**. The port is open only while a watch is known to have any Sukrara app (Garmin Connect says it
    is installed, or a push reached it), loopback only, and the main switch closes it.
 
-The fetch carries the app's own report back as its query (`apps/garmin/shared/link/Link.mc` `saveReport`, Android `LinkReport.parse`):
+The fetch carries the app's own report back as its query, and the version it reads (`v=`, *Versions*) (`apps/garmin/shared/link/Link.mc` `saveReport`, Android `LinkReport.parse`):
 `r=<run>_<run>…&d=<readingAt>.<since>`, a run being `<kind>.<at>.<sent>.<readingAt>` (kind `p` a push, `p<n>` a push that took n older waiting messages with it, `f` a fetch,
 `e<code>` a failed fetch, `s` appended when it picked it up from storage (Garmin didn't hand it over), `x` appended when it kept the older payload; `at` the watch clock; the last 10, oldest
 first) and `d` the reading it draws (its time on the watch clock) and since when. Times only, never a value. The
@@ -93,7 +93,7 @@ Every profile:
 
 | Key | Value |
 |---|---|
-| `v` | `5`. An app ignores any other version, any other profile, and anything that isn't a dictionary with `v`, `p` and `sent` |
+| `v` | `5`. An app of another version reads only what never moves (below, *Versions*); it ignores any other profile and anything that isn't a dictionary with a whole-number `v`, `p` and `sent` |
 | `p` | the profile: `face` (every watch face) / `app` / `field` |
 | `sent` | the phone's clock when it was built |
 | `unit` | `mgdl` / `mmol` (the watch converts: mg/dL ÷ 18.0182, one decimal) |
@@ -165,6 +165,24 @@ other faces use as the barrel:
   5 minutes ahead of the watch clock (the phone's clock was wrong, then fixed). The app keeps the newest `key` and `w` it
   was pushed (a fetch has neither and leaves them).
 
+## Versions
+
+THE VERSION RULE ([`../../apps/formats.json`](../../apps/formats.json) `watch-payload`, docs/48 "When versions
+differ"; `cases.json` `versions`). Until 1.0.0 every app reads only the current version, and **these never move**: the
+top-level `v` (a whole number), `p`, `sent`, `unit`, `bands` and the glucose `g`'s `t` and `v`; the port and the fetch
+paths; the fetch's `v=`; a write's `v` and the answer's `r: v` with `v`.
+
+- **A payload of another version** (a whole-number `v`, the app's profile, a `sent`): the watch keeps its glucose alone
+  (`SukraraFace.glucoseOnly`: the frozen parts as a payload of its own version, no trend, history, status or anything
+  else; the order rule as usual), so the current value stays on the wrist, ageing; and it says which app to update,
+  the smaller version's: a newer payload → *this app*, an older one → *Sukrara on the phone* (`SukraraFace.toUpdate`,
+  the barrel's `update()`, Sukrara's `Link.update()`). The first payload of its own version clears it.
+- **The fetch** adds `&v=<the version the app reads>` (none = 5, the builds from before it said one): the phone shows
+  which side to update (the Garmin page's notice and the app's lines, Android `LinkReport.update`).
+- **Every write** (entries, undo, mute) carries `v`, outside the signature; the phone checks it before anything else
+  and answers another version `{id, r: "v", v: <the phone's>}`, reading nothing else of it. The watch keeps the write
+  (*Waiting: update Sukrara*) and sends it again after the first payload of its own version.
+
 ## Entries from the watch
 
 The app logs rapid insulin, long-acting insulin and carbs with `POST http://127.0.0.1:17582/sukrara/entries`, through
@@ -178,6 +196,7 @@ one has nothing to log against anyway.
 
 | Field | Value |
 |---|---|
+| `v` | the payload version the watch app reads (*Versions*: another one is answered `r: v` first; none = 5) |
 | `id` | the entry's id, a lowercase UUID v4 the watch makes when the person confirms (`Cryptography.randomBytes(16)`, version and variant bits set): it becomes the treatment's id in the log (contracts/treatments: created once by the device that creates it) |
 | `k` | `rapid` / `long` / `carbs` |
 | `a` | the amount as the phone stores it: insulin with at most one decimal (`4.5`, `14`), carbs in whole grams (`30`) |

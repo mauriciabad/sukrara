@@ -117,7 +117,7 @@ class WatchEntryTest {
                         .jsonObject
                         .getValue("r")
                         .jsonPrimitive.content
-                if (r in setOf("sig", "clock", "id", "kind")) continue
+                if (r in setOf("v", "sig", "clock", "id", "kind")) continue
                 ran++
                 val name = c.getValue("name").jsonPrimitive.content
                 val body = c.getValue("body").jsonObject

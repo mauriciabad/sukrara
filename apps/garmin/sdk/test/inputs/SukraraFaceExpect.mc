@@ -71,6 +71,11 @@ module SukraraFaceExpect {
         return d < 0.01 && d > -0.01;
     }
 
+    // [a] and [b] the same, every key of both (numbers within 0.01)
+    function same(a, b) as Boolean {
+        return close(a, b) && close(b, a);
+    }
+
     // Every key [expect] names, [got] has the same; the differences logged as "<name> <key>: expected …, got …".
     function check(name as String, expect as Dictionary, got as Dictionary, logger) as Boolean {
         var ok = true;

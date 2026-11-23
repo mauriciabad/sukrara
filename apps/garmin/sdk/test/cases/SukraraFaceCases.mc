@@ -42,14 +42,24 @@ module SukraraFaceCases {
 
     function ignored() as Array {
         return [
-            {"v" => 4, "p" => "face", "sent" => 1794823776},
             {"v" => 4, "p" => "aura", "sent" => 1794823776},
             {"v" => 5, "sent" => 1794823776},
             {"v" => 5, "p" => "app", "sent" => 1794823776},
+            {"v" => 6, "p" => "app", "sent" => 1794823776},
+            {"v" => "6", "p" => "face", "sent" => 1794823776},
             {"p" => "face", "sent" => 1794823776},
             {"v" => 5, "p" => "face"},
+            {"v" => 6, "p" => "face"},
             "hello",
             [1, 2],
+        ];
+    }
+
+    function other() as Array {
+        return [
+            {"name" => "a newer phone (version 6): the current glucose stays, the face says to update itself", "payload" => {"v" => 6, "p" => "face", "sent" => 1794823776, "unit" => "mmol", "bands" => [55, 70, 140, 180, 250, 300], "g" => {"t" => 1794823746, "v" => 112, "rate" => 0.4, "band" => 0, "deg" => -20.0, "src" => "new"}, "hist" => [110, 108], "st" => {"k" => "needed", "side" => "high"}, "next" => {"a" => 1}}, "keeps" => {"v" => 5, "p" => "face", "sent" => 1794823776, "unit" => "mmol", "bands" => [55, 70, 140, 180, 250, 300], "g" => {"t" => 1794823746, "v" => 112, "rate" => null, "band" => null, "deg" => null}, "hist" => []}, "update" => "app"},
+            {"name" => "an older phone (version 4, the face profile): the glucose stays, the face says to update Sukrara on the phone", "payload" => {"v" => 4, "p" => "face", "sent" => 1794823776, "unit" => "mgdl", "bands" => [55, 70, 140, 180, 250, 300], "g" => {"t" => 1794823576, "v" => 39, "rate" => null, "band" => null, "deg" => null}, "hist" => [], "st" => null, "last" => null, "sensor" => {"s" => "none"}, "tir" => null}, "keeps" => {"v" => 5, "p" => "face", "sent" => 1794823776, "unit" => "mgdl", "bands" => [55, 70, 140, 180, 250, 300], "g" => {"t" => 1794823576, "v" => 39, "rate" => null, "band" => null, "deg" => null}, "hist" => []}, "update" => "phone"},
+            {"name" => "a newer phone with no reading: the update line alone", "payload" => {"v" => 7, "p" => "face", "sent" => 1794823776, "unit" => "mgdl", "bands" => [55, 70, 140, 180, 250, 300], "g" => null}, "keeps" => {"v" => 5, "p" => "face", "sent" => 1794823776, "unit" => "mgdl", "bands" => [55, 70, 140, 180, 250, 300], "g" => null, "hist" => []}, "update" => "app"},
         ];
     }
 

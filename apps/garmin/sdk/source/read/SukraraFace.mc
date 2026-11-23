@@ -40,6 +40,48 @@ module SukraraFace {
         return d.get("v") == VERSION && profile.equals(d.get("p")) && d.get("sent") instanceof Number;
     }
 
+    // THE VERSION RULE (contracts/apps/formats.json, the payload's "versions"): the version of [p] when it is a payload
+    // of [profile] of another version (a whole-number v, the profile, a whole-number sent: parts that never move),
+    // else null. Its glucose still reads (glucoseOnly); which app to update is toUpdate's.
+    function otherVersion(p as Object?, profile as String) as Number? {
+        if (!(p instanceof Dictionary)) {
+            return null;
+        }
+        var d = p as Dictionary<String, Object?>;
+        var v = d.get("v");
+        return v instanceof Number && v != VERSION && profile.equals(d.get("p")) && d.get("sent") instanceof Number ? v : null;
+    }
+
+    // What this version reads of [p], a payload of another version (otherVersion): the parts that never move (v, p,
+    // sent, unit, bands and the glucose's t and v) as a payload of this version, so the current value stays on the
+    // watch, ageing; nothing else of it (no trend, history, status or anything newer).
+    function glucoseOnly(p as Dictionary) as Dictionary {
+        var out = {"v" => VERSION, "p" => p.get("p"), "sent" => p.get("sent")} as Dictionary<String, Object?>;
+        var u = p.get("unit");
+        if (u instanceof String) {
+            out.put("unit", u);
+        }
+        var b = p.get("bands");
+        if (b instanceof Array) {
+            out.put("bands", b);
+        }
+        var g = p.get("g");
+        out.put("g", g instanceof Dictionary && g.get("t") instanceof Number && g.get("v") instanceof Number
+            ? {"t" => g.get("t"), "v" => g.get("v"), "rate" => null, "band" => null, "deg" => null}
+            : null);
+        out.put("hist", []);
+        return out;
+    }
+
+    // toUpdate's answers: this app (the phone is newer), or Sukrara on the phone (it is older)
+    const UPDATE_APP = "app";
+    const UPDATE_PHONE = "phone";
+
+    // Which app to update after a payload of version [other] (otherVersion; null = none): the smaller version's.
+    function toUpdate(other as Number?) as String? {
+        return other == null || other == VERSION ? null : other > VERSION ? UPDATE_APP : UPDATE_PHONE;
+    }
+
     // The order rule: whether [incoming] (valid) replaces the payload kept, sent at [storedSent] (null: none), at the
     // watch time [now]. The newest by `sent` wins, unless the kept one is more than AHEAD_S ahead of the watch clock.
     // It takes the kept one's `sent` only, so a background or a glance never needs to hold two payloads at once.

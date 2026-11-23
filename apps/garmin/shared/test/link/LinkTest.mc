@@ -66,6 +66,35 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
     return ok;
 }
 
+// THE VERSION RULE in Sukrara's own apps (SukraraFace.otherVersion): another version's payload keeps its glucose alone
+// and says which app to update; one of this version clears it. The face profile's cases, read with each app's profile.
+(:test)
+function linkOtherVersions(logger as Logger) as Boolean {
+    var ok = true;
+    var other = SukraraFaceCases.other();
+    for (var i = 0; i < other.size(); i++) {
+        var c = other[i] as Dictionary;
+        var p = c.get("payload") as Dictionary;
+        p.put("p", Link.PROFILE);
+        var keeps = c.get("keeps") as Dictionary;
+        keeps.put("p", Link.PROFILE);
+        Link.reset();
+        var k = Link.readable(p);
+        if (!Link.accept(k, SukraraFaceCases.NOW) || !SukraraFaceExpect.same(Link.payload(), keeps)) {
+            logger.error(c.get("name") + ": kept " + Link.payload());
+            ok = false;
+        }
+        if (!(c.get("update") as String).equals(Link.update())) {
+            logger.error(c.get("name") + ": update " + Link.update());
+            ok = false;
+        }
+    }
+    Link.readable({"v" => SukraraFace.VERSION, "p" => Link.PROFILE, "sent" => SukraraFaceCases.NOW});
+    Test.assertMessage(Link.update() == null, "a payload of this version clears it");
+    Link.reset();
+    return ok;
+}
+
 // A background run counts once, whichever way comes first (Garmin's onBackgroundData or the pickup from storage at a
 // draw), and the pickup brings what Garmin didn't hand over (#244).
 (:test)

@@ -136,8 +136,10 @@ class LinkService extends System.ServiceDelegate {
         if (w instanceof String) {
             q += (q.length() > 0 ? "&" : "") + "w=" + w;
         }
+        // and the payload version this app reads (contracts/apps/formats.json: the phone names the app to update)
+        q += (q.length() > 0 ? "&" : "") + "v=" + SukraraFace.VERSION;
         Communications.makeWebRequest(
-            LinkBackground.FETCH_URL + (q.length() > 0 ? "?" + q : ""),
+            LinkBackground.FETCH_URL + "?" + q,
             null,
             {
                 :method => Communications.HTTP_REQUEST_METHOD_GET,

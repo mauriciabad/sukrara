@@ -1,5 +1,5 @@
 {
-  "about": "Undo from the watch (README 'Undo from the watch'): each case is a POST to /sukrara/undo ('body', every value a string; 'encoding' as entries.json) at the phone's clock 'now' with entries.json's key, on a phone whose log has 'stored' ('w' = logged from the watch, 'del' = deleted); 'phone' as entries.json (whether it takes entries: default yes). 'signed' = the text the HMAC-SHA256 covers; 'answer' = the JSON the phone answers (HTTP 200); 'deletes' = the id of the entry the phone's own delete removes, or null (nothing changes). Each case starts from 'stored'. Run by WatchWritesTest (Android :integrations, the endpoint) and WatchEntryTest (:feature:treatments, the phone's delete path).",
+  "about": "Undo from the watch (README 'Undo from the watch'): each case is a POST to /sukrara/undo ('body', every value a string; 'encoding' as entries.json) at the phone's clock 'now' with entries.json's key, on a phone whose log has 'stored' ('w' = logged from the watch, 'del' = deleted); 'phone' as entries.json (whether it takes entries: default yes). 'signed' = the text the HMAC-SHA256 covers; 'answer' = the JSON the phone answers (HTTP 200); 'deletes' = the id of the entry the phone's own delete removes, or null (nothing changes). Each case starts from 'stored'. Run by WatchWritesTest (Android :integrations, the endpoint) and WatchEntryTest (:feature:treatments, the phone's delete path). Every body has 'v' = the watch app's payload version, not signed (none = 5); another version is answered r: v with the phone's, nothing else read (README 'Versions').",
   "now": 1794823776,
   "stored": [
     {"id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "k": "rapid", "a": 4.5, "t": 1794823746, "w": true},
@@ -11,7 +11,7 @@
     {
       "name": "Undo of rapid insulin the watch logged 30 s ago: deleted through the phone's own delete",
       "encoding": "json",
-      "body": {"id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "s": "1794823776", "mac": "55113fc6f81bcd62e0aca52686389e7375e516e0b7c30814b7ddf32f3cbc339a"},
+      "body": {"v": "5", "id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "s": "1794823776", "mac": "55113fc6f81bcd62e0aca52686389e7375e516e0b7c30814b7ddf32f3cbc339a"},
       "signed": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e|1794823776",
       "answer": {"id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "r": "done"},
       "deletes": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e"
@@ -19,7 +19,7 @@
     {
       "name": "the same as a form body (makeWebRequest's default): done",
       "encoding": "form",
-      "body": {"id": "9f2a4c3d-5e6b-4c7d-8e8f-1a2b3c4d5e6f", "s": "1794823771", "mac": "cd5bedd4e32e9e2345a2701c0933ae2a3cc3f87fa3e1b4d781c58cc385458ade"},
+      "body": {"v": "5", "id": "9f2a4c3d-5e6b-4c7d-8e8f-1a2b3c4d5e6f", "s": "1794823771", "mac": "cd5bedd4e32e9e2345a2701c0933ae2a3cc3f87fa3e1b4d781c58cc385458ade"},
       "signed": "9f2a4c3d-5e6b-4c7d-8e8f-1a2b3c4d5e6f|1794823771",
       "answer": {"id": "9f2a4c3d-5e6b-4c7d-8e8f-1a2b3c4d5e6f", "r": "done"},
       "deletes": "9f2a4c3d-5e6b-4c7d-8e8f-1a2b3c4d5e6f"
@@ -27,7 +27,7 @@
     {
       "name": "a retry whose answer was lost, or an entry deleted on the phone meanwhile: gone, nothing changes",
       "encoding": "json",
-      "body": {"id": "a03b5d4e-6f7c-4d8e-9f90-2b3c4d5e6f70", "s": "1794823776", "mac": "b5cbb218797233200a6f4b4195b475a7be1df64fe8a254b7f96e94c2b3ed2443"},
+      "body": {"v": "5", "id": "a03b5d4e-6f7c-4d8e-9f90-2b3c4d5e6f70", "s": "1794823776", "mac": "b5cbb218797233200a6f4b4195b475a7be1df64fe8a254b7f96e94c2b3ed2443"},
       "signed": "a03b5d4e-6f7c-4d8e-9f90-2b3c4d5e6f70|1794823776",
       "answer": {"id": "a03b5d4e-6f7c-4d8e-9f90-2b3c4d5e6f70", "r": "gone"},
       "deletes": null
@@ -35,7 +35,7 @@
     {
       "name": "an id the log doesn't have (never reached the phone): unknown, nothing changes",
       "encoding": "json",
-      "body": {"id": "b14c6e5f-7081-4e9f-a0a1-3c4d5e6f7081", "s": "1794823776", "mac": "ea57d1eaef4cfe7c4a83217b4e43db716d8676337c8305b62f22e42550527dfb"},
+      "body": {"v": "5", "id": "b14c6e5f-7081-4e9f-a0a1-3c4d5e6f7081", "s": "1794823776", "mac": "ea57d1eaef4cfe7c4a83217b4e43db716d8676337c8305b62f22e42550527dfb"},
       "signed": "b14c6e5f-7081-4e9f-a0a1-3c4d5e6f7081|1794823776",
       "answer": {"id": "b14c6e5f-7081-4e9f-a0a1-3c4d5e6f7081", "r": "unknown"},
       "deletes": null
@@ -43,7 +43,7 @@
     {
       "name": "the phone's own entry (not logged from the watch): foreign, refused",
       "encoding": "json",
-      "body": {"id": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c", "s": "1794823776", "mac": "03f4fd67428a0a2fb9cbcc1b9ffb407b1779ec0594aa765802cb20308cf10eca"},
+      "body": {"v": "5", "id": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c", "s": "1794823776", "mac": "03f4fd67428a0a2fb9cbcc1b9ffb407b1779ec0594aa765802cb20308cf10eca"},
       "signed": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c|1794823776",
       "answer": {"id": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c", "r": "foreign"},
       "deletes": null
@@ -51,7 +51,7 @@
     {
       "name": "a bad signature (another app on the phone, or an old key): nothing changes",
       "encoding": "json",
-      "body": {"id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "s": "1794823776", "mac": "0000000000000000000000000000000000000000000000000000000000000000"},
+      "body": {"v": "5", "id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "s": "1794823776", "mac": "0000000000000000000000000000000000000000000000000000000000000000"},
       "signed": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e|1794823776",
       "answer": {"id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "r": "sig"},
       "deletes": null
@@ -59,7 +59,7 @@
     {
       "name": "an old send time (sent 15 min ago, or the watch clock 15 min behind): nothing changes, the answer has the phone's clock",
       "encoding": "json",
-      "body": {"id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "s": "1794822876", "mac": "decb3e40845af05426cf51f03b8affb16d0f43249db35abb03c8e0e16c1333bd"},
+      "body": {"v": "5", "id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "s": "1794822876", "mac": "decb3e40845af05426cf51f03b8affb16d0f43249db35abb03c8e0e16c1333bd"},
       "signed": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e|1794822876",
       "answer": {"id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "r": "clock", "now": 1794823776},
       "deletes": null
@@ -67,7 +67,7 @@
     {
       "name": "an id that isn't a lowercase UUID v4: dropped",
       "encoding": "json",
-      "body": {"id": "8E1F3B2C-4D5A-4B6C-9D7E-0F1A2B3C4D5E", "s": "1794823776", "mac": "18155ac0ab7fa179b76524421f7356008d1e96c01125cd2a8b231e710e507e04"},
+      "body": {"v": "5", "id": "8E1F3B2C-4D5A-4B6C-9D7E-0F1A2B3C4D5E", "s": "1794823776", "mac": "18155ac0ab7fa179b76524421f7356008d1e96c01125cd2a8b231e710e507e04"},
       "signed": "8E1F3B2C-4D5A-4B6C-9D7E-0F1A2B3C4D5E|1794823776",
       "answer": {"id": "8E1F3B2C-4D5A-4B6C-9D7E-0F1A2B3C4D5E", "r": "id"},
       "deletes": null
@@ -76,7 +76,7 @@
       "name": "this phone takes no changes now (a follower the wearer no longer lets add entries): off, nothing changes",
       "phone": {"open": false},
       "encoding": "json",
-      "body": {"id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "s": "1794823776", "mac": "55113fc6f81bcd62e0aca52686389e7375e516e0b7c30814b7ddf32f3cbc339a"},
+      "body": {"v": "5", "id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "s": "1794823776", "mac": "55113fc6f81bcd62e0aca52686389e7375e516e0b7c30814b7ddf32f3cbc339a"},
       "signed": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e|1794823776",
       "answer": {"id": "8e1f3b2c-4d5a-4b6c-9d7e-0f1a2b3c4d5e", "r": "off"},
       "deletes": null

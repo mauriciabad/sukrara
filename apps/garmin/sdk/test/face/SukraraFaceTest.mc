@@ -80,6 +80,35 @@ function sukraraFaceKeepsTheNewest(logger as Logger) as Boolean {
     return ok;
 }
 
+// THE VERSION RULE: a payload of another version keeps its glucose alone and says which app to update; the next one of
+// this version clears it
+(:test)
+function sukraraFaceOtherVersions(logger as Logger) as Boolean {
+    var ok = true;
+    var other = SukraraFaceCases.other();
+    for (var i = 0; i < other.size(); i++) {
+        var c = other[i] as Dictionary;
+        SukraraFace.forget();
+        if (!SukraraFace.keep(c.get("payload"), SukraraFaceCases.NOW)) {
+            logger.error(c.get("name") + ": not kept");
+            ok = false;
+            continue;
+        }
+        if (!SukraraFaceExpect.same(SukraraFace.payload(), c.get("keeps"))) {
+            logger.error(c.get("name") + ": kept " + SukraraFace.payload() + ", the case keeps " + c.get("keeps"));
+            ok = false;
+        }
+        if (!(c.get("update") as String).equals(SukraraFace.update())) {
+            logger.error(c.get("name") + ": update " + SukraraFace.update());
+            ok = false;
+        }
+    }
+    SukraraFace.keep((SukraraFaceCases.cases()[0] as Dictionary).get("payload"), SukraraFaceCases.NOW + 60);
+    Test.assertMessage(SukraraFace.update() == null, "a payload of this version clears it");
+    SukraraFace.forget();
+    return ok;
+}
+
 // the value as the person reads it, its freshness, the trend and its place among the person's limits
 (:test)
 function sukraraFaceValue(logger as Logger) as Boolean {

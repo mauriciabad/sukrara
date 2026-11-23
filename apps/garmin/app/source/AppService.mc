@@ -75,7 +75,8 @@ class AppService extends LinkService {
     // every run's result: kept here (AppRun.keep), worked on, then the outbox, then Background.exit (which ends the run)
     function hand(data as Dictionary) as Void {
         var now = Time.now().value();
-        var p = data.get("d");
+        var p = Link.readable(data.get("d"));
+        data.put("d", p);
         // a new alert first, before the run's storage writes (the payload alone is about 4 KB): Garmin's notification
         // as soon as a newer payload is in (the order rule Link.accept keeps it by)
         if (Link.valid(p)) {

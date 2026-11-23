@@ -189,6 +189,7 @@ class WatchWrites(
 
     private suspend fun entry(req: HttpRequest): HttpAnswer {
         val f = fields(req) ?: return BAD
+        versioned(f)?.let { return it }
         val id = f["id"] ?: return BAD
         val k = f["k"] ?: return BAD
         val a = f["a"] ?: return BAD
@@ -215,6 +216,7 @@ class WatchWrites(
 
     private suspend fun undo(req: HttpRequest): HttpAnswer {
         val f = fields(req) ?: return BAD
+        versioned(f)?.let { return it }
         val id = f["id"] ?: return BAD
         val s = f["s"] ?: return BAD
         val mac = f["mac"] ?: return BAD
@@ -227,6 +229,7 @@ class WatchWrites(
 
     private suspend fun mute(req: HttpRequest): HttpAnswer {
         val f = fields(req) ?: return BAD
+        versioned(f)?.let { return it }
         val id = f["id"] ?: return BAD
         val act = f["do"] ?: return BAD
         val side = f["side"] ?: return BAD
@@ -268,6 +271,18 @@ class WatchWrites(
             log("watch $act $side ${minutes ?: 0} min: $id")
             ok(id, "done")
         }
+    }
+
+    /**
+     * THE VERSION RULE, before anything else is read: a write of another version (its `v`; none =
+     * [UNVERSIONED]) is answered `r: v` with this phone's version, and nothing else of it is read (the watch keeps it
+     * until the versions match). Null = this version.
+     */
+    private fun versioned(f: Map<String, String>): HttpAnswer? {
+        val v = f["v"]?.let { it.toIntOrNull() ?: -1 } ?: UNVERSIONED
+        if (v == WatchPayload.VERSION) return null
+        log("watch write of version $v: answered v")
+        return ok(f["id"].orEmpty(), "v", "v" to JsonPrimitive(WatchPayload.VERSION))
     }
 
     /** The signature and the send time: null when both hold, else the answer. */

@@ -60,6 +60,15 @@ module Outbox {
         var k = p.get("key");
         var list = items();
         var changed = false;
+        // a payload of this version: what waited for an update goes again
+        if (Link.update() == null) {
+            for (var i = 0; i < list.size(); i++) {
+                if ("v".equals(list[i].get("st"))) {
+                    list[i].put("st", "new");
+                    changed = true;
+                }
+            }
+        }
         if (k instanceof String && k.length() == 64 && !k.equals(Application.Storage.getValue(KEY))) {
             Application.Storage.setValue(KEY, k);
             for (var i = 0; i < list.size(); i++) {
@@ -158,9 +167,10 @@ module Outbox {
         return it.get("id") + "|" + it.get("k") + "|" + it.get("a") + "|" + it.get("t") + "|" + s + "|" + it.get("f");
     }
 
-    // The request's fields, every value a string, signed with [keyHex] at the phone's time [s].
+    // The request's fields, every value a string, signed with [keyHex] at the phone's time [s]; `v` the payload version
+    // this app speaks (not signed: the phone answers another one first, contracts/apps/formats.json).
     function params(it as Dictionary, s as Number, keyHex as String) as Dictionary {
-        var out = {"id" => it.get("id"), "s" => s.toString()} as Dictionary;
+        var out = {"v" => SukraraFace.VERSION.toString(), "id" => it.get("id"), "s" => s.toString()} as Dictionary;
         var w = it.get("w");
         var fields = "m".equals(w) ? ["do", "side", "min"] : "u".equals(w) ? [] : ["k", "a", "t", "f"];
         for (var i = 0; i < fields.size(); i++) {
@@ -280,7 +290,8 @@ module Outbox {
     // with the next item. README's tables: stored / known / done (an undo's gone too)
     // leave the outbox; an undo's unknown / foreign drop it; sig waits for a key; clock takes the
     // phone's now and goes again (twice at most per flush); pen waits for the person; id / kind / amount / when / off /
-    // action / bad drop it (when and off tell the person); anything else (no phone, a timeout, an old phone) keeps it.
+    // action / bad drop it (when and off tell the person); v (the phone speaks another version) keeps it until a
+    // payload of this version comes; anything else (no phone, a timeout) keeps it.
     function answer(id, code as Number, data, now as Number) as Boolean {
         var list = items();
         var it = id != null ? find(list, id) : null;
@@ -288,6 +299,13 @@ module Outbox {
             return false;
         }
         var r = data.get("r");
+        if ("v".equals(r)) {
+            // the phone speaks another version: it waits (Waiting: update Sukrara) until a payload of this one comes
+            it.put("st", "v");
+            save(list);
+            Link.other(data.get("v"));
+            return false;
+        }
         if ("sig".equals(r)) {
             it.put("st", "sig");
             save(list);
@@ -341,18 +359,22 @@ module Outbox {
 }
 
 // What the screen and the glance say about the outbox at the watch time [now]: "ask" (the phone asked about a pen),
-// "wait" (Waiting for the phone), "sent" (the phone stored the last one in the last 10 minutes), or null.
+// "update" (the phone speaks another version: Waiting, update Sukrara), "wait" (Waiting for the phone), "sent" (the
+// phone stored the last one in the last 10 minutes), or null.
 (:glance)
 module Sending {
     function state(now as Number) as String? {
         var v = Application.Storage.getValue(Outbox.STORE);
         if (v instanceof Array && v.size() > 0) {
+            var update = false;
             for (var i = 0; i < v.size(); i++) {
-                if ("pen".equals((v[i] as Dictionary).get("st"))) {
+                var st = (v[i] as Dictionary).get("st");
+                if ("pen".equals(st)) {
                     return "ask";
                 }
+                update = update || "v".equals(st);
             }
-            return "wait";
+            return update ? "update" : "wait";
         }
         var s = Application.Storage.getValue(Outbox.SENT);
         return s instanceof Number && now - s < Outbox.SENT_SHOWN_S ? "sent" : null;

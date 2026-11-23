@@ -155,7 +155,7 @@ class WatchWritesTest {
             val a = writes.answer(request(WatchWrites.ENTRIES, c))
             assertEquals(name, "200 OK", a.status)
             assertJson(name, answer, Json.parseToJsonElement(a.body))
-            if (r in setOf("sig", "clock", "id", "kind")) {
+            if (r in setOf("v", "sig", "clock", "id", "kind")) {
                 assertTrue("$name: never reaches the phone's path", port.got.isEmpty())
             } else {
                 val e = port.got.single()

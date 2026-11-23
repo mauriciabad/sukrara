@@ -131,6 +131,12 @@ class IntegrationsGallery {
             fetchOpen = true,
         )
 
+    /** [this] with the face's report saying it reads payload [version]. */
+    private fun GarminLinkState.reading(version: Int): GarminLinkState {
+        val r = LinkReport(now - Duration.ofMinutes(3), emptyList(), null, null, version)
+        return copy(report = r, reports = mapOf(WatchProfile.Face to r))
+    }
+
     private val pages: List<Pair<String, @Composable () -> Unit>> =
         listOf(
             "apps-off" to { AppsContent(AppsUi(true, XdripState.Off, emptyList(), UploadStatus.Off), now, AppsActions()) },
@@ -153,6 +159,11 @@ class IntegrationsGallery {
             },
             // one watch with the face, current
             "garmin-sent" to { GarminContent(GarminUi(sent, XdripState.Off, listOf(gcm)), now, GarminActions()) },
+            // THE VERSION RULE: the face reads an older payload version (update it), or a newer one (update Sukrara)
+            "garmin-update-watch" to
+                { GarminContent(GarminUi(sent.reading(version = 4), XdripState.Off, listOf(gcm)), now, GarminActions()) },
+            "garmin-update-phone" to
+                { GarminContent(GarminUi(sent.reading(version = 6), XdripState.Off, listOf(gcm)), now, GarminActions()) },
             // two watches: one away with an older reading, one without the face; the xDrip+ server on for other faces
             "garmin-two-watches" to {
                 GarminContent(

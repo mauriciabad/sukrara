@@ -85,6 +85,8 @@ def render():
     lines += ["            %s," % mc(x) for x in c["older"]["cases"]]
     lines += ["        ];", "    }", "", "    function ignored() as Array {", "        return ["]
     lines += ["            %s," % mc(x) for x in c["versions"]["ignored"]]
+    lines += ["        ];", "    }", "", "    function other() as Array {", "        return ["]
+    lines += ["            %s," % mc(x) for x in c["versions"]["other"]]
     for profile in ("app", "field"):
         lines += ["        ];", "    }", "", "    function %s() as Array {" % profile, "        return ["]
         lines += ["            %s," % mc({"name": x["name"], "payload": x["payload"]}) for x in c[profile]]
@@ -173,6 +175,7 @@ def schema():
             for e in v.iter_errors(x["payload"]):
                 bad.append("%s: %s: %s %s" % (profile, x["name"], e.json_path, e.message[:200]))
     bad += ["versions.ignored: %s matches the schema" % json.dumps(x) for x in c["versions"]["ignored"] if v.is_valid(x)]
+    bad += ["versions.other: %s matches the schema" % x["name"] for x in c["versions"]["other"] if v.is_valid(x["payload"])]
     return bad
 
 

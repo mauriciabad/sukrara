@@ -29,6 +29,9 @@ module Link {
     const SENT = "linkSent"; // the stored payload's sent (the order rule reads only this)
     // the watch's id on the phone (the app profile's push only, README `w`): its fetch says it (&w=)
     const WATCH = "linkW";
+    // the version of the last payload (or write answer) of another version, until one of this version comes: which app
+    // to update (update())
+    const OTHER = "linkOther";
     var _payload as Dictionary? = null;
     var skew as Number = 0; // how far the phone's clock is ahead of the watch's, s
     var _fetchedAt as Number? = null;
@@ -99,6 +102,7 @@ module Link {
         var sent = data.get("sent");
         var gt = data.get("gt");
         if (kept == null) {
+            d = readable(d);
             kept = accept(d, now);
             var g = valid(d) ? (d as Dictionary).get("g") : null;
             sent = valid(d) ? (d as Dictionary).get("sent") : 0;
@@ -181,6 +185,33 @@ module Link {
         Application.Storage.setValue(REPORT, "r=" + r + "&d=" + _drawn);
     }
 
+    // THE VERSION RULE (SukraraFace.otherVersion): [p] as this version reads it. A payload of another version is its
+    // glucose alone (SukraraFace.glucoseOnly), its version kept for the update line; one of this version clears that.
+    function readable(p) {
+        var other = SukraraFace.otherVersion(p, PROFILE);
+        if (other != null) {
+            Application.Storage.setValue(OTHER, other);
+            return SukraraFace.glucoseOnly(p as Dictionary);
+        }
+        if (valid(p)) {
+            Application.Storage.deleteValue(OTHER);
+        }
+        return p;
+    }
+
+    // Another version than this app's, from a write's answer (r: v, Outbox) or a payload (readable).
+    function other(v) as Void {
+        if (v instanceof Number && v != SukraraFace.VERSION) {
+            Application.Storage.setValue(OTHER, v);
+        }
+    }
+
+    // Which app to update (SukraraFace.toUpdate): UPDATE_APP (this one), UPDATE_PHONE (Sukrara on the phone) or null.
+    function update() as String? {
+        var o = Application.Storage.getValue(OTHER);
+        return SukraraFace.toUpdate(o instanceof Number ? o : null);
+    }
+
     // Keeps [p] when it is a payload of this version and the app's profile, no older than the stored one (README "Order").
     function accept(p, now as Number) as Boolean {
         if (!valid(p)) {
@@ -221,6 +252,7 @@ module Link {
         Application.Storage.deleteValue(TAKEN);
         Application.Storage.deleteValue(LinkBackground.HANDOFF);
         Application.Storage.deleteValue(WATCH);
+        Application.Storage.deleteValue(OTHER);
     }
 
     function valid(p) as Boolean {

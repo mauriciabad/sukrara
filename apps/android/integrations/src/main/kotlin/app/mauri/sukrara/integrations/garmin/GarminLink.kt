@@ -198,16 +198,20 @@ data class LinkReport(
     val runs: List<LinkRun>,
     val drawn: Instant?,
     val drawnSince: Instant?,
+    /** The payload version the app reads (the fetch's `v`; none = [WatchWrites.UNVERSIONED]). */
+    val version: Int = WatchWrites.UNVERSIONED,
 ) {
     /**
-     * Every message the app got in [runs] it kept the older payload for (`px` / `fx`: it can't read this phone's, a
-     * payload version it doesn't know), and none it took: the app needs updating, not a restart.
+     * THE VERSION RULE (contracts/apps/formats.json, docs/48 "When versions differ"): the app reads another version
+     * than this phone builds, and the smaller version is the one to update; null = the same version.
      */
-    val rejected: Boolean
-        get() {
-            val got = runs.filter { it.kind == "p" || it.kind == "f" || it.kind == "px" || it.kind == "fx" }
-            return got.isNotEmpty() && got.all { it.kind.endsWith("x") }
-        }
+    val update: UpdateSide?
+        get() =
+            when {
+                version < WatchPayload.VERSION -> UpdateSide.Watch
+                version > WatchPayload.VERSION -> UpdateSide.Phone
+                else -> null
+            }
 
     /**
      * The newest reading the face kept (its time): what it shows at the next wrist raise. [drawn] only moves while the
@@ -222,23 +226,42 @@ data class LinkReport(
                 ?: drawn
 
     companion object {
-        /** `r=p.<at>.<sent>.<readingAt>_f.…&d=<readingAt>.<since>` (shared/link Link.mc saveReport); null when there is none. */
+        /**
+         * `r=p.<at>.<sent>.<readingAt>_f.…&d=<readingAt>.<since>&v=<version>` (shared/link Link.mc saveReport,
+         * LinkService); null when it has neither runs nor a version (another face's fetch).
+         */
         fun parse(
             query: Map<String, String>,
             at: Instant,
         ): LinkReport? {
-            val r = query["r"] ?: return null
+            val version = query["v"]?.toIntOrNull()
+            val r = query["r"] ?: if (version != null) "" else return null
             val runs =
-                r.split('_').mapNotNull { run ->
+                r.split('_').filter { it.isNotEmpty() }.mapNotNull { run ->
                     val f = run.split('.')
                     if (f.size != 4) return@mapNotNull null
                     val n = f.drop(1).map { it.toLongOrNull() ?: return@mapNotNull null }
                     LinkRun(f[0], n[0], n[1], n[2])
                 }
             val d = query["d"]?.split('.')?.mapNotNull { it.toLongOrNull() }?.takeIf { it.size == 2 }
-            return LinkReport(at, runs, d?.let { Instant.ofEpochSecond(it[0]) }, d?.let { Instant.ofEpochSecond(it[1]) })
+            return LinkReport(
+                at,
+                runs,
+                d?.let { Instant.ofEpochSecond(it[0]) },
+                d?.let { Instant.ofEpochSecond(it[1]) },
+                version ?: WatchWrites.UNVERSIONED,
+            )
         }
     }
+}
+
+/** Which app a version mismatch names (docs/48 "When versions differ"): the one with the smaller version. */
+enum class UpdateSide {
+    /** The Sukrara app on the watch reads an older version: update it in Connect IQ. */
+    Watch,
+
+    /** The app on the watch is newer than this phone's Sukrara: update Sukrara. */
+    Phone,
 }
 
 /**

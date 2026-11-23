@@ -21,9 +21,11 @@ module SukraraFace {
     const URL = "http://127.0.0.1:17582/sukrara/face";
     // Connect IQ's shortest temporal event
     const EVERY_S = 300;
-    // the face's storage keys: the payload, and its `sent` alone (the order rule reads only that)
+    // the face's storage keys: the payload, and its `sent` alone (the order rule reads only this); the version of the
+    // last payload of another version (the version rule), until one of this version comes
     const STORE = "SukraraFace";
     const SENT = "SukraraFaceSent";
+    const OTHER = "SukraraFaceOther";
 
     var _payload as Dictionary? = null;
     var _skew as Number = 0;
@@ -74,7 +76,14 @@ module SukraraFace {
     // receive at the watch time [now]. It reads the kept payload's `sent` alone ([SENT]), never the kept payload beside
     // the new one: the face holds one payload at a time.
     function keep(data as Object?, now as Number) as Boolean {
-        if (!valid(data, "face")) {
+        // a payload of another version: its glucose alone, and which app to update (update())
+        var other = otherVersion(data, "face");
+        if (other != null) {
+            Application.Storage.setValue(OTHER, other);
+            data = glucoseOnly(data as Dictionary);
+        } else if (valid(data, "face")) {
+            Application.Storage.deleteValue(OTHER);
+        } else {
             return false;
         }
         var p = data as Dictionary;
@@ -100,6 +109,13 @@ module SukraraFace {
     function readingAt(now as Number) as Reading? {
         load();
         return _payload != null ? new Reading(_payload as Dictionary, _skew, now) : null;
+    }
+
+    // At every draw: which app to update, a line in place of what the face can't read: UPDATE_APP (this face),
+    // UPDATE_PHONE (Sukrara on the phone), or null. It ends by itself with the first payload of this version.
+    function update() as String? {
+        var o = Application.Storage.getValue(OTHER);
+        return toUpdate(o instanceof Number ? o : null);
     }
 
     // The newest payload as it came, for a key Reading doesn't have; null until Sukrara first answers.
@@ -129,5 +145,6 @@ module SukraraFace {
         _loaded = true;
         Application.Storage.deleteValue(STORE);
         Application.Storage.deleteValue(SENT);
+        Application.Storage.deleteValue(OTHER);
     }
 }

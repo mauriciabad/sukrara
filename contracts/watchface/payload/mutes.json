@@ -1,11 +1,11 @@
 {
-  "about": "Mutes from the watch (README 'Mute from the watch'): each case, in order, is a POST to /sukrara/mute ('body', every value a string; 'encoding' as entries.json) at the phone's clock 'now' with entries.json's key; 'signed' = the text the HMAC-SHA256 covers; 'answer' = the JSON the phone answers (HTTP 200); 'calls' = the alert runtime action it runs (AlertControls: muteAll(minutes or null), mute(side,minutes), unmute(side), unmuteAll(), remindLess(side), remindAsUsual(side)), or null (none). The cases run in order on one phone: a repeated id is known. Run by WatchWritesTest (Android :integrations).",
+  "about": "Mutes from the watch (README 'Mute from the watch'): each case, in order, is a POST to /sukrara/mute ('body', every value a string; 'encoding' as entries.json) at the phone's clock 'now' with entries.json's key; 'signed' = the text the HMAC-SHA256 covers; 'answer' = the JSON the phone answers (HTTP 200); 'calls' = the alert runtime action it runs (AlertControls: muteAll(minutes or null), mute(side,minutes), unmute(side), unmuteAll(), remindLess(side), remindAsUsual(side)), or null (none). The cases run in order on one phone: a repeated id is known. Run by WatchWritesTest (Android :integrations). Every body has 'v' = the watch app's payload version, not signed (none = 5); another version is answered r: v with the phone's, nothing else read (README 'Versions').",
   "now": 1794823776,
   "cases": [
     {
       "name": "Mute all for 30 min: the phone's Mute all",
       "encoding": "json",
-      "body": {"id": "b4f53723-e648-4d60-85c6-9102a3b4c5e6", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "8344389d1ea6e513b1fbfa4efcae74a0d12c8f1af4b998ddf434b79a0fc50fae"},
+      "body": {"v": "5", "id": "b4f53723-e648-4d60-85c6-9102a3b4c5e6", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "8344389d1ea6e513b1fbfa4efcae74a0d12c8f1af4b998ddf434b79a0fc50fae"},
       "signed": "b4f53723-e648-4d60-85c6-9102a3b4c5e6|mute|all|30|1794823776",
       "answer": {"id": "b4f53723-e648-4d60-85c6-9102a3b4c5e6", "r": "done"},
       "calls": "muteAll(30)"
@@ -13,7 +13,7 @@
     {
       "name": "Mute all until turned off (0)",
       "encoding": "form",
-      "body": {"id": "c5a64834-f759-4e71-96d7-a213b4c5d6f7", "do": "mute", "side": "all", "min": "0", "s": "1794823776", "mac": "216aa2a3c0847283be39479ed134a46a6464dc02bd070568321e9e7c8ee740e2"},
+      "body": {"v": "5", "id": "c5a64834-f759-4e71-96d7-a213b4c5d6f7", "do": "mute", "side": "all", "min": "0", "s": "1794823776", "mac": "216aa2a3c0847283be39479ed134a46a6464dc02bd070568321e9e7c8ee740e2"},
       "signed": "c5a64834-f759-4e71-96d7-a213b4c5d6f7|mute|all|0|1794823776",
       "answer": {"id": "c5a64834-f759-4e71-96d7-a213b4c5d6f7", "r": "done"},
       "calls": "muteAll(null)"
@@ -21,7 +21,7 @@
     {
       "name": "mute the low side for 1 h: the low alerts' own mute",
       "encoding": "json",
-      "body": {"id": "d6b75945-0a6a-4f82-87e8-b324c5d6e7a8", "do": "mute", "side": "low", "min": "60", "s": "1794823776", "mac": "056cbd2a3337ed56ebbaaa277e827c095e043d4fb697b2a0b84dd063e8aad048"},
+      "body": {"v": "5", "id": "d6b75945-0a6a-4f82-87e8-b324c5d6e7a8", "do": "mute", "side": "low", "min": "60", "s": "1794823776", "mac": "056cbd2a3337ed56ebbaaa277e827c095e043d4fb697b2a0b84dd063e8aad048"},
       "signed": "d6b75945-0a6a-4f82-87e8-b324c5d6e7a8|mute|low|60|1794823776",
       "answer": {"id": "d6b75945-0a6a-4f82-87e8-b324c5d6e7a8", "r": "done"},
       "calls": "mute(low,60)"
@@ -29,7 +29,7 @@
     {
       "name": "mute the high side for 15 min",
       "encoding": "json",
-      "body": {"id": "e7c86a56-1b7b-4a93-98f9-c435d6e7f8b9", "do": "mute", "side": "high", "min": "15", "s": "1794823776", "mac": "8b906bdea4e66140002511a637b8698a7310ecb3064ccee0cc5342c7dbec513d"},
+      "body": {"v": "5", "id": "e7c86a56-1b7b-4a93-98f9-c435d6e7f8b9", "do": "mute", "side": "high", "min": "15", "s": "1794823776", "mac": "8b906bdea4e66140002511a637b8698a7310ecb3064ccee0cc5342c7dbec513d"},
       "signed": "e7c86a56-1b7b-4a93-98f9-c435d6e7f8b9|mute|high|15|1794823776",
       "answer": {"id": "e7c86a56-1b7b-4a93-98f9-c435d6e7f8b9", "r": "done"},
       "calls": "mute(high,15)"
@@ -37,7 +37,7 @@
     {
       "name": "mute the high side for 2 h",
       "encoding": "json",
-      "body": {"id": "f8d97b67-2c8c-4ba4-89aa-d546e7f8a9ca", "do": "mute", "side": "high", "min": "120", "s": "1794823776", "mac": "f8046e76d6feec062f95bed07f480a9d0978a3edfcb9275a596ae40ec1852ffd"},
+      "body": {"v": "5", "id": "f8d97b67-2c8c-4ba4-89aa-d546e7f8a9ca", "do": "mute", "side": "high", "min": "120", "s": "1794823776", "mac": "f8046e76d6feec062f95bed07f480a9d0978a3edfcb9275a596ae40ec1852ffd"},
       "signed": "f8d97b67-2c8c-4ba4-89aa-d546e7f8a9ca|mute|high|120|1794823776",
       "answer": {"id": "f8d97b67-2c8c-4ba4-89aa-d546e7f8a9ca", "r": "done"},
       "calls": "mute(high,120)"
@@ -45,7 +45,7 @@
     {
       "name": "unmute the low side (ends its mute, or the quiet after carbs: the phone's Unmute)",
       "encoding": "json",
-      "body": {"id": "09eaac78-3d9d-4cb5-9abb-e657f8a9badb", "do": "unmute", "side": "low", "min": "0", "s": "1794823776", "mac": "b67224c2ee281028b7cb7b8e7df8ebcae198a177c9168ddf1f88652211b62ead"},
+      "body": {"v": "5", "id": "09eaac78-3d9d-4cb5-9abb-e657f8a9badb", "do": "unmute", "side": "low", "min": "0", "s": "1794823776", "mac": "b67224c2ee281028b7cb7b8e7df8ebcae198a177c9168ddf1f88652211b62ead"},
       "signed": "09eaac78-3d9d-4cb5-9abb-e657f8a9badb|unmute|low|0|1794823776",
       "answer": {"id": "09eaac78-3d9d-4cb5-9abb-e657f8a9badb", "r": "done"},
       "calls": "unmute(low)"
@@ -53,7 +53,7 @@
     {
       "name": "end Mute all",
       "encoding": "json",
-      "body": {"id": "1afbbd89-4eae-4dc6-8bcc-f768a9babcec", "do": "unmute", "side": "all", "min": "0", "s": "1794823776", "mac": "82cbd4195257f98bd86b4370f9495f854f452c20ca3b68e835866876233eb5cf"},
+      "body": {"v": "5", "id": "1afbbd89-4eae-4dc6-8bcc-f768a9babcec", "do": "unmute", "side": "all", "min": "0", "s": "1794823776", "mac": "82cbd4195257f98bd86b4370f9495f854f452c20ca3b68e835866876233eb5cf"},
       "signed": "1afbbd89-4eae-4dc6-8bcc-f768a9babcec|unmute|all|0|1794823776",
       "answer": {"id": "1afbbd89-4eae-4dc6-8bcc-f768a9babcec", "r": "done"},
       "calls": "unmuteAll()"
@@ -61,7 +61,7 @@
     {
       "name": "the same action again (a retry, a replay inside the send window): done once, nothing more",
       "encoding": "json",
-      "body": {"id": "b4f53723-e648-4d60-85c6-9102a3b4c5e6", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "8344389d1ea6e513b1fbfa4efcae74a0d12c8f1af4b998ddf434b79a0fc50fae"},
+      "body": {"v": "5", "id": "b4f53723-e648-4d60-85c6-9102a3b4c5e6", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "8344389d1ea6e513b1fbfa4efcae74a0d12c8f1af4b998ddf434b79a0fc50fae"},
       "signed": "b4f53723-e648-4d60-85c6-9102a3b4c5e6|mute|all|30|1794823776",
       "answer": {"id": "b4f53723-e648-4d60-85c6-9102a3b4c5e6", "r": "known"},
       "calls": null
@@ -69,7 +69,7 @@
     {
       "name": "a side until turned off: the phone has no endless side mute (only Mute all)",
       "encoding": "json",
-      "body": {"id": "2b0cce9a-5fbf-4ed7-9cdd-0879babccdfd", "do": "mute", "side": "low", "min": "0", "s": "1794823776", "mac": "348328800630a50cbebbec50c0e47908cf8bd39a9a551374c377bdb9cff7face"},
+      "body": {"v": "5", "id": "2b0cce9a-5fbf-4ed7-9cdd-0879babccdfd", "do": "mute", "side": "low", "min": "0", "s": "1794823776", "mac": "348328800630a50cbebbec50c0e47908cf8bd39a9a551374c377bdb9cff7face"},
       "signed": "2b0cce9a-5fbf-4ed7-9cdd-0879babccdfd|mute|low|0|1794823776",
       "answer": {"id": "2b0cce9a-5fbf-4ed7-9cdd-0879babccdfd", "r": "action"},
       "calls": null
@@ -77,7 +77,7 @@
     {
       "name": "a length the watch doesn't offer",
       "encoding": "json",
-      "body": {"id": "3c1ddfab-60c0-4fe8-8dee-198abccddeae", "do": "mute", "side": "all", "min": "45", "s": "1794823776", "mac": "633d2338881e10642015de9176e32e1ce96c8b2dfe8e28877ac7b1ddaa3a3143"},
+      "body": {"v": "5", "id": "3c1ddfab-60c0-4fe8-8dee-198abccddeae", "do": "mute", "side": "all", "min": "45", "s": "1794823776", "mac": "633d2338881e10642015de9176e32e1ce96c8b2dfe8e28877ac7b1ddaa3a3143"},
       "signed": "3c1ddfab-60c0-4fe8-8dee-198abccddeae|mute|all|45|1794823776",
       "answer": {"id": "3c1ddfab-60c0-4fe8-8dee-198abccddeae", "r": "action"},
       "calls": null
@@ -85,7 +85,7 @@
     {
       "name": "an unknown side",
       "encoding": "json",
-      "body": {"id": "4d2ee0bc-71d1-40f9-9eff-2a9bcddeefbf", "do": "mute", "side": "both", "min": "30", "s": "1794823776", "mac": "fc4e9d6614a5c0c7a9bb1304b580ac9dabc539a30c928971608d8638c14372cd"},
+      "body": {"v": "5", "id": "4d2ee0bc-71d1-40f9-9eff-2a9bcddeefbf", "do": "mute", "side": "both", "min": "30", "s": "1794823776", "mac": "fc4e9d6614a5c0c7a9bb1304b580ac9dabc539a30c928971608d8638c14372cd"},
       "signed": "4d2ee0bc-71d1-40f9-9eff-2a9bcddeefbf|mute|both|30|1794823776",
       "answer": {"id": "4d2ee0bc-71d1-40f9-9eff-2a9bcddeefbf", "r": "action"},
       "calls": null
@@ -93,7 +93,7 @@
     {
       "name": "a bad signature: nothing muted",
       "encoding": "json",
-      "body": {"id": "a5f2ee01-8e2f-4a1a-9f00-3bacdeeffac0", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "e36d2c881e2fc6f1bdf7a1a128f1069db118447438f59bd94e0ae02fc9c47d00"},
+      "body": {"v": "5", "id": "a5f2ee01-8e2f-4a1a-9f00-3bacdeeffac0", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "e36d2c881e2fc6f1bdf7a1a128f1069db118447438f59bd94e0ae02fc9c47d00"},
       "signed": "a5f2ee01-8e2f-4a1a-9f00-3bacdeeffac0|mute|all|30|1794823776",
       "answer": {"id": "a5f2ee01-8e2f-4a1a-9f00-3bacdeeffac0", "r": "sig"},
       "calls": null
@@ -101,7 +101,7 @@
     {
       "name": "an old send time: nothing changes, the answer has the phone's clock",
       "encoding": "json",
-      "body": {"id": "b6a3ff12-9f3a-4b2b-8a11-4cbdeffaabd1", "do": "unmute", "side": "all", "min": "0", "s": "1794822876", "mac": "90ad51668f6bf6504344a0a03dc45e1edff5cde2d283bb41684b994a7a6093fb"},
+      "body": {"v": "5", "id": "b6a3ff12-9f3a-4b2b-8a11-4cbdeffaabd1", "do": "unmute", "side": "all", "min": "0", "s": "1794822876", "mac": "90ad51668f6bf6504344a0a03dc45e1edff5cde2d283bb41684b994a7a6093fb"},
       "signed": "b6a3ff12-9f3a-4b2b-8a11-4cbdeffaabd1|unmute|all|0|1794822876",
       "answer": {"id": "b6a3ff12-9f3a-4b2b-8a11-4cbdeffaabd1", "r": "clock", "now": 1794823776},
       "calls": null
@@ -109,7 +109,7 @@
     {
       "name": "an id that isn't a lowercase UUID v4",
       "encoding": "json",
-      "body": {"id": "not-a-uuid", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "2a183f2d41f01791d0215f5d7733082d2ac3816ddf00338903344bb7b257d69f"},
+      "body": {"v": "5", "id": "not-a-uuid", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "2a183f2d41f01791d0215f5d7733082d2ac3816ddf00338903344bb7b257d69f"},
       "signed": "not-a-uuid|mute|all|30|1794823776",
       "answer": {"id": "not-a-uuid", "r": "id"},
       "calls": null
@@ -117,7 +117,7 @@
     {
       "name": "Remind less on the low side (the alert keeps ringing, less often: the phone's Remind less)",
       "encoding": "json",
-      "body": {"id": "5e3ff1cd-82e2-41fa-8f00-3bdeeffaabc2", "do": "less", "side": "low", "min": "0", "s": "1794823776", "mac": "fb8142b9d52dca648e4d77141f3c8d3cd58283586863125ec96e925735a35141"},
+      "body": {"v": "5", "id": "5e3ff1cd-82e2-41fa-8f00-3bdeeffaabc2", "do": "less", "side": "low", "min": "0", "s": "1794823776", "mac": "fb8142b9d52dca648e4d77141f3c8d3cd58283586863125ec96e925735a35141"},
       "signed": "5e3ff1cd-82e2-41fa-8f00-3bdeeffaabc2|less|low|0|1794823776",
       "answer": {"id": "5e3ff1cd-82e2-41fa-8f00-3bdeeffaabc2", "r": "done"},
       "calls": "remindLess(low)"
@@ -125,7 +125,7 @@
     {
       "name": "Remind as usual on the high side",
       "encoding": "json",
-      "body": {"id": "6f40a2de-93f3-420b-9011-4ceffaabbcd3", "do": "usual", "side": "high", "min": "0", "s": "1794823776", "mac": "203f386a3c99482d0ae9529da032659f71c7528afca4a778b9d89b9c34c597db"},
+      "body": {"v": "5", "id": "6f40a2de-93f3-420b-9011-4ceffaabbcd3", "do": "usual", "side": "high", "min": "0", "s": "1794823776", "mac": "203f386a3c99482d0ae9529da032659f71c7528afca4a778b9d89b9c34c597db"},
       "signed": "6f40a2de-93f3-420b-9011-4ceffaabbcd3|usual|high|0|1794823776",
       "answer": {"id": "6f40a2de-93f3-420b-9011-4ceffaabbcd3", "r": "done"},
       "calls": "remindAsUsual(high)"
@@ -133,7 +133,7 @@
     {
       "name": "Remind less for Mute all: no such action",
       "encoding": "json",
-      "body": {"id": "7051b3ef-a404-431c-8122-5dfaabbccde4", "do": "less", "side": "all", "min": "0", "s": "1794823776", "mac": "f491539008c7d74ed457930d02cb954bcb1831322dd9d3261c2f381f900e9bce"},
+      "body": {"v": "5", "id": "7051b3ef-a404-431c-8122-5dfaabbccde4", "do": "less", "side": "all", "min": "0", "s": "1794823776", "mac": "f491539008c7d74ed457930d02cb954bcb1831322dd9d3261c2f381f900e9bce"},
       "signed": "7051b3ef-a404-431c-8122-5dfaabbccde4|less|all|0|1794823776",
       "answer": {"id": "7051b3ef-a404-431c-8122-5dfaabbccde4", "r": "action"},
       "calls": null
@@ -141,9 +141,17 @@
     {
       "name": "Remind less with a length: no such action",
       "encoding": "json",
-      "body": {"id": "8162c4f0-b515-442d-9233-6eabbccddef5", "do": "less", "side": "low", "min": "30", "s": "1794823776", "mac": "9e06a8f1b82e1dad23f4455f1a7488801c1343ef670d5687354c35af6eb92a59"},
+      "body": {"v": "5", "id": "8162c4f0-b515-442d-9233-6eabbccddef5", "do": "less", "side": "low", "min": "30", "s": "1794823776", "mac": "9e06a8f1b82e1dad23f4455f1a7488801c1343ef670d5687354c35af6eb92a59"},
       "signed": "8162c4f0-b515-442d-9233-6eabbccddef5|less|low|30|1794823776",
       "answer": {"id": "8162c4f0-b515-442d-9233-6eabbccddef5", "r": "action"},
+      "calls": null
+    },
+    {
+      "name": "Mute all from a watch app of version 4: nothing done, the phone answers with its own version (the watch app is the one to update)",
+      "encoding": "json",
+      "body": {"v": "4", "id": "1a4b8c7d-5e6f-4a71-8c8d-9e0f1a2b3c4d", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "954e2bf86c567bab7a77d46e202538bf57f947fb560716c86afe4fdf4495acc1"},
+      "signed": "1a4b8c7d-5e6f-4a71-8c8d-9e0f1a2b3c4d|mute|all|30|1794823776",
+      "answer": {"id": "1a4b8c7d-5e6f-4a71-8c8d-9e0f1a2b3c4d", "r": "v", "v": 5},
       "calls": null
     }
   ]

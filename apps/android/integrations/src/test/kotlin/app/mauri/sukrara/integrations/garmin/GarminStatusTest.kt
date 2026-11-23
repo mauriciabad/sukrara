@@ -246,23 +246,28 @@ class GarminStatusTest {
     }
 
     @Test
-    fun anAppThatRejectsEveryMessageNeedsUpdating() {
-        // a face of another payload version keeps the older payload for every push and fetch (px / fx): say so
-        val runs = listOf(LinkRun("px", 1, 0, 0), LinkRun("fx", 2, 0, 0), LinkRun("S", 3, 1, 0), LinkRun("px", 4, 0, 0))
+    fun anAppOfAnotherVersionNamesTheAppToUpdate() {
+        // THE VERSION RULE: the face's fetch says it reads version 4, this phone builds 5: the face needs updating
+        val runs = listOf(LinkRun("p", 1, 1, 1), LinkRun("f", 2, 2, 1))
         val w = watch.copy(delivered = ago(1), reading = ago(1))
-        val s = base.copy(watches = listOf(w), report = LinkReport(now, runs, drawn = null, drawnSince = null))
-        assertTrue(s.report!!.rejected)
-        assertEquals(WatchLine(true, null, WatchLine.Problem.Outdated), line(w, s))
-        assertEquals(GarminStatus.Outdated("Descent"), of(s))
-        assertTrue(of(s).isProblem())
-        // one message it took: not all rejects
-        val took = s.copy(report = s.report!!.copy(runs = runs + LinkRun("p", 5, 5, ago(1).epochSecond)))
-        assertEquals(null, line(w, took).problem)
+        val face = LinkReport(now, runs, drawn = null, drawnSince = null, version = 4)
+        val older = base.copy(watches = listOf(w), report = face, reports = mapOf(WatchProfile.Face to face))
+        assertEquals(UpdateSide.Watch, older.report!!.update)
+        assertEquals(WatchLine.Problem.Outdated, line(w, older).problem)
+        assertEquals(GarminStatus.Outdated("Descent", GarminApp.Aura, UpdateSide.Watch), of(older))
+        assertTrue(of(older).isProblem())
+        // a face that reads version 6: this phone's Sukrara is the one to update
+        val newer = older.copy(report = face.copy(version = 6), reports = mapOf(WatchProfile.Face to face.copy(version = 6)))
+        assertEquals(WatchLine.Problem.PhoneOutdated, line(w, newer).problem)
+        assertEquals(GarminStatus.Outdated("Descent", GarminApp.Aura, UpdateSide.Phone), of(newer))
+        // the same version (a fetch without v is version 5): nothing to update
+        val same = face.copy(version = WatchPayload.VERSION)
+        assertTrue(of(older.copy(report = same, reports = mapOf(WatchProfile.Face to same))) !is GarminStatus.Outdated)
         // the same rule for the app and the field (their own reports)
         val app = GarminWatch.of(7, "Descent", true, mapOf(GarminApp.App.id to AppLink(installed = true, delivered = ago(1))))
-        val r = LinkReport(now, runs, drawn = null, drawnSince = null)
+        val r = LinkReport(now, runs, drawn = null, drawnSince = null, version = 6)
         assertEquals(
-            AppLine.Outdated,
+            AppLine.Outdated(UpdateSide.Phone),
             AppLine.on(GarminApp.App, app, base.copy(watches = listOf(app), reports = mapOf(WatchProfile.App to r)), now),
         )
         assertEquals(AppLine.Got(ago(1)), AppLine.on(GarminApp.App, app, base.copy(watches = listOf(app)), now))

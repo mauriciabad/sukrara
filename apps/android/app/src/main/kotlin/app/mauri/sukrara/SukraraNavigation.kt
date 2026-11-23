@@ -835,6 +835,9 @@ fun SukraraNavigation(
                                 graph.clock::now,
                                 openXdrip = { backStack.push(XdripRoute) },
                                 openWatch = { id, name -> backStack.push(GarminWatchRoute(id, name)) },
+                                updateSukrara = {
+                                    AppUpdate.open(context, graph.updates != null) { backStack.push(SettingsKey("about")) }
+                                },
                             )
                         }
                     }

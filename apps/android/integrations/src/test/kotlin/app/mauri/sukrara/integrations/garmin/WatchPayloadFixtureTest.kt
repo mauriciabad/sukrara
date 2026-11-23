@@ -38,6 +38,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.int
@@ -121,12 +122,13 @@ class WatchPayloadFixtureTest {
     @Test
     fun theSchemaRejectsWhatTheWatchIgnores() {
         // cases.json's versions.ignored: every app ignores these, and the schema says none is a payload
-        for (x in file
-            .getValue("versions")
-            .jsonObject
-            .getValue("ignored")
-            .jsonArray) {
+        val versions = file.getValue("versions").jsonObject
+        for (x in versions.getValue("ignored").jsonArray) {
             assertTrue("$x is valid", PayloadSchema.errors(x).isNotEmpty())
+        }
+        // and none of another version is one of this version's
+        for (x in versions.getValue("other").jsonArray) {
+            assertTrue("$x is valid", PayloadSchema.errors(x.jsonObject.getValue("payload")).isNotEmpty())
         }
         // the face and the field never carry the key (the fetch never does)
         val face =
@@ -137,6 +139,24 @@ class WatchPayloadFixtureTest {
                 .getValue("payload")
                 .jsonObject
         assertTrue(PayloadSchema.errors(JsonObject(face + ("key" to JsonPrimitive("0".repeat(64))))).isNotEmpty())
+    }
+
+    @Test
+    fun theFetchSaysTheAppsVersion() {
+        // THE VERSION RULE on the phone: a fetch's v (none = 5) and which side to update
+        for (c in file
+            .getValue("versions")
+            .jsonObject
+            .getValue("fetch")
+            .jsonArray
+            .map { it.jsonObject }) {
+            val q = c.getValue("query").jsonPrimitive.content
+            val query = q.split('&').associate { it.substringBefore('=') to it.substringAfter('=') }
+            val report = LinkReport.parse(query, Instant.ofEpochSecond(now))!!
+            assertEquals(q, c.getValue("version").jsonPrimitive.int, report.version)
+            val side = c.getValue("update").jsonPrimitive.contentOrNull
+            assertEquals(q, side, report.update?.name?.lowercase())
+        }
     }
 
     @Test

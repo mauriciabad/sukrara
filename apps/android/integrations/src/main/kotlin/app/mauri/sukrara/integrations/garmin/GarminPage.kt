@@ -9,6 +9,7 @@ import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -19,6 +20,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import app.mauri.sukrara.designsystem.banner.NoticeAction
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeDefaults
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.rows.ActionButtonsRow
@@ -68,7 +73,7 @@ internal fun shows(
     w: GarminWatch,
     s: GarminLinkState,
 ): Instant? {
-    if (missed(w, s) || rejected(w, s)) return s.report?.has
+    if (missed(w, s) || update(w, s) != null) return s.report?.has
     return listOfNotNull(w.reading, s.report?.has?.takeIf { only(w, s) }).maxOrNull()
 }
 
@@ -112,11 +117,18 @@ private fun reportOf(
     s: GarminLinkState,
 ) = s.reports[app.profile]?.takeIf { !app.isFace || soleFace(app, s) }
 
-/** The face on [w] keeps every message it gets and takes none: it can't read this phone's (it needs updating). */
-internal fun rejected(
+/** The face on [w] reads another payload version than this phone's: which app to update (its report says its version). */
+internal fun update(
     w: GarminWatch,
     s: GarminLinkState,
-) = only(w, s) && s.report?.rejected == true
+) = s.report?.update?.takeIf { only(w, s) }
+
+/**
+ * THE VERSION RULE on this phone: the first of Sukrara's apps whose report says another version, and which side to
+ * update; null = every app that reports reads this phone's version.
+ */
+fun GarminLinkState.mismatch(): Pair<GarminApp, UpdateSide>? =
+    GarminApp.entries.firstNotNullOfOrNull { app -> reportOf(app, this)?.update?.let { app to it } }
 
 /** A report this long after a delivery has had time to count it. */
 private val REPORT_AFTER: Duration = Duration.ofSeconds(30)
@@ -184,9 +196,11 @@ sealed interface GarminStatus {
 
     data object Waiting : GarminStatus
 
-    /** The face on [watch] can't read this phone's messages: it needs updating. */
+    /** [app] on [watch] reads another version than this phone: [update] says which side to update. */
     data class Outdated(
         val watch: String,
+        val app: GarminApp,
+        val update: UpdateSide,
     ) : GarminStatus
 
     companion object {
@@ -224,9 +238,10 @@ sealed interface GarminStatus {
 
                 else -> {
                     val sent = near.filter { it.delivered() }.maxByOrNull { it.delivered!! }
-                    val outdated = near.firstOrNull { rejected(it, s) }
+                    val outdated = s.mismatch()
+                    val on = outdated?.let { (app, _) -> near.firstOrNull { it.has(app) != false } }
                     when {
-                        outdated != null -> Outdated(outdated.name)
+                        outdated != null && on != null -> Outdated(on.name, outdated.first, outdated.second)
                         sent != null -> Sent(sent.name, shows(sent, s))
                         fetched != null -> Fetching(fetched)
                         near.any { it.failed != null } -> Failing(near.first().name)
@@ -251,8 +266,11 @@ data class WatchLine(
         /** No Sukrara app is installed on it. */
         NoFace,
 
-        /** The face keeps every message it gets and takes none: it can't read this phone's, it needs updating. */
+        /** The face reads an older version than this phone: it needs updating. */
         Outdated,
+
+        /** The face reads a newer version than this phone: Sukrara on the phone needs updating. */
+        PhoneOutdated,
 
         /** The watch takes the messages but the face doesn't ([missed]): restart the watch (#244). */
         NotTaking,
@@ -284,7 +302,8 @@ data class WatchLine(
                 when {
                     w.installed == false -> Problem.NoFace
                     !w.connected -> null
-                    rejected(w, s) -> Problem.Outdated
+                    update(w, s) == UpdateSide.Watch -> Problem.Outdated
+                    update(w, s) == UpdateSide.Phone -> Problem.PhoneOutdated
                     missed(w, s) -> Problem.NotTaking
                     w.delivered() -> null
                     w.stuck(now) -> Problem.Stuck
@@ -307,8 +326,10 @@ sealed interface AppLine {
     /** No watch Garmin Connect knows has it. */
     data object NotInstalled : AppLine
 
-    /** It keeps every message it gets and takes none: it can't read this phone's, it needs updating. */
-    data object Outdated : AppLine
+    /** It reads another version than this phone: [update] says which side to update. */
+    data class Outdated(
+        val update: UpdateSide,
+    ) : AppLine
 
     /** Another app holds the port: only Garmin Connect's messages reach it. */
     data object PortBusy : AppLine
@@ -336,8 +357,10 @@ sealed interface AppLine {
             now: Instant,
         ): AppLine {
             val fetched = fresh(fetchedBy(app, s), now)
+            val update = reportOf(app, s)?.update
             return when {
                 s.watches.isNotEmpty() && s.watches.all { it.has(app) == false } && fetched == null -> NotInstalled
+                update != null -> Outdated(update)
                 s.portBusy -> PortBusy
                 fetched != null -> InUse(fetched)
                 s.watches.any { it.has(app) == true } -> Idle
@@ -368,7 +391,7 @@ sealed interface AppLine {
             val got = w.link(app)?.delivered?.takeIf { w.has(app) != false }
             return when {
                 w.has(app) == false && asked == null -> NotInstalled
-                only && reportOf(app, s)?.rejected == true -> Outdated
+                only && reportOf(app, s)?.update != null -> Outdated(reportOf(app, s)!!.update!!)
                 s.portBusy -> PortBusy
                 asked != null -> InUse(asked)
                 got != null -> Got(got)
@@ -462,6 +485,8 @@ class GarminActions(
     val openWatch: (Long, String) -> Unit = { _, _ -> },
     /** An app's Connect IQ store page. */
     val openStore: (GarminApp) -> Unit = {},
+    /** Sukrara's own update on this phone: the GitHub version's updater, or Sukrara's Google Play listing. */
+    val updateSukrara: () -> Unit = {},
 )
 
 @Composable
@@ -470,6 +495,7 @@ fun GarminPage(
     now: () -> Instant,
     openXdrip: () -> Unit,
     openWatch: (Long, String) -> Unit,
+    updateSukrara: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -484,6 +510,7 @@ fun GarminPage(
             openXdrip,
             openWatch,
             { viewModel.openStore(it) },
+            updateSukrara,
         ),
         modifier,
     )
@@ -535,6 +562,7 @@ fun GarminContent(
                 else -> null
             },
     )
+    if (status is GarminStatus.Outdated) UpdateNotice(status, actions, Modifier.padding(NoticeDefaults.PageMargins))
     if (s.on) {
         if (s.garminConnect) {
             // always enabled: SPA draws a disabled button's label at full contrast, and a send with no watch near does no harm
@@ -686,6 +714,30 @@ fun GarminContent(
     FooterText(stringResource(R.string.in_garmin_footer))
 }
 
+/**
+ * THE VERSION RULE on the Garmin page: which app to update and the one button to its update (the Connect IQ listing,
+ * or Sukrara's own update); it goes by itself at the first report of the same version.
+ */
+@Composable
+fun UpdateNotice(
+    status: GarminStatus.Outdated,
+    actions: GarminActions,
+    modifier: Modifier = Modifier,
+) {
+    val watch = status.update == UpdateSide.Watch
+    NoticeCard(
+        stringResource(if (watch) R.string.in_garmin_update_watch_how else R.string.in_garmin_update_phone_how),
+        modifier,
+        title = updateText(status.app, status.watch, status.update),
+        tone = NoticeTone.Warning,
+        action =
+            NoticeAction(
+                stringResource(if (watch) R.string.in_garmin_update else R.string.in_garmin_update_sukrara),
+                { if (watch) actions.openStore(status.app) else actions.updateSukrara() },
+            ),
+    )
+}
+
 /** "Connected · has the 14:21 reading · …": one time per line, a clock time to compare with the phone's. */
 @Composable
 internal fun watchText(
@@ -706,6 +758,10 @@ internal fun watchText(
 
         WatchLine.Problem.Outdated -> {
             parts += stringResource(R.string.in_garmin_watch_outdated)
+        }
+
+        WatchLine.Problem.PhoneOutdated -> {
+            parts += stringResource(R.string.in_garmin_watch_phone_outdated)
         }
 
         WatchLine.Problem.Stuck -> {
@@ -798,8 +854,16 @@ private fun appText(
                 stringResource(R.string.in_garmin_face_port_busy)
             }
 
-            AppLine.Outdated -> {
-                stringResource(R.string.in_garmin_app_outdated)
+            is AppLine.Outdated -> {
+                stringResource(
+                    if (line.update ==
+                        UpdateSide.Watch
+                    ) {
+                        R.string.in_garmin_app_outdated
+                    } else {
+                        R.string.in_garmin_app_phone_outdated
+                    },
+                )
             }
 
             is AppLine.InUse -> {
@@ -878,9 +942,25 @@ fun garminStatusText(
         }
 
         is GarminStatus.Outdated -> {
-            stringResource(R.string.in_garmin_outdated, status.watch)
+            updateText(status.app, status.watch, status.update)
         }
     }
+
+/**
+ * THE VERSION RULE's line, the app on the watch named (docs/48 "When versions differ"): "Sukrara Aura watch face on
+ * Descent needs an update", or "… is newer than this phone's Sukrara".
+ */
+@Composable
+fun updateText(
+    app: GarminApp,
+    watch: String,
+    update: UpdateSide,
+): String =
+    stringResource(
+        if (update == UpdateSide.Watch) R.string.in_garmin_outdated else R.string.in_garmin_phone_outdated,
+        stringResource(app.nameRes),
+        watch,
+    )
 
 /** Whether the Garmin row's line is a problem the person fixes outside the app (drawn in the error colour). */
 fun GarminStatus.isProblem() =

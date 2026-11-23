@@ -3095,6 +3095,33 @@ relock doesn't bring it back), swiped, muted, treated or over; its next ring wit
 Turning the main switch off stops pushes, fetches, entries and mutes at once (the port closes); on again resumes them.
 TalkBack reads each row as a plain row with its text.
 
+## When versions differ (shared formats)
+
+Every app (#262, docs/48 "When versions differ"; THE registry `contracts/apps/formats.json`, its tests on every app).
+Apps exchange versioned formats (sharing, treatments, invite, avatar, the watch payload and its writes); until 1.0.0
+each reads only the current version, but every mismatch is detected and **the device in view names the app to update**
+(the smaller version), never a blank face.
+
+- **Watch payload** (built): a watch app that gets a payload of another version keeps its glucose alone (the frozen
+  `g`: value and age, no trend, history, status or anything else) and knows which app to update: a newer payload →
+  this app, an older one → Sukrara on the phone. Every fetch says the version it reads (`&v=`), so the phone's
+  **Garmin page** shows a warning notice under the main switch: *Sukrara Aura watch face on Descent needs an update* ·
+  "It can't read this phone's readings. Update it in Connect IQ, then sync the watch." + **Update** (its Connect IQ
+  listing), or *… is newer than this phone's Sukrara* · "This phone can't send it readings until Sukrara is updated." +
+  **Update Sukrara** (the GitHub version: About, its updater; Google Play: Sukrara's listing); the watch's line and the
+  app's row say the same, and Share with apps' Garmin row in the error colour. Writes from the watch (entries, undo,
+  mute) carry `v`; the phone answers another version `r: v` and reads nothing else; the watch keeps them and sends them
+  after the first payload it can read.
+- Still to come (#262): the update line on the watch (Aura, the watch app and glance, the data field), home's banner,
+  followers, the wearer's Share rows, invites (docs/48's table).
+
+**States and exits**: *versions match* → nothing shown. *The watch reads another version* → the Garmin page's notice,
+the watch's line and the app's row name the app to update, with one button to that update; the watch keeps showing the
+current glucose (ageing by the freshness steps), its entries wait in its outbox. Out: updating, which clears it at the
+first report or payload of the same version (no tap); Back leaves the page; nothing to close or mute because it ends by
+itself. Reachable without a notification: the Garmin page (Settings › Share with apps › Garmin). TalkBack reads the
+notice's title, text and button like any notice.
+
 ## Sukrara on Garmin watches: the app and the data field (the watch)
 
 The watch side of the two apps above (`apps/garmin/app`, `apps/garmin/field`; design `contracts/watchface/app/SPEC.md`,

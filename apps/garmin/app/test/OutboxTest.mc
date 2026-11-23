@@ -66,6 +66,10 @@ function outboxSignsEveryCase(logger as Logger) as Boolean {
     for (var i = 0; i < all.size(); i++) {
         var c = all[i][0] as Dictionary;
         var body = c.get("body") as Dictionary;
+        // a write of another version (or of the builds before writes said one) is another app's, not this one's
+        if (!SukraraFace.VERSION.toString().equals(body.get("v"))) {
+            continue;
+        }
         var it = OutboxCases.item(body, all[i][1] as Boolean);
         var text = Outbox.signed(it, body.get("s") as String);
         if (!text.equals(c.get("signed"))) {
@@ -191,6 +195,23 @@ function outboxEveryAnswer(logger as Logger) as Boolean {
     Outbox.answer(it.get("id"), 200, c.get("answer"), now);
     Outbox.pen(it.get("id") as String, false);
     Test.assertEqualMessage(Outbox.items().size(), 0, "Cancel: dropped");
+    // v: the phone speaks another version: kept, not sent again until a payload of this version comes; the screen and
+    // the glance say to update Sukrara on the phone (the answer's v is older)
+    c = OutboxCases.answered(e, "v");
+    it = OutboxCases.item(c.get("body") as Dictionary, false);
+    OutboxCases.start(it);
+    Link.reset();
+    Test.assertMessage(!Outbox.answer(it.get("id"), 200, {"id" => it.get("id"), "r" => "v", "v" => 4}, now), "v: stop");
+    Test.assertEqualMessage(Outbox.items().size(), 1, "v: kept");
+    Test.assertMessage(Outbox.next(now) == null, "v: waits");
+    Test.assertEqualMessage(Sending.state(now), "update", "v: Waiting, update Sukrara");
+    Test.assertEqualMessage(Link.update(), SukraraFace.UPDATE_PHONE, "v: an older phone");
+    Outbox.received({"sent" => now}, now);
+    Test.assertMessage(Outbox.next(now) == null, "still another version: still waits");
+    Link.readable({"v" => SukraraFace.VERSION, "p" => Link.PROFILE, "sent" => now});
+    Outbox.received({"sent" => now}, now);
+    Test.assertEqualMessage((Outbox.next(now) as Dictionary).get("id"), it.get("id"), "a payload of this version: sent again");
+    Link.reset();
     // no phone, an old phone, another entry's answer: kept, stop for now
     c = OutboxCases.answered(e, "stored");
     it = OutboxCases.item(c.get("body") as Dictionary, false);
@@ -278,7 +299,7 @@ function outboxUndo(logger as Logger) as Boolean {
     Test.assertEqualMessage(next.get("w"), "u", "then its undo");
     Test.assertEqualMessage(next.get("id"), entry.get("id"), "by the entry's id");
     var sent = Outbox.params(next, now, WriteCases.KEY);
-    Test.assertEqualMessage(sent.size(), 3, "id, s, mac");
+    Test.assertEqualMessage(sent.size(), 4, "v, id, s, mac");
     Outbox.reset();
     return true;
 }
