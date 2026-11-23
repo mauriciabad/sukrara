@@ -192,8 +192,7 @@
     <string name="reason_update_wearer_title">%1$s tiene que actualizar Sukrara</string>
     <string name="reason_update_wearer_title_unnamed">Su móvil tiene que actualizar Sukrara</string>
     <string name="reason_update_wearer_body">Su Sukrara es más antigua que esta. Las lecturas nuevas llegarán cuando la actualice.</string>
-    <string name="home_link_update">No se pueden leer las lecturas nuevas · actualiza Sukrara</string>
-    <string name="home_link_update_wearer">Su Sukrara necesita actualizarse</string>
+    <string name="home_link_update">No se pueden leer las lecturas nuevas</string>
     <string name="data_store_settings_title">Ajustes</string>
     <string name="data_store_settings_text">Tus ajustes volvieron a los valores por defecto. Revisa tus niveles de alerta y silencios.</string>
     <string name="data_open_alerts">Abrir ajustes de alertas</string>

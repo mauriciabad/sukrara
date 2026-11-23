@@ -574,10 +574,9 @@ private fun FollowerHeader(state: HomeUiState) {
                     stringResource(R.string.home_link_revoked) to true
                 }
 
+                // either way this phone can't read them; the reason under the card names the app to update
                 is NoDataReason.UpdateToFollow -> {
-                    stringResource(
-                        if (reason.update == LinkUpdate.ThisApp) R.string.home_link_update else R.string.home_link_update_wearer,
-                    ) to true
+                    stringResource(R.string.home_link_update) to true
                 }
 
                 is NoDataReason.WearerSilent -> {
