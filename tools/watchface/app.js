@@ -844,12 +844,13 @@ var WL = (function () {
   // a number of the report (small) with its name under it (xtiny) after its goal's mark
   // a number over its name and goal mark; o.f the number's role (small), o.marks false: the name in the goal's colour
   // instead of the mark
-  function numsRow(nums, y) {
+  // [max] the columns' widest spacing (round 92, a rectangle's thirds)
+  function numsRow(nums, y, max) {
     var cap = capOf('xtiny'), ly = y + 6 + cap, tries = [['small', true], ['small', false], ['tiny', true], ['tiny', false], ['xtiny', false]], r;
     for (var k = 0; k < tries.length; k++) {
       var f = tries[k][0], marks = tries[k][1];
       var L = nums.map(function (m) { return ww(m[1], 'xtiny') + (marks ? cap * 0.75 + 4 : 0); }), N = nums.map(function (m) { return ww(m[0], f); });
-      var dx = Math.min(92, edgeX(ly + fu('xtiny').desc) - Math.max(L[0], L[2]) / 2, edgeX(y + 2) - Math.max(N[0], N[2]) / 2);
+      var dx = Math.min(max || 92, edgeX(ly + fu('xtiny').desc) - Math.max(L[0], L[2]) / 2, edgeX(y + 2) - Math.max(N[0], N[2]) / 2);
       var need = Math.max(L[0] / 2 + L[1] / 2, L[1] / 2 + L[2] / 2, N[0] / 2 + N[1] / 2, N[1] / 2 + N[2] / 2) + 6;
       r = { f: f, marks: marks, dx: dx };
       if (dx >= need) break;
@@ -1602,7 +1603,8 @@ var WL = (function () {
     // the report of the period (d.rep, as S.appNums)
     var Rr = d.rep || { above: '14 %', inR: '85 %', good: '64 %', below: '0.1 %', split: [0, 0.1, 64, 21, 14, 0.8, 0], met: [true, true, true],
       nums: [['136', 'Average', true], ['6.6 %', 'GMI', true], ['27 %', 'CV', true]] };
-    var nb = capOf('small') + 4 + 6 + capOf('xtiny') + fu('xtiny').desc + 2, top = cyy + ch + 10, bot = hh - nb, bxx = -hw + 14, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
+    // the numbers' block over the page dots (10 units under it)
+    var nb = capOf('small') + 4 + 6 + capOf('xtiny') + fu('xtiny').desc + 12, top = cyy + ch + 10, bot = hh - nb, bxx = -hw + 14, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
     Rr.split.forEach(function (v) { tot += v; });
     var y = bot;
     keys.forEach(function (k, i) {
@@ -1622,7 +1624,8 @@ var WL = (function () {
       if (r[3] && ww(r[3], 'xtiny') <= rx - (lx + w + 8)) g.t(lx + w + 8, yy + 5 + gh / 2 + capOf('xtiny') / 2, r[3], { f: 'xtiny', fill: PAL.soft, anchor: 'start' });
     });
     g.p('M' + r1(-hw + 12) + ' ' + r1(bot + 2) + 'H' + r1(hw - 12), { stroke: PAL.grid, sw: 1.5 });
-    Rr.nums.forEach(function (m, i) { numCheck(g, (i - 1) * (2 * hw - 40) / 3, bot + 4 + capOf('small'), m); });
+    var ny = bot + 4 + capOf('small'), nr = numsRow(Rr.nums, ny, (2 * hw - 40) / 3);
+    Rr.nums.forEach(function (m, i) { numCheck(g, (i - 1) * nr.dx, ny, m, nr); });
     if (c.dots !== false) pageDots(g, 2, 1);
   };
   R.actions = function (g, d, c) {
