@@ -56,6 +56,17 @@ class FieldCasesView extends WatchUi.DataField {
         var now = 1794823776 + (c["at"] as Number);
         if (p instanceof Dictionary) {
             now = (p["sent"] as Number) + (c["at"] as Number);
+            // a payload of another version (update: "app" a newer one, "phone" an older one), read as the link reads it
+            var u = c["update"];
+            if (u != null) {
+                var q = {};
+                var ks = p.keys();
+                for (var k = 0; k < ks.size(); k++) {
+                    q[ks[k]] = p[ks[k]];
+                }
+                q["v"] = SukraraFace.VERSION + ("app".equals(u) ? 1 : -1);
+                p = Link.readable(q);
+            }
             Link.accept(p, now);
         }
         var t0 = System.getTimer();
@@ -175,7 +186,7 @@ class FieldCasesView extends WatchUi.DataField {
         FieldCaseDump.json({
             "field" => true, "cls" => FieldFontTable.CLS, "screen" => c["screen"], "form" => c["form"], "slots" => c["slots"],
             "kind" => c["kind"], "word" => word, "g" => x.g, "unit" => x.unit, "age" => x.age, "readAt" => x.readAt,
-            "deg" => x.deg, "doubled" => x.doubled, "hist" => hist(x), "noPhone" => x.noPhone,
+            "deg" => x.deg, "doubled" => x.doubled, "hist" => hist(x), "noPhone" => x.noPhone, "update" => x.update,
         });
         System.println("");
     }

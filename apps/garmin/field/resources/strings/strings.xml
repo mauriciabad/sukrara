@@ -8,6 +8,9 @@
     <string id="Setup1">Waiting</string>
     <string id="Setup2">for phone</string>
     <string id="Glucose">GLUCOSE</string>
+    <!-- the label with a payload of another version (docs/48): the app to update -->
+    <string id="UpdatePhone">UPDATE PHONE</string>
+    <string id="UpdateField">UPDATE FIELD</string>
     <string id="Now">Sukrara · now</string>
     <string id="MinAgo">Sukrara · $1$ min ago</string>
     <string id="NoReadingSince">No reading since $1$</string>

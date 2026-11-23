@@ -8,6 +8,8 @@
     <string id="Setup1">Esperando</string>
     <string id="Setup2">al móvil</string>
     <string id="Glucose">GLUCOSA</string>
+    <string id="UpdatePhone">ACTUALIZA MÓVIL</string>
+    <string id="UpdateField">ACTUALIZA CAMPO</string>
     <string id="Now">Sukrara · ahora</string>
     <string id="MinAgo">Sukrara · hace $1$ min</string>
     <string id="NoReadingSince">Sin lecturas desde $1$</string>

@@ -4924,6 +4924,7 @@
     "trk": [],
     "trm": [],
     "unit": "mgdl",
+    "update": null,
     "warm": 0.0,
     "x": {}
    }
@@ -9201,6 +9202,7 @@
     "trk": [],
     "trm": [],
     "unit": "mgdl",
+    "update": null,
     "warm": 0.0,
     "x": {}
    }
@@ -9257,6 +9259,7 @@
     "trk": [],
     "trm": [],
     "unit": "mgdl",
+    "update": null,
     "warm": 0.0,
     "x": {
      "setup": true
@@ -9660,6 +9663,385 @@
     "trk": [],
     "trm": [],
     "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
+  "update-app": {
+   "budget": 7789,
+   "input": {
+    "age": 0.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {
+     "update": "app"
+    },
+    "clock": "12:09",
+    "clockH": 12.16,
+    "days": 14,
+    "deg": 0.0,
+    "doubled": false,
+    "g": 120,
+    "hm": [
+     0.5
+    ],
+    "hours": 12,
+    "hv": [
+     120
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": null,
+    "rate": null,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "update",
+    "sel": 0,
+    "sensorDays": null,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "update": "app",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
+  "update-glance": {
+   "budget": 3260,
+   "input": {
+    "age": 0.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {
+     "update": "phone"
+    },
+    "clock": "12:09",
+    "clockH": 12.16,
+    "days": 14,
+    "deg": 0.0,
+    "doubled": false,
+    "g": 120,
+    "hm": [
+     0.5
+    ],
+    "hours": 12,
+    "hv": [
+     120
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": null,
+    "rate": null,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": null,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "update": "phone",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
+  "update-glance-app": {
+   "budget": 2284,
+   "input": {
+    "age": 0.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {
+     "update": "app"
+    },
+    "clock": "12:09",
+    "clockH": 12.16,
+    "days": 14,
+    "deg": 0.0,
+    "doubled": false,
+    "g": 120,
+    "hm": [
+     0.5
+    ],
+    "hours": 12,
+    "hv": [
+     120
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": null,
+    "rate": null,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": null,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "update": "app",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
+  "update-old": {
+   "budget": 7875,
+   "input": {
+    "age": 8.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {
+     "update": "app"
+    },
+    "clock": "12:17",
+    "clockH": 12.293,
+    "days": 14,
+    "deg": 0.0,
+    "doubled": false,
+    "g": 120,
+    "hm": [
+     8.5
+    ],
+    "hours": 12,
+    "hv": [
+     120
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": null,
+    "rate": null,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "update",
+    "sel": 0,
+    "sensorDays": null,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "update": "app",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
+  "update-opened": {
+   "budget": 7952,
+   "input": {
+    "age": 0.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {
+     "opened": true,
+     "update": "phone"
+    },
+    "clock": "12:09",
+    "clockH": 12.16,
+    "days": 14,
+    "deg": 0.0,
+    "doubled": false,
+    "g": 120,
+    "hm": [
+     0.5
+    ],
+    "hours": 12,
+    "hv": [
+     120
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": null,
+    "rate": null,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "update",
+    "sel": 0,
+    "sensorDays": null,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "update": "phone",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
+  "update-phone": {
+   "budget": 8648,
+   "input": {
+    "age": 0.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {
+     "update": "phone"
+    },
+    "clock": "12:09",
+    "clockH": 12.16,
+    "days": 14,
+    "deg": 0.0,
+    "doubled": false,
+    "g": 120,
+    "hm": [
+     0.5
+    ],
+    "hours": 12,
+    "hv": [
+     120
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": null,
+    "rate": null,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "update",
+    "sel": 0,
+    "sensorDays": null,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "update": "phone",
     "warm": 0.0,
     "x": {}
    }

@@ -3115,16 +3115,23 @@ each reads only the current version, but every mismatch is detected and **the de
 - **On the watch**: **Sukrara Aura** puts the update line in the chip row's place (SPEC §6.6b): *Update Sukrara* /
   *on phone*, or *Update face* / *in Connect IQ* (es *Actualiza Sukrara* / *en el móvil*, *Actualiza la esfera* /
   *en Connect IQ*), under the current value (its band's colour, struck from 5 min, "No reading since" from 20 min; no
-  trend, pill, treatment or time in range); in private and always-on too.
-- Still to come (#262): the watch app and its glance, the data field, home's banner, followers, the wearer's Share
-  rows, invites (docs/48's table).
+  trend, pill, treatment or time in range); in private and always-on too. The **watch app** shows one page in place of
+  its pages (app SPEC §4.4): the glucose, *Update Sukrara on your phone* · "This app is newer" or *Update this app* ·
+  "Sukrara on your phone is newer", and **Open on phone** (Garmin Connect opens the website's Android page or this
+  app's Connect IQ listing; then *Look at your phone*, 5 s); its glance says the title alone; entries logged from the
+  Log complication wait (*Waiting: update Sukrara*). The **data field**'s label says *UPDATE PHONE* / *UPDATE FIELD*
+  over the current glucose; the **complications** keep the glucose.
+- Still to come (#262): home's banner, setup's Garmin step, followers, the wearer's Share rows, invites (docs/48's
+  table).
 
 **States and exits**: *versions match* → nothing shown. *The watch reads another version* → the Garmin page's notice,
-the watch's line and the app's row name the app to update, with one button to that update; the watch keeps showing the
-current glucose (ageing by the freshness steps), its entries wait in its outbox. Out: updating, which clears it at the
-first report or payload of the same version (no tap); Back leaves the page; nothing to close or mute because it ends by
-itself. Reachable without a notification: the Garmin page (Settings › Share with apps › Garmin). TalkBack reads the
-notice's title, text and button like any notice.
+the watch's line and the app's row name the app to update, with one button to that update; on the watch the face's
+update line, the watch app's page (*Open on phone* → *Look at your phone* 5 s → the button again; BACK leaves the app),
+its glance and the data field's label say it; the watch keeps showing the current glucose (ageing by the freshness
+steps), its entries wait in its outbox. Out: updating, which clears it at the first report or payload of the same
+version (no tap; the watch app's pages come back by themselves); Back leaves the page; nothing to close or mute because
+it ends by itself. Reachable without a notification: the Garmin page (Settings › Share with apps › Garmin), the watch
+face, the watch app and its glance. TalkBack reads the notice's title, text and button like any notice.
 
 ## Sukrara on Garmin watches: the app and the data field (the watch)
 

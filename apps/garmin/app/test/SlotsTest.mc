@@ -41,6 +41,15 @@ function slotsValue(logger as Logger) as Boolean {
     Test.assertEqual(Slots.value(Link.payload(), T), "LO");
     SlotCases.take(SlotCases.payload(420, 0, "mgdl"));
     Test.assertEqual(Slots.value(Link.payload(), T), "HI");
+    // a payload of a newer version: its glucose alone still fills the complications (no trend, no history)
+    var newer = SlotCases.payload(175, 60, "mgdl");
+    newer.put("v", SukraraFace.VERSION + 1);
+    Link.reset();
+    Link.accept(Link.readable(newer), T);
+    Test.assertEqualMessage(Slots.value(Link.payload(), T), "175", "a newer payload's glucose");
+    Test.assertEqualMessage(Slots.data(Link.payload(), T)[1], 0.0, "no trend");
+    Test.assertEqualMessage(Slots.graph(Link.payload())[1], 0.0, "no history");
+    Test.assertEqualMessage(Link.update(), SukraraFace.UPDATE_APP, "this app to update");
     var p = SlotCases.payload(120, 0, "mgdl");
     p.put("g", null);
     SlotCases.take(p);

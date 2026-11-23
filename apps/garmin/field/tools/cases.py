@@ -73,7 +73,7 @@ def cases(device):
         slots = {"i": 0, "f": [[0, 0, w, h, "LTRB"]]} if form == "whole" else dfs[form]
         p = data["states"][c["state"]] if c.get("state") else None
         out.append({"id": c["id"], "screen": c["screen"], "form": form, "at": c.get("at", 0), "kind": c.get("kind"),
-                    "payload": p, "slots": slots})
+                    "update": c.get("update"), "payload": p, "slots": slots})
     return out, cls
 
 

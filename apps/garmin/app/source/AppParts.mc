@@ -175,7 +175,8 @@ module AppParts {
     }
 
     function sendingText(snd as String) as String {
-        return AppWords.s(snd.equals("ask") ? Rez.Strings.SendAsk : snd.equals("wait") ? Rez.Strings.SendWait : Rez.Strings.SendSent);
+        return AppWords.s(snd.equals("ask") ? Rez.Strings.SendAsk : snd.equals("wait") ? Rez.Strings.SendWait
+            : snd.equals("update") ? Rez.Strings.SendUpdate : Rez.Strings.SendSent);
     }
 
     // ---- the glance (S.glance): its own area right of Sukrara's icon, x −83 … 165, y −51.5 … 51.5 -------------
@@ -187,6 +188,19 @@ module AppParts {
         // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page. Every
         // word in the glance's font, on one line where it fits the content's width, else the title's two halves; the
         // lines centred on its middle
+        // a payload of another version: the app to update alone (the face and the app's page show the glucose), on one
+        // line or the two halves
+        if (d.sent && d.update != null) {
+            var us = "app".equals(d.update) ? [AppWords.s(Rez.Strings.UpdateApp)] : [AppWords.s(Rez.Strings.UpdatePhone)];
+            if (AppDraw.ww(us[0], GL) > x1 - x0 && !"app".equals(d.update)) {
+                us = [AppWords.s(Rez.Strings.UpdatePhone1), AppWords.s(Rez.Strings.UpdatePhone2)];
+            }
+            var ulh = AppDraw.lh(GL);
+            for (var i = 0; i < us.size(); i++) {
+                g.w(x0, -(us.size() - 1) * ulh / 2 + gc / 2 + i * ulh, us[i], GL, AppMath.INK, START);
+            }
+            return;
+        }
         if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
             var ls = [AppWords.s(d.sent ? Rez.Strings.NoReadings : Rez.Strings.SetupTitle)];
             if (!d.sent && AppDraw.ww(ls[0], GL) > x1 - x0) {
@@ -276,7 +290,7 @@ module AppParts {
             pill(g, px, cy, d.pill as Array, GL, 1.5, START);
         }
         if (s != null) {
-            g.w(ax, cy + gc / 2, s, GL, snd.equals("ask") ? AppMath.pal("high") : AppMath.SOFT, START);
+            g.w(ax, cy + gc / 2, s, GL, snd.equals("ask") || snd.equals("update") ? AppMath.pal("high") : AppMath.SOFT, START);
         }
     }
 }

@@ -30,6 +30,7 @@ every draw); never an old value as current; never colour alone; Aura's palette, 
 | Data field: whole / half / band / quarter / cap, its own alert | a separate data-field app | `S.df1` … `S.df4small` (any class: `S.dfSlot`, §14.4), `S.dfAlert` | Data field |
 | Complications as other faces draw them | the watch app publishes 4 | `S.faceCx` | Complications |
 | Waiting for the phone (no message yet): app, glance, data field | both | `S.setup`, `S.glanceSetup`, `S.dfSetup` | Waiting for the phone |
+| Another version (§4.4): app, glance, data field | both | `S.update`, `S.glance` (`update`), `S.dfSlot` (`d.update`) | — |
 
 ## 2. The input (what the payload must give each screen)
 
@@ -117,6 +118,25 @@ say where.
 - **Complications**: as with no data ("---", *Log*); selecting one opens this page.
 - **The data field** (`S.dfSetup`): *GLUCOSE* and *Waiting for phone* (soft, two lines where narrow); no alert,
   nothing written to the activity.
+
+### 4.4 Another version (`S.update`)
+
+A payload of another version (docs/48 § When versions differ; `Link.update()`: this app is older, `app`, or Sukrara on
+the phone, `phone`): the app keeps its glucose alone and names the app to update, the smaller version.
+- **The app**: the waiting page's layout (§4.3) in place of the pages: the current glucose (58, its band's colour, struck
+  from 5 min, none from 20 min; no trend) where the phone's icon goes; the title *Update Sukrara on your phone* /
+  *Update this app* (es *Actualiza Sukrara en tu móvil* / *Actualiza esta app*); the body *This app is newer* /
+  *Sukrara on your phone is newer* (es *Esta app es más nueva* / *Sukrara en tu móvil es más nueva*); **Open on phone**
+  → `openWebPage`: this app's Connect IQ listing (`apps.json` `store`, `es-ES` in Spanish), or the website's Android
+  page `/android/#versions` (`/es/android/#versiones`); then *Look at your phone* for 5 s, and the phone is asked at
+  once. BACK leaves. The Log complication still opens the one list: entries wait in the outbox (the phone answers
+  `r: v`), *Waiting: update Sukrara* / *En espera: actualiza Sukrara* where the outbox's line shows. The first payload
+  of this version brings the pages back and sends what waited.
+- **The glance**: the title alone (ink), on one line or its two halves (*Update Sukrara* / *on your phone*).
+- **The data field**: its label row names the app, *UPDATE PHONE* / *UPDATE FIELD* (es *ACTUALIZA MÓVIL* /
+  *ACTUALIZA CAMPO*) in the high colour (the low block's ink on a low), over the current glucose (no trend, the
+  sparkline its one point); a slot too narrow for the words shows the value alone.
+- **Complications**: the current glucose as usual (no trend, no history in the graph).
 
 ## 5. The one list (`S.actions`)
 
@@ -241,6 +261,8 @@ amount → hold to log (let go: back to the amount; BACK: the list) → logged (
 *Mute alerts* → a length → muted (*Undo* 10 s); *Muted* → *Unmute* / *Change time* / BACK. Garmin's notification →
 open (the app's alert) / Treatment (the amount) / Remind less / Mute (toast, close) / dismiss. The app's alert → Treatment / Remind less ↔ Remind as
 usual / Mute (lengths) / BACK (the alert stays on the phone). Data field: no input; its alert dismisses as Garmin's do.
+Another version (§4.4) → *Open on phone* (*Look at your phone*, 5 s) / BACK; it leaves by itself at the first payload
+of this version.
 
 ## 13. Decided, and open
 

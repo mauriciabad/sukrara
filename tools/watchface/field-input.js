@@ -6,7 +6,7 @@
 // (contracts/watchface/field/cases.json, apps/garmin/field/tools/field_test.py). Pure: fromWatch(x) -> { input, cfg }.
 var FieldInput = (function () {
   function fromWatch(x) {
-    var d = { g: x.g, age: x.age, readAt: x.readAt, unit: x.unit, noPhone: x.noPhone === true, lang: 'en' };
+    var d = { g: x.g, age: x.age, readAt: x.readAt, unit: x.unit, noPhone: x.noPhone === true, update: x.update || null, lang: 'en' };
     // app.js turns the arrow by the rate; the watch by the phone's angle (AppInput's rule)
     d.rate = x.deg === null ? NaN : x.doubled ? (x.deg < 0 ? 3 : -3) : -x.deg / 30;
     // the history before the reading, 5 min apart, oldest first (null = no reading in that slot), then the reading

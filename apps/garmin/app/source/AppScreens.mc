@@ -1058,24 +1058,45 @@ module AppScreens {
     }
 
     function setup(g as AppG, opened as Boolean) as Void {
+        page(g, null, AppWords.s(Rez.Strings.SetupTitle), [AppWords.s(Rez.Strings.SetupLine1), AppWords.s(Rez.Strings.SetupLine2)], opened);
+    }
+
+    // ---- a payload of another version (S.update, docs/48 § When versions differ): the setup page's layout with the app
+    // to update as the title (d.update: "app" this one, "phone" Sukrara on the phone), why as the body, the current
+    // glucose (the frozen one: no trend) where the phone's icon goes, and Open on phone (AppView.openSetup: the update)
+    function update(g as AppG, d as AppData, opened as Boolean) as Void {
+        var app = "app".equals(d.update);
+        page(g, d, AppWords.s(app ? Rez.Strings.UpdateApp : Rez.Strings.UpdatePhone),
+            [AppWords.s(app ? Rez.Strings.UpdateAppWhy : Rez.Strings.UpdatePhoneWhy)], opened);
+    }
+
+    // the page of setup and update: [d] null the phone's icon, else its value (none from 20 min); [given] the body's lines
+    function page(g as AppG, d as AppData?, title as String, given as Array<String>, opened as Boolean) as Void {
         var ME = AppDraw.ME;
         var bb = setupButton();
         var by = bb[0];
         var bh = bb[1];
         var top = AppFontTable.RECT ? -hh() + 20 : -150;
         var ir = 24;
-        var tl = AppDrawApp.wrap(AppWords.s(Rez.Strings.SetupTitle), ME, 290);
+        var tl = AppDrawApp.wrap(title, ME, 290);
         if (tl.size() > 2) {
             tl = tl.slice(0, 2);
         }
         var mh = AppDraw.lh(ME) * 0.9;
-        var given = [AppWords.s(Rez.Strings.SetupLine1), AppWords.s(Rez.Strings.SetupLine2)];
+        var one = given[0];
+        for (var k = 1; k < given.size(); k++) {
+            one += " " + given[k];
+        }
         var bw1 = 2 * edgeX(by - 10) - 20;
         var bf = AppDraw.TI;
         var ls = given;
         for (var k = 0; k < 2; k++) {
             bf = k == 0 ? AppDraw.TI : AppDraw.XT;
-            ls = AppDraw.ww(given[0], bf) <= bw1 && AppDraw.ww(given[1], bf) <= bw1 ? given : AppDrawApp.wrap(given[0] + " " + given[1], bf, bw1);
+            var fits = true;
+            for (var j = 0; j < given.size(); j++) {
+                fits = fits && AppDraw.ww(given[j], bf) <= bw1;
+            }
+            ls = fits ? given : AppDrawApp.wrap(one, bf, bw1);
             if (ls.size() <= 2) {
                 break;
             }
@@ -1085,7 +1106,11 @@ module AppScreens {
         var y = by - 12 - (AppDraw.capOf(bf) + (ls.size() - 1) * th) - 12 - titleH;
         // Sukrara for Android's own icon (the disc, the cube, the dot: the phone app that needs to be open), not the
         // watch's launcher icon (the owner, 2026-11-22); its bitmap made at the class's size (tools/fonts.py)
-        if (y - 2 * ir - 10 >= top) {
+        if (d != null) {
+            if (d.g != null && d.age < 20 && y - 2 * ir - 10 >= top) {
+                AppParts.value(g, d, 0, y - 10 - ir + 58 * 0.668 / 2, 58, MIDDLE, false, null);
+            }
+        } else if (y - 2 * ir - 10 >= top) {
             g.bmp(Rez.Drawables.PhoneIcon, 0, y - 10 - ir, 2 * ir);
         }
         lines(g, y + AppDraw.capOf(ME), tl, ME, mh, AppMath.INK);

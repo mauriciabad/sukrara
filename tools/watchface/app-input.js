@@ -24,7 +24,8 @@ var AppInput = (function () {
   function fromWatch(x) {
     var d = {
       g: x.g, age: x.age, readAt: x.readAt, readyAt: x.readyAt, unit: x.unit, clock: x.clock, clockH: x.clockH,
-      sensorDays: x.sensorDays, sensorState: x.sensorState === 'warmup' ? 'warmup' : 'ok', order: x.order, lang: 'en'
+      sensorDays: x.sensorDays, sensorState: x.sensorState === 'warmup' ? 'warmup' : 'ok', order: x.order, lang: 'en',
+      update: x.update || null
     };
     // app.js turns the arrow by the rate; the watch by the phone's angle
     d.rate = x.rate === null ? NaN : x.doubled ? (x.deg < 0 ? 3 : -3) : -x.deg / 30;

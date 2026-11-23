@@ -10,11 +10,18 @@
     <!-- the title on two lines, where the glance's font doesn't fit it on one -->
     <string id="SetupTitle1" scope="glance">Waiting for</string>
     <string id="SetupTitle2" scope="glance">your phone</string>
+    <!-- a payload of another version (docs/48): the app to update, the smaller version; on two lines where the glance's
+         font doesn't fit one -->
+    <string id="UpdatePhone" scope="glance">Update Sukrara on your phone</string>
+    <string id="UpdatePhone1" scope="glance">Update Sukrara</string>
+    <string id="UpdatePhone2" scope="glance">on your phone</string>
+    <string id="UpdateApp" scope="glance">Update this app</string>
 
     <!-- the outbox (glance and app) -->
     <string id="SendWait" scope="glance">Waiting for the phone</string>
     <string id="SendSent" scope="glance">Sent</string>
     <string id="SendAsk" scope="glance">The phone has a question</string>
+    <string id="SendUpdate" scope="glance">Waiting: update Sukrara</string>
 
     <!-- complications (the CGM-GB long labels are CGM+ GB's names: never translated) -->
     <string id="CxValue">CGM-GB-value</string>
@@ -164,4 +171,6 @@
     <string id="SetupLine2">your glucose here</string>
     <string id="OpenOnPhone">Open on phone</string>
     <string id="LookPhone">Look at your phone</string>
+    <string id="UpdatePhoneWhy">This app is newer</string>
+    <string id="UpdateAppWhy">Sukrara on your phone is newer</string>
 </strings>

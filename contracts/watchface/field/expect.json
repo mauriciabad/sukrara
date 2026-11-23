@@ -71,7 +71,10 @@
   "alert-extremely-high": 6040,
   "alert-falling-fast": 5028,
   "alert-rising-fast": 6080,
-  "alert-no-data": 5160
+  "alert-no-data": 5160,
+  "whole-update-field": 2083,
+  "band-update-phone": 2173,
+  "quarter-update-low": 2513
  },
  "fenix7": {
   "whole-steady": 1962,

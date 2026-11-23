@@ -94,6 +94,17 @@ class AppCasesView extends WatchUi.View {
         Outbox.reset();
         var p = c["payload"] as Dictionary;
         var now = (p["sent"] as Number) + (c["at"] as Number);
+        // a payload of another version (cfg update: "app" a newer one, "phone" an older one), read as the link reads it
+        var u = (c["cfg"] as Dictionary)["update"];
+        if (u != null && p["none"] != true) {
+            var q = {};
+            var ks = p.keys();
+            for (var k = 0; k < ks.size(); k++) {
+                q[ks[k]] = p[ks[k]];
+            }
+            q["v"] = SukraraFace.VERSION + ("app".equals(u) ? 1 : -1);
+            p = Link.readable(q) as Dictionary;
+        }
         Application.Storage.deleteValue(GlanceCopy.STORE);
         if (p["none"] != true && Link.accept(p, now)) {
             GlanceCopy.save(p, Link.skew);
@@ -164,6 +175,8 @@ class AppCasesView extends WatchUi.View {
                 muteScreen(gg, scr, now);
             } else if (scr.equals("setup")) {
                 AppScreens.setup(gg, cfg["opened"] == true);
+            } else if (scr.equals("update")) {
+                AppScreens.update(gg, d as AppData, cfg["opened"] == true);
             } else if (scr.equals("alert")) {
                 var items = Ring.now(p, now, Link.skew);
                 var it = items[cfg["item"] instanceof Number ? cfg["item"] as Number : 0];
@@ -346,7 +359,7 @@ module AppCaseDump {
             }
         }
         json({
-            "screen" => scr, "days" => days, "sel" => sel, "sent" => d.sent, "g" => d.g, "rate" => d.rate,
+            "screen" => scr, "days" => days, "sel" => sel, "sent" => d.sent, "update" => d.update, "g" => d.g, "rate" => d.rate,
             "deg" => d.deg, "doubled" => d.doubled, "age" => d.age, "readAt" => d.readAt, "unit" => d.unit,
             "bands" => d.bands, "hm" => d.hm, "hv" => d.hv, "trm" => d.trm, "trk" => d.trk, "tra" => d.tra,
             "pill" => d.pill, "clock" => d.clock, "clockH" => d.clockH, "sensorState" => d.sensorState,

@@ -38,6 +38,12 @@ export const CASES = [
   ['glance-setup', { screen: 'glance', setup: true }],
   ['setup', { screen: 'setup' }],
   ['setup-opened', { screen: 'setup', opened: true }],
+  ['update-phone', { screen: 'update', update: 'phone' }],
+  ['update-app', { screen: 'update', update: 'app' }],
+  ['update-opened', { screen: 'update', update: 'phone', opened: true }],
+  ['update-old', { screen: 'update', update: 'app', age: 8 }],
+  ['glance-update-phone', { screen: 'glance', update: 'phone' }],
+  ['glance-update-app', { screen: 'glance', update: 'app' }],
   ['app', { screen: 'appA' }],
   ['app-low', { screen: 'appA', scenario: 'low' }],
   ['app-high', { screen: 'appA', scenario: 'high' }],
@@ -77,6 +83,9 @@ export const CASES = [
   ['field-old', { screen: 'dfSlot', form: 'band', age: 8 }],
   ['field-setup', { screen: 'dfSetup', form: 'band' }],
   ['field-setup-quarter', { screen: 'dfSetup', form: 'quarter' }],
+  ['field-update', { screen: 'dfSlot', form: 'band', update: 'phone' }],
+  ['field-update-whole', { screen: 'dfSlot', form: 'whole', update: 'app' }],
+  ['field-update-quarter', { screen: 'dfSlot', form: 'quarter', update: 'phone', scenario: 'low' }],
   ['complications', { screen: 'faceCx' }],
 ];
 

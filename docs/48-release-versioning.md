@@ -236,6 +236,16 @@ A change that must move one of these is a new format beside the old one, not a v
 - The Garmin page's notice sits under the main switch (a `NoticeCard`, Warning tone) and the watch's line, the app's
   row and Share with apps' Garmin row say it too. *Update Sukrara*: the GitHub version opens About (its updater checks
   on opening and offers *Install*), Google Play opens Sukrara's listing.
+- **Sukrara Aura**: two lines in the chip row (*Update Sukrara* / *on phone*, *Update face* / *in Connect IQ*): one line
+  at the face's 24 px is wider than the circle there (Spanish 290–365 px), and two keep the numbers' size. It replaces
+  the reading's time (the value's look says its age) and shows in private and always-on (Aura SPEC §6.6b).
+- **Watch app**: the update page is the waiting page's layout (app SPEC §4.4) with the glucose where the phone's icon
+  goes, so one page design serves both; START and a tap are *Open on phone* there (no list from the pages; the Log
+  complication still opens it). The body says why (*This app is newer* / *Sukrara on your phone is newer*).
+- **Data field**: the current glucose stays and its label row says *UPDATE PHONE* / *UPDATE FIELD* (amber), instead
+  of `--` beside the words: the field reads `g` like the face, and in an activity the number matters most; a slot too
+  narrow for the label shows the value alone (the face, the app and the phone say it).
+- **Complications** keep the current glucose (no trend, no history), not `---`: it is a real, current reading.
 
 ### Draft: States and exits (for FEATURES.md when built)
 

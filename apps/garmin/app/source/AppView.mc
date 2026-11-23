@@ -19,6 +19,7 @@ class AppView extends WatchUi.View {
     var days as Number = 14; // the numbers' period (switchable here, never saved)
     var sel as Number = 0; // the list's selection
     var notSetUp as Boolean = false; // waiting for the phone: it never sent anything (SPEC §4.3)
+    var upd as String? = null; // a payload of another version: the app to update (AppData.update), its page in place of the pages
     var opened as Number? = null; // when Open on phone was pressed (System.getTimer)
     var _look as Timer.Timer? = null;
     var _timer as Timer.Timer?;
@@ -38,8 +39,8 @@ class AppView extends WatchUi.View {
         _timer = new Timer.Timer();
         build();
         arm();
-        if (notSetUp) {
-            AppNav.fetch(); // a working phone fills it in seconds
+        if (notSetUp || upd != null) {
+            AppNav.fetch(); // a working phone fills it in seconds (an updated one too)
         }
     }
 
@@ -58,13 +59,23 @@ class AppView extends WatchUi.View {
     const LOOK_MS = 5000;
     // the setup link (the website's /es/ page for a watch in Spanish)
     const SETUP = "https://sukrara.mauri.app/garmin/setup/";
+    // the updates (docs/48 decision 3): this app's Connect IQ listing (contracts/watchface/payload/apps.json "store"),
+    // or, Sukrara on the phone older, the website's Android page where each copy's update is said
+    const STORE = "https://apps.garmin.com/en-US/apps/c8c7b5e9-35e6-4941-b811-3bf7c9238c9a";
+    const STORE_ES = "https://apps.garmin.com/es-ES/apps/c8c7b5e9-35e6-4941-b811-3bf7c9238c9a";
+    const ANDROID = "https://sukrara.mauri.app/android/#versions";
+    const ANDROID_ES = "https://sukrara.mauri.app/es/android/#versiones";
 
-    // Open on phone: Garmin Connect opens the setup link on the phone (Sukrara for Android takes it as an App Link and
-    // opens where the person can act; without Sukrara the website says how to get it), then Look at your phone for
-    // 5 s; and the phone is asked at once
+    // Open on phone: Garmin Connect opens the link on the phone, then Look at your phone for 5 s; and the phone is asked
+    // at once. Waiting for the phone: the setup link (Sukrara for Android takes it as an App Link and opens where the
+    // person can act; without Sukrara the website says how to get it). A payload of another version: the update
     function openSetup() as Void {
         var es = System.getDeviceSettings().systemLanguage == System.LANGUAGE_SPA;
-        Communications.openWebPage(es ? SETUP.substring(0, 26) + "es/" + SETUP.substring(26, SETUP.length()) : SETUP, null, null);
+        var url = es ? SETUP.substring(0, 26) + "es/" + SETUP.substring(26, SETUP.length()) : SETUP;
+        if (upd != null) {
+            url = "app".equals(upd) ? (es ? STORE_ES : STORE) : (es ? ANDROID_ES : ANDROID);
+        }
+        Communications.openWebPage(url, null, null);
         AppNav.fetch();
         opened = System.getTimer();
         _look = new Timer.Timer();
@@ -86,6 +97,7 @@ class AppView extends WatchUi.View {
         AppView.setup();
         var d = AppInput.build(now, kind.equals("pages") && page == 0);
         notSetUp = !d.sent;
+        upd = notSetUp ? null : d.update;
         if (opened != null && System.getTimer() - (opened as Number) >= LOOK_MS) {
             opened = null;
         }
@@ -141,6 +153,8 @@ class AppView extends WatchUi.View {
         var g = new AppG();
         if (notSetUp) {
             AppScreens.setup(g, opened != null);
+        } else if (upd != null && !kind.equals("list")) {
+            AppScreens.update(g, d, opened != null);
         } else if (kind.equals("list")) {
             AppLists.actions(g, d, sel);
         } else if (page == 1) {
@@ -218,7 +232,7 @@ class AppDelegate extends TapDelegate {
     }
 
     function turn() as Boolean {
-        if (view.notSetUp) {
+        if (view.notSetUp || view.upd != null) {
             return true;
         }
         view.page = 1 - view.page;
@@ -227,9 +241,9 @@ class AppDelegate extends TapDelegate {
         return true;
     }
 
-    // START: the one list; not set up: Open on phone (nothing could be signed yet)
+    // START: the one list; not set up, or another version: Open on phone
     function select() as Void {
-        if (view.notSetUp) {
+        if (view.notSetUp || view.upd != null) {
             if (view.opened == null) {
                 view.openSetup();
             }
@@ -240,7 +254,7 @@ class AppDelegate extends TapDelegate {
 
     // the numbers' period: MENU steps through 1d · 7d · 14d · 30d
     function onMenu() as Boolean {
-        if (view.page != 1 || view.notSetUp) {
+        if (view.page != 1 || view.notSetUp || view.upd != null) {
             return false;
         }
         var pers = [1, 7, 14, 30];
@@ -256,7 +270,7 @@ class AppDelegate extends TapDelegate {
         var s = AppDraw.s;
         var y = (c[1] - AppDraw.oy) / s;
         var x = (c[0] - AppDraw.ox) / s;
-        if (view.notSetUp) {
+        if (view.notSetUp || view.upd != null) {
             var sb = AppScreens.setupButton();
             if (view.opened == null && y > sb[0] - 8 && y < sb[0] + sb[1] + 8) {
                 view.openSetup();

@@ -279,7 +279,7 @@ var WL = (function () {
     if (c.pill === 'none') pill = null;
     var age = Number.isFinite(c.age) ? c.age : 0.5;
     var rm = 20 * 60 + 41 - Math.floor(age), readAt = Math.floor(rm / 60) + ':' + String(rm % 60).padStart(2, '0');
-    return {
+    var out = {
       scn: scn, g: c.glucose || g, rate: rate, age: age, hist: hist, tr: tr, pill: pill, unit: c.unit || 'mgdl',
       clock: '20:41', clockH: nowH, sensorDays: 11, readAt: readAt, sensorState: c.sensor || 'ok',
       tir1: { pct: 89, split: [0, 4, 58, 31, 7, 0, 0] },
@@ -287,6 +287,9 @@ var WL = (function () {
       last: lastTreatment(tr), lang: c.lang || 'en',
       slot: watchLast(tr, c), order: kindOrder(scn, c)
     };
+    // a payload of another version (c.update: 'phone' / 'app'): its glucose alone, nothing else of it
+    if (c.update) Object.assign(out, { update: c.update, rate: NaN, hist: [{ m: 0, v: out.g }], tr: [], pill: null, last: null, slot: null });
+    return out;
   }
   function lastTreatment(tr) {
     var r = null;
@@ -994,6 +997,13 @@ var WL = (function () {
       // halves (the watch's strings SetupTitle1 / 2)
       var st = 'Waiting for your phone';
       if (c.setup) { glanceLines(g, ww(st, 'glance') <= X1 - X0 ? [st] : ['Waiting for', 'your phone'], X0, PAL.soft); return; }
+      // a payload of another version: the app to update alone (the face and the app's page show the glucose), on one line
+      // or the watch's two halves (c.update: 'phone' / 'app'; c.lines: the watch's words)
+      if (c.update) {
+        var ul = c.lines || (c.update === 'app' ? ['Update this app'] : ['Update Sukrara', 'on your phone']), u1 = ul.join(' ');
+        glanceLines(g, ww(u1, 'glance') <= X1 - X0 || ul.length < 2 ? [u1] : ul, X0, PAL.ink);
+        return;
+      }
       var late = d.age >= 1.5, pl = d.pill && d.age < 5 ? d.pill : null, snd = c.sending;
       var fs = pl || late || snd ? 54 : 58;
       if (d.age >= 20 || d.sensorState === 'warmup') {
@@ -1036,7 +1046,7 @@ var WL = (function () {
       items.forEach(function (it) {
         if (it.t) g.t(it.x, cy + gc / 2, it.t, { f: 'glance', fill: PAL.soft, anchor: 'start' });
         else if (it.p) pill(g, it.x, cy, it.p, { f: 'glance', anchor: 'start', tall: 1.5 });
-        else g.t(it.x, cy + gc / 2, it.s.text, { f: 'glance', fill: it.s.ask ? PAL.high : PAL.soft, anchor: 'start' });
+        else g.t(it.x, cy + gc / 2, it.s.text, { f: 'glance', fill: it.s.ask || it.s.update ? PAL.high : PAL.soft, anchor: 'start' });
       });
     }, c);
   };
@@ -1332,7 +1342,10 @@ var WL = (function () {
     }
     var th = lh(bf0) * 0.85, bodyH = capOf(bf0) + (lines.length - 1) * th, titleH = capOf('medium') + (tl.length - 1) * mh;
     var y = by - 12 - bodyH - 12 - titleH;
-    if (y - 2 * ir - 10 >= top) phoneIcon(g, 0, y - 10 - ir, ir);
+    // c.value (the update page): the current glucose where the phone's icon goes, ageing (struck when old); from 20 min
+    // none (the reading is no longer shown)
+    if (c.value) { if (d.g !== null && d.g !== undefined && d.age < 20 && y - 2 * ir - 10 >= top) value(g, d, 0, y - 10 - ir + 58 * 0.668 / 2, 58); }
+    else if (y - 2 * ir - 10 >= top) phoneIcon(g, 0, y - 10 - ir, ir);
     tl.forEach(function (t, i) { g.t(0, y + capOf('medium') + i * mh, t, { f: 'medium', edge: true, fill: PAL.ink }); });
     y += titleH + 12;
     lines.forEach(function (t, i) { g.t(0, y + capOf(bf0) + i * th, t, { f: bf0, edge: true, fill: PAL.soft }); });
@@ -1347,6 +1360,17 @@ var WL = (function () {
     g.icon('phone', -bw0 / 2 + 10, by + bh / 2, 20, PAL.on);
     g.t(-bw0 / 2 + 26, by + bh / 2 + capOf(bf) / 2, bt, { f: bf, fill: PAL.on, anchor: 'start' });
     btnHint(g, 60, '', {});
+  };
+  // A payload of another version (docs/48 § When versions differ): the setup page's layout, with the app to update as
+  // its title, why as its body, the current glucose (the frozen one: no trend) where the phone's icon goes, and Open on
+  // phone: Garmin Connect opens that app's update on the phone (this app's Connect IQ listing, or the website's Android
+  // page). c.update: 'phone' (Sukrara on the phone is older) or 'app' (this app is). After the press: Look at your phone.
+  S.update = function (g, d, c) {
+    var app = c.update === 'app';
+    S.setup(g, d, Object.assign({
+      title: app ? 'Update this app' : 'Update Sukrara on your phone',
+      lines: [app ? 'Sukrara on your phone is newer' : 'This app is newer'], value: true,
+    }, c));
   };
   // a row of the one list between x0 and x1: the kind's mark, its name (small) and its last entry (xtiny) at the right;
   // the selected row on a card. The name gives way to the detail (it fits down to xtiny)
@@ -1534,9 +1558,13 @@ var WL = (function () {
     var band = bandOf(d.g), inv = d.age < 5 && (band === 'veryLow' || band === 'low');
     if (inv) g.r(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0, 0, { fill: PAL[band], op: band === 'veryLow' ? 1 : 0.85 });
     var W0 = inv ? inkOn(PAL[band]) : null, lab = inv ? W0 : PAL.soft, str = fmtG(d.g, d.unit), late = d.age >= 1.5;
+    // a payload of another version: the label row names the app to update (c.label: the watch's words), the value is
+    // the frozen glucose (no trend, no sparkline: its one point)
+    var LB = 'GLUCOSE';
+    if (d.update) { LB = (c && c.label) || (d.update === 'app' ? 'UPDATE FIELD' : 'UPDATE PHONE'); lab = inv ? W0 : PAL.high; }
     if (whole) {
       var top = KC.rect ? -KC.hh + 40 : -128;
-      dfLabel(g, 0, top, 'GLUCOSE', { fill: lab });
+      dfLabel(g, 0, top, LB, { fill: lab });
       value(g, d, 0, -8, 116, { inverted: inv, col: inv ? W0 : undefined });
       if (!inv) { var scl = 1.4, Wd = 100 / Math.log(7) * scl * Math.log(19) + 24 * scl; auraSpark(g, d, { x0: -Wd / 2, x1: Wd / 2, y0: 26, y1: 110 }, { sc: scl }); }
       if (late) g.t(0, 150, d.readAt, { f: 'xtiny', fill: inv ? W0 : PAL.soft });
@@ -1550,7 +1578,7 @@ var WL = (function () {
         var fs = feFit(Math.min(92, (sb.h - 30) * 0.8)), vw = bw(str, fs), Wsp = Math.min(170, sb.w - vw - 14 - 16);
         if (Wsp < 90) break;
         var gw = vw + 14 + Wsp, x0 = (sb.x0 + sb.x1) / 2 - gw / 2, yb = sb.y1 - 16, cap = fs * 0.668;
-        dfLabel(g, x0, sb.y0 + 20, 'GLUCOSE', { anchor: 'start' });
+        dfLabel(g, x0, sb.y0 + 20, LB, { anchor: 'start', fill: lab });
         if (late) g.t(x0 + gw, sb.y0 + 20, d.readAt, { f: 'xtiny', fill: PAL.soft, anchor: 'end' });
         value(g, d, x0, yb, fs, { anchor: 'start', arrow: false });
         auraSpark(g, d, { x0: x0 + vw + 14, x1: x0 + gw, y0: yb - cap - 8, y1: yb }, { sc: Math.min(1, fs / 88) });
@@ -1561,7 +1589,8 @@ var WL = (function () {
     var fv = fitValue(b, emOf(str, Number.isFinite(d.rate)), 116);
     if (!fv) return 'none';
     var bx = fv.box, cx = (bx.x0 + bx.x1) / 2;
-    if (fv.lab) dfLabel(g, cx, bx.y0 + capOf('xtiny') + 3, 'GLUCOSE', { fill: lab });
+    // (the update's label only where the slot's width takes it: else the value alone, the face and the phone say it)
+    if (fv.lab && (!d.update || ww(LB, 'xtiny') <= bx.w - 12)) dfLabel(g, cx, bx.y0 + capOf('xtiny') + 3, LB, { fill: lab });
     value(g, d, cx, bx.y1 - 4, fv.fs, { inverted: inv, col: inv ? W0 : undefined });
     return 'value';
   }

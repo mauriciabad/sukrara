@@ -8,10 +8,15 @@
     <string id="SetupTitle" scope="glance">Esperando a tu móvil</string>
     <string id="SetupTitle1" scope="glance">Esperando</string>
     <string id="SetupTitle2" scope="glance">a tu móvil</string>
+    <string id="UpdatePhone" scope="glance">Actualiza Sukrara en tu móvil</string>
+    <string id="UpdatePhone1" scope="glance">Actualiza Sukrara</string>
+    <string id="UpdatePhone2" scope="glance">en tu móvil</string>
+    <string id="UpdateApp" scope="glance">Actualiza esta app</string>
 
     <string id="SendWait" scope="glance">Esperando al móvil</string>
     <string id="SendSent" scope="glance">Enviado</string>
     <string id="SendAsk" scope="glance">El móvil tiene una pregunta</string>
+    <string id="SendUpdate" scope="glance">En espera: actualiza Sukrara</string>
 
     <string id="CxValue">CGM-GB-value</string>
     <string id="CxValueShort">CGM</string>
@@ -155,4 +160,6 @@
     <string id="SetupLine2">tu glucosa aquí</string>
     <string id="OpenOnPhone">Abrir en el móvil</string>
     <string id="LookPhone">Mira tu móvil</string>
+    <string id="UpdatePhoneWhy">Esta app es más nueva</string>
+    <string id="UpdateAppWhy">Sukrara en tu móvil es más nueva</string>
 </strings>

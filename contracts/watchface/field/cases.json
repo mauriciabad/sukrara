@@ -1,5 +1,5 @@
 {
- "about": "The data field's screens (contracts/watchface/app/SPEC.md §9, §14.4; tools/watchface/app.js S.dfSlot, S.dfAlert): each case draws one form (whole, half, band, quarter, cap: the slots of the reference's DFS, on the watch's own screen class) or the field's alert from a phone state (`states`: a payload of the field profile) at `at` seconds after it was sent. `state` null: the phone never sent anything (not set up, SPEC §4.3). apps/garmin/field/tools/field_test.py runs them in the simulator against the reference; expect.json holds the pictures' budgets.",
+ "about": "The data field's screens (contracts/watchface/app/SPEC.md §9, §14.4; tools/watchface/app.js S.dfSlot, S.dfAlert): each case draws one form (whole, half, band, quarter, cap: the slots of the reference's DFS, on the watch's own screen class) or the field's alert from a phone state (`states`: a payload of the field profile) at `at` seconds after it was sent. `state` null: the phone never sent anything (not set up, SPEC §4.3). `update` (app / phone): the state's payload read as one of a newer / older version (its glucose alone, the label naming the app to update). apps/garmin/field/tools/field_test.py runs them in the simulator against the reference; expect.json holds the pictures' budgets.",
  "states": {
   "steady": {
    "v": 5,
@@ -1267,6 +1267,30 @@
    "state": "steady",
    "at": 1470,
    "kind": "no_data"
+  },
+  {
+   "id": "whole-update-field",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "steady",
+   "at": 0,
+   "update": "app"
+  },
+  {
+   "id": "band-update-phone",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "steady",
+   "at": 0,
+   "update": "phone"
+  },
+  {
+   "id": "quarter-update-low",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "low",
+   "at": 0,
+   "update": "phone"
   }
  ]
 }

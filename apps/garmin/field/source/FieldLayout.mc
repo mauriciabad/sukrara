@@ -21,11 +21,15 @@ class FieldInput {
     var hv as Array = []; // their values
     var bands as Array = [55, 70, 140, 180, 250, 300];
     var noPhone as Boolean = true; // the phone never sent this field anything
+    // a payload of another version (Link.update, docs/48): the app to update, "app" (this field) or "phone"; null =
+    // none. The reading is then its glucose alone (no trend, no history)
+    var update as String? = null;
 
     function initialize() {}
 
     function from(r as ReadingInput) as FieldInput {
         noPhone = !r.payload;
+        update = Link.update();
         unit = r.unit;
         bands = r.bands;
         g = r.mgdl;
@@ -173,6 +177,20 @@ module FieldLayout {
         g.w(x, y, WatchUi.loadResource(Rez.Strings.Glucose) as String, FieldDraw.XT, fill, anchor);
     }
 
+    // the label of a reading: GLUCOSE, or with a payload of another version the app to update (UPDATE PHONE / UPDATE
+    // FIELD, in the high colour or the low block's ink); [ink] the low block's ink (null: no block)
+    function readingLabel(g as FieldG, d as FieldInput, x as Numeric, y as Numeric, ink as Number?, anchor as Number) as Void {
+        if (d.update == null) {
+            label(g, x, y, ink != null ? ink : pal("soft"), anchor);
+            return;
+        }
+        g.w(x, y, updateLabel(d), FieldDraw.XT, ink != null ? ink : pal("high"), anchor);
+    }
+
+    function updateLabel(d as FieldInput) as String {
+        return WatchUi.loadResource("app".equals(d.update) ? Rez.Strings.UpdateField : Rez.Strings.UpdatePhone) as String;
+    }
+
     function valColour(d as FieldInput, inverted as Boolean) as Number {
         if (d.age >= 5) {
             return pal("grey");
@@ -315,7 +333,7 @@ module FieldLayout {
     // the whole page: the label, the value (116) over the sparkline (sc 1.4), the reading's time when late; [ink] the
     // low block's ink (null: no block)
     function whole(g as FieldG, d as FieldInput, ink as Number?) as Void {
-        label(g, 0, FieldFontTable.RECT ? -FieldDraw.hh() + 40 : -128, ink != null ? ink : pal("soft"), 0);
+        readingLabel(g, d, 0, FieldFontTable.RECT ? -FieldDraw.hh() + 40 : -128, ink, 0);
         value(g, d, 0, -8, 116, 0, true, ink != null, ink);
         if (ink == null) {
             var Wd = 100 / Math.ln(7) * 1.4 * Math.ln(19) + 24 * 1.4;
@@ -341,7 +359,7 @@ module FieldLayout {
             }
             gw += vw + 14;
             var x0 = ((sb[0] as Float) + (sb[1] as Float)) / 2 - gw / 2;
-            label(g, x0, (sb[2] as Float) + 20, pal("soft"), -1);
+            readingLabel(g, d, x0, (sb[2] as Float) + 20, null, -1);
             if (d.age >= 1.5) {
                 g.w(x0 + gw, (sb[2] as Float) + 20, d.readAt, FieldDraw.XT, pal("soft"), 1);
             }
@@ -360,8 +378,9 @@ module FieldLayout {
             return;
         }
         var cx = ((fv[0] as Float) + (fv[1] as Float)) / 2;
-        if (fv[5]) {
-            label(g, cx, (fv[2] as Float) + FieldDraw.capOf(FieldDraw.XT) + 3, ink != null ? ink : pal("soft"), 0);
+        // the update's label only where the slot's width takes it: else the value alone (the face and the phone say it)
+        if (fv[5] && (d.update == null || FieldDraw.ww(updateLabel(d), FieldDraw.XT) <= (fv[1] as Float) - (fv[0] as Float) - 12)) {
+            readingLabel(g, d, cx, (fv[2] as Float) + FieldDraw.capOf(FieldDraw.XT) + 3, ink, 0);
         }
         value(g, d, cx, (fv[3] as Float) - 4, fv[4] as Float, 0, true, ink != null, ink);
     }

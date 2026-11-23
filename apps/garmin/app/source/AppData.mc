@@ -13,6 +13,9 @@ import Toybox.WatchUi;
 class AppData {
     var now as Number = 0; // the watch clock it was built at (epoch s)
     var sent as Boolean = false; // the phone ever sent this app anything
+    // a payload of another version (Link.update, docs/48): the app to update, "app" (this one) or "phone" (Sukrara on
+    // the phone); null = none. The payload is then its glucose alone
+    var update as String? = null;
     var g as Number? = null; // the newest reading, mg/dL (39 LO, 401 HI); null = none
     var rate as Float? = null; // mg/dL/min; null = no trend (and LO / HI)
     var deg as Float = 0.0; // the arrow's rotation (negative = up)
@@ -87,6 +90,7 @@ module AppInput {
         d.clockH = (c.hour as Number) + (c.min as Number) / 60.0 + (c.sec as Number) / 3600.0;
         var p = Link.payload();
         var x = Link.inputs(now);
+        d.update = Link.update();
         if (p == null || x == null) {
             return d;
         }
