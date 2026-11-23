@@ -37,6 +37,10 @@ struct WidgetWords: Sendable {
             case .revoked: return ("They stopped sharing", follow)
             case .broken: return ("Following stopped", why)
             case .wearerSilent: return ("No readings from their phone yet", "Their phone may be off or offline")
+            case .updateToFollow(let thisApp):
+                return thisApp
+                    ? ("Update Sukrara", "Until then, new readings can't be shown")
+                    : ("Their phone needs to update Sukrara", "New readings come once they update it")
             case .juggluco(.looking): return ("Looking for Juggluco", "On this network")
             case .juggluco(.firstReading): return ("Waiting for Juggluco's first reading", "On this network")
             case .juggluco: return ("No reading from Juggluco", why)
@@ -79,6 +83,10 @@ struct WidgetWords: Sendable {
             case .broken: return ("Se dejó de seguir", why)
             case .wearerSilent:
                 return ("Aún no llegan lecturas de su móvil", "Su móvil puede estar apagado o sin conexión")
+            case .updateToFollow(let thisApp):
+                return thisApp
+                    ? ("Actualiza Sukrara", "Hasta entonces, no se pueden mostrar las lecturas nuevas")
+                    : ("Su móvil tiene que actualizar Sukrara", "Las lecturas nuevas llegarán cuando la actualice")
             case .juggluco(.looking): return ("Buscando Juggluco", "En esta red")
             case .juggluco(.firstReading): return ("Esperando la primera lectura de Juggluco", "En esta red")
             case .juggluco: return ("Sin lecturas de Juggluco", why)

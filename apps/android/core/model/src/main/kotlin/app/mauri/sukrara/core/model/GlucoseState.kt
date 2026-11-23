@@ -307,7 +307,12 @@ data class LinkState(
     val revoked: Boolean = false,
     /** The wearer allowed this follow: their readings are expected from now on. */
     val active: Boolean = false,
+    /** The wearer's events are of another version (THE VERSION RULE): which app to update; null = they match. */
+    val update: LinkUpdate? = null,
 )
+
+/** Which app must update to read the wearer's events (docs/48 "When versions differ"): this one, or the wearer's. */
+enum class LinkUpdate { ThisApp, Wearer }
 
 /**
  * The single glucose state source. Exactly one input per source feeds it (the sensor or Juggluco; a Sukrara stream: the

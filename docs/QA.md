@@ -968,6 +968,12 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
     hasn't been told yet…* while offline. The wearer's escalation line (Lately) with no follower left reads *no
     follower to tell*.
 
+- [ ] **Another version** (THE VERSION RULE; home's gallery `follower-update` / `follower-update-wearer`, the Mac's
+      `AppModelFollowerTests`; `contracts/protocol/sync/other-version.json`): a follower that gets the wearer's events
+      of a newer version shows *Update Sukrara* over the last value with *Update* (the GitHub version: About; Google
+      Play: its listing; the Mac: *Check for Updates…* or the App Store page); of an older version, *<name> needs to
+      update Sukrara* with nothing to tap; the first readable event clears it. Light, dark, largest font, Spanish.
+
 ## Q23 Import history
 
 Synthetic data only: a throwaway Tidepool account and files written from the emulator, never the owner's.
@@ -1115,6 +1121,12 @@ watch; the watch shows the real value: check it against the phone, never photogr
       the pill) as one the phone made. An entry sent twice is in the list once.
 - [ ] TalkBack: the row and every page row read their text; each action button reads as a button with its label; the
       main switch reads as a switch with its note.
+- [ ] **Another version** (docs/48 "When versions differ"; the gallery pages `garmin-update-watch` /
+      `garmin-update-phone`, home's `garmin-update-banner*`, setup's `setup-garmin-update`, and the watch's `update-*`
+      cases in the simulator): a watch app on a payload version this phone doesn't send shows its glucose and names the
+      app to update; the phone's Garmin page, home's banner and setup's Garmin step show one notice, its *Update* opens
+      the watch app's Connect IQ listing (or Sukrara's own update when the watch app is newer); updating clears every
+      one of them without a tap. TalkBack reads the notice's title, text and button.
 ## Q28 Garmin watch face (Sukrara Aura)
 
 - [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/aura/tools/garmin_test.py run <dir> [<core refs>]`

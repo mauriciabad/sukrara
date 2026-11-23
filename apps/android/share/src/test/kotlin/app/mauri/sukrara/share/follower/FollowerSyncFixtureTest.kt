@@ -4,6 +4,7 @@
 package app.mauri.sukrara.share.follower
 
 import app.mauri.sukrara.core.model.LinkState
+import app.mauri.sukrara.core.model.LinkUpdate
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.core.testing.FakeClock
@@ -29,6 +30,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -41,7 +43,8 @@ import java.time.Instant
  * The follower sequences in contracts/protocol/sync through the real [FollowerEngine] (not only `StreamFollower`, which
  * `SyncFixturesTest` pins): a seeded follower record, every step's event delivered by a fake relay, `{"restart"}` =
  * a new engine on the same SecureStore (what a process restart keeps). The engine must leave the fixture's expected
- * status, keys, devices, writers, the wearer's profile, readings, sensor, treatments and settings — what the person sees.
+ * status, keys, devices, writers, the wearer's profile, readings, sensor, treatments, settings and the app to update —
+ * what the person sees.
  */
 class FollowerSyncFixtureTest {
     private val files =
@@ -59,6 +62,7 @@ class FollowerSyncFixtureTest {
             listOf(
                 "conflict-rotation",
                 "join-readings",
+                "other-version",
                 "replace-identity",
                 "revoke-reapprove",
                 "rotation",
@@ -188,6 +192,20 @@ class FollowerSyncFixtureTest {
             // whose `ended` disarms the no-data alarm), never a silent stream that ends in No data
             val removed = s.status.name.lowercase() == "revoked"
             assertEquals("$name link removed", removed, links.lastOrNull()?.revoked == true)
+            // THE VERSION RULE: the link names the app to update, as the fixture's `update`
+            val update =
+                when (
+                    fx
+                        .getValue("expected")
+                        .jsonObject["update"]
+                        ?.jsonPrimitive
+                        ?.contentOrNull
+                ) {
+                    "this" -> LinkUpdate.ThisApp
+                    "wearer" -> LinkUpdate.Wearer
+                    else -> null
+                }
+            assertEquals("$name update", update, links.lastOrNull()?.update)
             assertEquals("$name stopped-sharing notice", removed, notices.lastOrNull() == FollowerNotice.Revoked)
         }
 

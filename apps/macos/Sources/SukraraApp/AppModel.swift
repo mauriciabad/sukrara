@@ -167,6 +167,15 @@ public final class AppModel {
     private var followMonitoring = false
     /// The Keychain won't read the follower key; the runtime retries (and the alerts go on over the stored readings).
     private(set) var keychainUnreadable = false
+    /// The wearer's readings are of another version (THE VERSION RULE): which app to update; nil while they match.
+    private(set) var followUpdate: FollowerSession.FollowUpdate?
+    /// Sukrara's page in the Mac App Store, in the app's language (the App Store version's *Update Sukrara…*; the
+    /// website's `STORES.appStore`).
+    static var appStorePage: URL {
+        let es = (L10n.language ?? Bundle.module.preferredLocalizations.first) == "es"
+        return URL(string: "https://apps.apple.com/\(es ? "es" : "us")/app/sukrara/id6833533014?mt=12")!
+    }
+
     /// The Keychain retrying while the wearer's stored readings are still alerted on: the panel shows the card under
     /// its line.
     var alertingOnLastData: Bool { keychainUnreadable && followMonitoring }
@@ -330,6 +339,7 @@ public final class AppModel {
         lastSnapshot = snapshot
         link = snapshot.link
         keychainUnreadable = followsSource && snapshot.keychainUnreadable
+        followUpdate = followsSource ? snapshot.update : nil
         // the follow's path and Bluetooth only while it is the source (Appendix G finding 1)
         nearby = followsSource ? snapshot.nearby : nil
         linkPath = followsSource ? LinkPath.of(snapshot) : nil
@@ -999,6 +1009,8 @@ public final class AppModel {
         let ownSource = !followsSource || lanMonitoring || ownLogActive || libreLinkUpUnset
         if keychainUnreadable, !ownSource { return .broken(.keyUnreadable) }
         if case .broken(let why) = link, !ownSource { return .broken(why) }
+        // every new reading of the wearer's is dropped until one of the apps updates: said over the last value too
+        if followMonitoring, let followUpdate { return .updateToFollow(thisApp: followUpdate == .thisApp) }
         guard readings.isEmpty else {
             guard look.state == .noReadings else { return nil }
             if followMonitoring { return .wearerSilent(since: readings.last?.t.timeIntervalSince1970) }
@@ -1045,7 +1057,9 @@ public final class AppModel {
             }
         // the Keychain retrying over stored readings: the line says so above the card (`alertingOnLastData`)
         return replacesCard
-            ? NoDataText.of(reason, now: now.timeIntervalSince1970, lastData: alertingOnLastData).title : nil
+            ? NoDataText.of(reason, now: now.timeIntervalSince1970, lastData: alertingOnLastData, wearer: linkName)
+                .title
+            : nil
     }
 
     /// Why the Nightscout site gives no reading now (contracts/sources/health.json), nil while it is live.

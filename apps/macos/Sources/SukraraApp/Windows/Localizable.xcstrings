@@ -49,6 +49,22 @@
         }
       }
     },
+    "%@ needs to update Sukrara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ needs to update Sukrara"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tiene que actualizar Sukrara"
+          }
+        }
+      }
+    },
     "%@ on widgets" : {
       "comment" : "Under a Graph setting: the widgets' own value where it differs from the menu bar's (\"6 h on widgets\", \"Off on widgets\")",
       "localizations" : {
@@ -4421,6 +4437,38 @@
         }
       }
     },
+    "Their phone needs to update Sukrara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their phone needs to update Sukrara"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su móvil tiene que actualizar Sukrara"
+          }
+        }
+      }
+    },
+    "Their Sukrara is older than this one. New readings come once they update it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their Sukrara is older than this one. New readings come once they update it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su Sukrara es más antigua que esta. Las lecturas nuevas llegarán cuando la actualice."
+          }
+        }
+      }
+    },
     "This Mac then shows %@'s glucose and alerts on it instead of %@'s. %@'s readings and treatments stay here, apart, and come back if %@ is read again." : {
       "localizations" : {
         "en" : {
@@ -4609,6 +4657,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Los tratamientos registrados en este Mac que %@ aún no tiene se quedan aquí con su glucosa, aparte, y le llegan si se vuelve a leer."
+          }
+        }
+      }
+    },
+    "Until then, %@'s new readings can't be shown here." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Until then, %@'s new readings can't be shown here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hasta entonces, aquí no se pueden mostrar las lecturas nuevas de %@."
+          }
+        }
+      }
+    },
+    "Until then, new readings can't be shown here." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Until then, new readings can't be shown here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hasta entonces, aquí no se pueden mostrar las lecturas nuevas."
+          }
+        }
+      }
+    },
+    "Update Sukrara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update Sukrara"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actualiza Sukrara"
+          }
+        }
+      }
+    },
+    "Update Sukrara…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update Sukrara…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actualizar Sukrara…"
           }
         }
       }

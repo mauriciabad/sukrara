@@ -30,6 +30,7 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.LinkState
+import app.mauri.sukrara.core.model.LinkUpdate
 import app.mauri.sukrara.core.model.MaintenanceWindow
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SensorAction
@@ -156,6 +157,9 @@ class HomeGallery {
                 ),
             "link-revoked" to ui(follower.copy(link = LinkState("Ana", NOW.minus(Duration.ofMinutes(5)), revoked = true))),
             "follower" to ui(follower),
+            // THE VERSION RULE: the wearer's readings are of another version (this app older / the wearer's older)
+            "follower-update" to ui(follower.copy(link = LinkState("Ana", NOW.minusSeconds(40), update = LinkUpdate.ThisApp))),
+            "follower-update-wearer" to ui(follower.copy(link = LinkState("Ana", NOW.minusSeconds(40), update = LinkUpdate.Wearer))),
             "muted" to ui(Samples.wearer().copy(alerts = AlertUiState(mutedUntil = NOW.plus(Duration.ofMinutes(72))))),
             // a muted low side and slowed falling-fast reminders: one chip each under the card
             "quiet-chips" to ui(Samples.wearer().copy(alerts = quietAlerts)),
@@ -271,7 +275,12 @@ class HomeGallery {
     @Test
     @Config(qualifiers = "es")
     fun spanishSharing() =
-        gallery(dark = false, fontScale = 1f, only = listOf("profile-nearby", "follower-nearby", "follower-offline"), prefix = "es-")
+        gallery(
+            dark = false,
+            fontScale = 1f,
+            only = listOf("profile-nearby", "follower-nearby", "follower-offline", "follower-update", "follower-update-wearer"),
+            prefix = "es-",
+        )
 
     /** A small phone at the largest font: a safety banner must be on screen without scrolling (ux-batch1 F2). */
     @Test

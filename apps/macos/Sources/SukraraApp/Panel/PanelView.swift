@@ -45,7 +45,8 @@ struct PanelView: View {
                 let retrying = model.alertingOnLastData
                 let block = reason.map { reason in
                     ReasonBlock(
-                        text: NoDataText.of(reason, now: context.date.timeIntervalSince1970, lastData: retrying),
+                        text: NoDataText.of(
+                            reason, now: context.date.timeIntervalSince1970, lastData: retrying, wearer: model.linkName),
                         act: links.flatMap { reasonAction(reason.action, $0) },
                         symbol: reason.action == .follow ? "person.badge.plus" : "gearshape",
                         icon: retrying
@@ -99,6 +100,7 @@ struct PanelView: View {
         case .follow: links.openFollow
         case .following, .source: { links.openSettingsPane(.source) }
         case .juggluco, .nightscout, .libreLinkUp: { links.openSettingsPane(.source) }
+        case .update: links.updateSukrara
         }
     }
 
@@ -402,6 +404,8 @@ struct PanelLinks {
     let openSettings: () -> Void
     /// Settings on one pane (a no-data reason's way out: Following, Juggluco in General).
     let openSettingsPane: (SettingsModel.Pane) -> Void
+    /// THE VERSION RULE's *Update Sukrara…*: Sparkle's check (the GitHub version) or Sukrara's App Store page.
+    var updateSukrara: () -> Void = {}
 }
 
 /// Why there's no value and what to do about it (#72; Android's no-data reasons): the reason in a line with the "no

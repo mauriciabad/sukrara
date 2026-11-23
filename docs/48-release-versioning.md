@@ -252,6 +252,21 @@ A change that must move one of these is a new format beside the old one, not a v
   named once; one button, *Update*. The watch's line on the Garmin page no longer repeats it; the app's row keeps its
   state. Home's banner sits after the safety banners and before the tips.
 - **Complications** keep the current glucose (no trend, no history), not `---`: it is a real, current reading.
+- **Setup's Garmin step** shows the same `updateBanner` under its switch (`SetupGarmin.update`, AppGarmin's one
+  mismatch rule); *Update* goes where home's does.
+- **The watch app's update page** takes the title in small when medium needs three lines (the wide fonts of fr265s
+  and the like cut *Update Sukrara on your phone* after two): one rule for the setup and update pages (app SPEC §4.3).
+- **Followers**: a payload of another `v` (`OtherVersion` / `PayloadError.version`) is rejected as `version` only
+  after the event's signature, epoch, author and decryption passed, and the follower keeps which app to update
+  (`FollowerState.update` / `FollowerSession.update`, not persisted: the relays bring the events again); the next
+  accepted event clears it. The no-data reason (`UpdateToFollow` / `.updateToFollow`) shows **over the last value
+  too**, like a clock that runs behind, instead of waiting for the 20 minutes: every new reading is being dropped.
+  Its words follow the Garmin notice's pattern (the title names the app to update, the text what happens until
+  then): *Update Sukrara* · "Until then, Ana's new readings can't be shown here." + *Update*, or *Ana needs to update
+  Sukrara* · "Their Sukrara is older than this one. New readings come once they update it." Fixture
+  `contracts/protocol/sync/other-version.json` (a step's `update`, the expected state's `update`), cross-checked by
+  `sync_crosscheck.py`. The Mac's *Update Sukrara…* is Sparkle's check (`Updates.checkNow`), or the App Store
+  version's page.
 
 ### Draft: States and exits (for FEATURES.md when built)
 

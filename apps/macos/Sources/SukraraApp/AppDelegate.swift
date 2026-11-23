@@ -136,7 +136,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         contextMenu.openAbout = { [weak windows] in windows?.openAbout() }
         contextMenu.openTreatments = { [weak windows] in windows?.openTreatments() }
         contextMenu.openReport = { [weak windows] in windows?.openReport() }
-        let links = PanelLinks(
+        var links = PanelLinks(
             setup: windows.setup, treatments: windows.treatments,
             openSetup: { [weak self] in self?.fromPanel { $0.openSetup() } },
             openFollow: { [weak self] in self?.fromPanel { $0.openFollow() } },
@@ -145,6 +145,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             openReport: { [weak self] in self?.fromPanel { $0.openReport() } },
             openSettings: { [weak self] in self?.fromPanel { $0.openSettings() } },
             openSettingsPane: { [weak self] pane in self?.fromPanel { $0.openSettings(pane: pane) } })
+        links.updateSukrara = { [weak model] in
+            guard let model else { return }
+            if let updates = model.updates {
+                updates.checkNow()
+            } else {
+                NSWorkspace.shared.open(AppModel.appStorePage)
+            }
+        }
         let statusItem = StatusItemController(model: model, menu: contextMenu, links: links)
         statusItem.onOpen = { [weak self, weak model] in
             self?.refreshNotificationPermission()

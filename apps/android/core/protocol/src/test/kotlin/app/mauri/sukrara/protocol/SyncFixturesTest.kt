@@ -22,6 +22,7 @@ import app.mauri.sukrara.protocol.testing.OgsVectors
 import app.mauri.sukrara.protocol.testing.OgsVectors.Companion.str
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -67,6 +68,7 @@ class SyncFixturesTest {
             "revoke-reapprove",
             "conflict-rotation",
             "replace-identity",
+            "other-version",
         )
 
     /**
@@ -74,9 +76,22 @@ class SyncFixturesTest {
      * gk; none otherwise), or — [event] null — restart the follower: it keeps its persisted state but forgets the event
      * ids it has seen and its rekey throttle (the Mac keeps those in memory only), so a relay replay is judged again.
      */
-    private data class Step(val name: String, val event: SignedEvent?, val expect: String? = null, val rekey: String? = null)
+    private data class Step(
+        val name: String,
+        val event: SignedEvent?,
+        val expect: String? = null,
+        val rekey: String? = null,
+        /** The app to update after this step (`this`, `wearer`, JSON null), checked when set. */
+        val update: JsonElement? = null,
+    )
 
-    private fun step(name: String, event: SignedEvent, expect: String, rekey: String? = null) = Step(name, event, expect, rekey)
+    private fun step(
+        name: String,
+        event: SignedEvent,
+        expect: String,
+        rekey: String? = null,
+        update: JsonElement? = null,
+    ) = Step(name, event, expect, rekey, update)
 
     private fun restart(name: String) = Step(name, null)
 
@@ -234,6 +249,10 @@ class SyncFixturesTest {
                 replaceIdentity()
             }
 
+            "other-version" -> {
+                base + otherVersion()
+            }
+
             else -> {
                 error(name)
             }
@@ -265,6 +284,26 @@ class SyncFixturesTest {
                 live(d, g1, now + 400, 150, 0.0, fresh.copy(end = now + 400)),
                 "rejected:reading-in-future",
             ),
+        )
+    }
+
+    /**
+     * THE VERSION RULE (docs/48 "When versions differ"): the wearer's live events of another version are refused, and the
+     * follower knows which app to update: version 3 (newer) → this one, version 1 → the wearer's; the first event it
+     * reads clears it.
+     */
+    private fun otherVersion(): List<Step> {
+        fun liveV(v: Int, t: Long, sgv: Int): SignedEvent {
+            val json = "{\"v\":$v,\"t\":$t,\"sgv\":$sgv,\"r\":null,\"dev\":\"libre3\"}"
+            val tags = listOf(listOf("gk", Wire.gk(g1.public)), listOf("expiration", (t + 5 + Wire.TTL_LIVE).toString()))
+            return crypto.sign(d, UnsignedEvent(Wire.KIND_LIVE, crypto.encrypt(d.secret, g1.public, json), tags, t + 5))
+        }
+        return listOf(
+            step("roster-1", roster(1, g1, listOf(d)), "accepted:roster", update = JsonNull),
+            step("live", live(d, g1, now - 300, 120, 0.0), "accepted:live", update = JsonNull),
+            step("live-v3", liveV(3, now - 240, 124), "rejected:version", update = JsonPrimitive("this")),
+            step("live-readable", live(d, g1, now - 180, 126, 0.5), "accepted:live", update = JsonNull),
+            step("live-v1", liveV(1, now - 120, 128), "rejected:version", update = JsonPrimitive("wearer")),
         )
     }
 
@@ -460,6 +499,7 @@ class SyncFixturesTest {
                 val r = m.feed(s.event, now)
                 assertEquals("$name/${s.name}", s.expect, r.code)
                 assertEquals("$name/${s.name} rekey", s.rekey, (r as? FollowResult.Ignored)?.rekey?.have)
+                s.update?.let { assertEquals("$name/${s.name} update", it, m.updateJson()) }
             }
         }
         return buildJsonObject {
@@ -503,6 +543,7 @@ class SyncFixturesTest {
                                     put("event", s.name)
                                     put("expect", s.expect)
                                     s.rekey?.let { put("rekey", it) }
+                                    s.update?.let { put("update", it) }
                                 }
                             },
                         )
@@ -539,6 +580,7 @@ class SyncFixturesTest {
                     },
                     (r as? FollowResult.Ignored)?.rekey?.have,
                 )
+                step["update"]?.let { assertEquals("$name/${step.str("event")} update", it, m.updateJson()) }
             }
             assertEquals(name, fx.getValue("expected"), m.stateJson())
         }

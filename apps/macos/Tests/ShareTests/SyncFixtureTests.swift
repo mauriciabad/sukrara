@@ -58,6 +58,10 @@ struct SyncFixtureTests {
                 return body?["have"] as? String
             }
             #expect(have == ((step["rekey"] as? String).map { [$0] } ?? []), "\(label) rekey")
+            // the app to update after this step (THE VERSION RULE): "this", "wearer" or null, checked when given
+            if step.keys.contains("update") {
+                #expect(session.update?.rawValue == step["update"] as? String, "\(label) update")
+            }
             for delta in outcome.deltas {
                 switch delta {
                 case .readings(let rs): for r in rs where readings[r.t] == nil { readings[r.t] = r }
@@ -70,6 +74,7 @@ struct SyncFixtureTests {
             }
         }
         let expected = fixture["expected"] as! [String: Any]
+        #expect(session.update?.rawValue == expected["update"] as? String, "\(name) update")
         #expect(session.state.status.rawValue == expected["status"] as? String, "\(name)")
         #expect(session.state.epochs.map(\.n).sorted() == expected["epochs"] as? [Int], "\(name)")
         #expect(session.state.devices == expected["devices"] as? [String], "\(name)")

@@ -12,9 +12,11 @@ import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.event.TreatmentPayload
 import app.mauri.sukrara.protocol.event.WireReading
 import app.mauri.sukrara.protocol.follow.FollowResult
+import app.mauri.sukrara.protocol.follow.FollowUpdate
 import app.mauri.sukrara.protocol.follow.FollowerState
 import app.mauri.sukrara.protocol.follow.Item
 import app.mauri.sukrara.protocol.follow.StreamFollower
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -49,8 +51,16 @@ class FollowerModel(private val crypto: NostrCrypto, initial: FollowerState) {
      * its rekey throttle (the Mac keeps those in memory only), so relay replays are judged again by the rules alone.
      */
     fun restart() {
-        follower = StreamFollower(crypto, follower.state.copy(seen = emptyMap(), rekeyAt = emptyMap()))
+        follower = StreamFollower(crypto, follower.state.copy(seen = emptyMap(), rekeyAt = emptyMap(), update = null))
     }
+
+    /** The app to update (THE VERSION RULE) as the fixtures write it: `this`, `wearer` or null. */
+    fun updateJson(): JsonElement =
+        when (follower.state.update) {
+            FollowUpdate.ThisApp -> JsonPrimitive("this")
+            FollowUpdate.Wearer -> JsonPrimitive("wearer")
+            null -> JsonNull
+        }
 
     /** The state as the sync fixtures' `expected` JSON (contracts/protocol/sync/README.md; the Mac compares the same). */
     fun stateJson(): JsonObject {
@@ -121,6 +131,7 @@ class FollowerModel(private val crypto: NostrCrypto, initial: FollowerState) {
                 } ?: JsonNull,
             )
             put("alerts", alerts.size)
+            put("update", updateJson())
         }
     }
 

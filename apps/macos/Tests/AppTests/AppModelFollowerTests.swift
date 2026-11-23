@@ -65,6 +65,21 @@ import Testing
         snapshot.readings = [Reading(t: last, mgdl: 131, sensorRate: 0)]
         model.apply(snapshot)
         #expect(model.noDataReason == .wearerSilent(since: last.timeIntervalSince1970))
+        // THE VERSION RULE: the wearer's readings of another version name the app to update, over a fresh value too
+        snapshot.readings = [Reading(t: clock.now, mgdl: 131, sensorRate: 0)]
+        snapshot.update = .thisApp
+        model.apply(snapshot)
+        #expect(model.noDataReason == .updateToFollow(thisApp: true) && model.noDataReason?.action == .update)
+        #expect(NoDataText.of(.updateToFollow(thisApp: true), now: 0, wearer: "Ana").action == "Update Sukrara…")
+        snapshot.update = .wearer
+        model.apply(snapshot)
+        #expect(model.noDataReason == .updateToFollow(thisApp: false) && model.noDataReason?.action == nil)
+        #expect(
+            NoDataText.of(.updateToFollow(thisApp: false), now: 0, wearer: "Ana").title == "Ana needs to update Sukrara"
+        )
+        snapshot.update = nil
+        snapshot.readings = [Reading(t: last, mgdl: 131, sensorRate: 0)]
+        model.apply(snapshot)
         #expect(model.notMonitoringReason == nil)
         snapshot.readings = [Reading(t: clock.now, mgdl: 131, sensorRate: 0)]
         model.apply(snapshot)

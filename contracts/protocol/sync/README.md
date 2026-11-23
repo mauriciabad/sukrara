@@ -19,6 +19,7 @@ test keys (the OGS draft-1 vector keys plus `D2` = sha256("sukrara/sync/D2")); a
 | `owner-conflict.json` | A3, owner side: the wearer's own echoes, its own rotation and late old events are `fine`; a newer roster or backup from another app publishing as the same identity is a `conflict`; the epoch the wearer's retry rotates to (above the other app's) |
 | `conflict-rotation.json` | the follower side of that retry: the old phone rotates to epoch 3 naming itself (the new phone's readings rejected), the new phone's retry rotates to epoch 4 (accepted again), the old phone's epoch-3 events rejected / ignored |
 | `leave.json` | a follower's `leave` (PROTOCOL-v2 "Leave"): its `body` and `ttl`, real wraps every app opens (`wraps`: who sealed each, to whom, when; a request from the key that left, a stranger's, one to another identity), the wearer's side (`wearer`, Android `LeaveWearerTest`: an approved follower left → rotation with keys to the rest, a waiting request withdrawn, everything else changes nothing, the time kept between approval and now) and the follower's outbox rule (`outbox`: told / done / still to send after the relays' NIP-01 `OK` answers, each from the URL its connection was opened with: `true` with or without `duplicate:`, `false` with `duplicate:`, refusals, another event, another port or path, the same relay spelled another way, a relay not listed, invalid relays; PROTOCOL-v2 "Relay answers"; Android `LeaveFixtureTest`, Mac `LeaveFixtureTests`) |
+| `other-version.json` | THE VERSION RULE: the wearer's live events of version 3 (newer: this app updates) and 1 (older: the wearer's) are `rejected:version`, each step's `update` names the app to update, a readable event clears it |
 | `replace-identity.json` | the wearer replaces its identity (PROTOCOL-v2 "Replace the identity"). `steps`: a replace cancelled (the revoked notice, then the same key one second newer: following again), then a real one (the notice: removed; the old phone's late reading ignored); after a restart the relays replay it all and the follower stays removed. `replace` (the wearer's side, Android `ReplaceIdentityTest`): who is told and when the identity is replaced for each way the relays answer |
 
 ## Format (`v` 1)
@@ -29,7 +30,8 @@ roster membership, epoch, decryption, tags — runs on every platform exactly as
 Follower sequences: `keys` (`{name: {sec, pub}}`), `sid`, `follower` (key name), `identity` (I's pub), `now` (unix s,
 the clock for every step), `events` (`{step: nostr event}`), `steps` (`[{event, expect, rekey?}]`, `expect` =
 `accepted|rejected|ignored:<what>`, the reference follower's codes; `rekey` = the `have` gk of the rekey request that
-step must send, none when absent; a step `{"restart": true}` relaunches the follower: persisted state kept, seen event
+step must send, none when absent; `update` = the app to update after that step, `this` / `wearer` / `null`, checked
+when present; a step `{"restart": true}` relaunches the follower: persisted state kept, seen event
 ids and rekey throttles forgotten), `expected`:
 
 - `status` (`new|requested|active|declined|inviteused|revoked`), `epochs` (sorted), `devices`, `writers`;
@@ -39,7 +41,8 @@ ids and rekey throttles forgotten), `expected`:
 - `sensor`: `{ss, se, sw}` from the newest live event (`null` when none or cleared);
 - `treatments`: `[{id, k, a, u, o, del}]` sorted by `id`, merged by `(u, o)` (a wearer entry overrides a forged writer copy);
 - `settings`: `{u, graph, alerts}` of the newest accepted settings (`settings-mirror.json` carries every `"mirror": true`
-  setting of contracts/settings, checked by Android `SyncFixturesTest`), or `null`; `alerts`: count accepted.
+  setting of contracts/settings, checked by Android `SyncFixturesTest`), or `null`; `alerts`: count accepted;
+- `update`: the app to update (THE VERSION RULE: `this`, `wearer`), `null` when the last events were readable.
 
 `owner-conflict.json`: `marks` (what the wearer's phone persists: its identity, its device key, the epochs it holds,
 `lastRosterAt` / `lastBackupAt` = `created_at` of the last roster / backup it published), `events`, `checks`
@@ -66,4 +69,4 @@ added in the tool, one method each: a newer epoch's key outranks every older-epo
 the newest held gk and only for events newer than the latest key, revoked notice vs key delivery ordered by the
 rumor's `created_at` and a restart (`revoke-reapprove`), an author not yet in the roster judged again, the settings
 rule (`settings-mirror`), readings in the future (a live event rejected whole), a roster without a profile keeping the
-last one (`join-readings`).
+last one (`join-readings`), a payload of another version (`other-version`).

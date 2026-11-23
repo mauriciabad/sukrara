@@ -85,6 +85,7 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.DndStatus
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.core.model.LinkUpdate
 import app.mauri.sukrara.core.model.MaintenanceWindow
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
@@ -573,6 +574,12 @@ private fun FollowerHeader(state: HomeUiState) {
                     stringResource(R.string.home_link_revoked) to true
                 }
 
+                is NoDataReason.UpdateToFollow -> {
+                    stringResource(
+                        if (reason.update == LinkUpdate.ThisApp) R.string.home_link_update else R.string.home_link_update_wearer,
+                    ) to true
+                }
+
                 is NoDataReason.WearerSilent -> {
                     val since = reason.since
                     when {
@@ -987,6 +994,27 @@ private fun reasonText(
             stringResource(R.string.reason_revoked_title) to stringResource(R.string.reason_revoked_body)
         }
 
+        is NoDataReason.UpdateToFollow -> {
+            val name = reason.wearer
+            when {
+                reason.update == LinkUpdate.ThisApp && name != null -> {
+                    stringResource(DsR.string.ds_update_sukrara) to stringResource(R.string.reason_update_body, name)
+                }
+
+                reason.update == LinkUpdate.ThisApp -> {
+                    stringResource(DsR.string.ds_update_sukrara) to stringResource(R.string.reason_update_body_unnamed)
+                }
+
+                name != null -> {
+                    stringResource(R.string.reason_update_wearer_title, name) to stringResource(R.string.reason_update_wearer_body)
+                }
+
+                else -> {
+                    stringResource(R.string.reason_update_wearer_title_unnamed) to stringResource(R.string.reason_update_wearer_body)
+                }
+            }
+        }
+
         is NoDataReason.WearerSilent -> {
             stringResource(R.string.reason_wearer_silent_title) to
                 (
@@ -1133,6 +1161,10 @@ private fun actionLabel(reason: NoDataReason): String =
 
             NoDataReason.SiteNotConnected, is NoDataReason.PhoneAppSilent -> {
                 R.string.reason_site_action
+            }
+
+            is NoDataReason.UpdateToFollow -> {
+                DsR.string.ds_update
             }
 
             is NoDataReason.SourceTrouble -> {

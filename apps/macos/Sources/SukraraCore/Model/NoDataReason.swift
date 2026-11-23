@@ -28,6 +28,10 @@ public enum NoDataReason: Codable, Sendable, Equatable {
     case broken(LinkProblem)
     /// Following, but nothing from the wearer's phone: `since` = the last reading (epoch s), nil = none yet.
     case wearerSilent(since: TimeInterval?)
+    /// Following, but the wearer's readings are of another version (THE VERSION RULE, docs/48): `thisApp` = this Mac's
+    /// Sukrara is the one to update, else the wearer's. Shown even while the last value shows: every new reading is
+    /// being dropped.
+    case updateToFollow(thisApp: Bool)
     /// Juggluco on this network gives no reading.
     case juggluco(JugglucoWait)
     /// The Nightscout site gives no reading (contracts/sources/health.json in the panel's words).
@@ -96,7 +100,9 @@ public enum NoDataReason: Codable, Sendable, Equatable {
     /// What the panel offers for it: follow someone (a new invite), the Following settings (cancel a request, stop
     /// following), Juggluco's settings (address, secret), the Nightscout source's (site, token) or LibreLinkUp's
     /// (sign in, whose glucose).
-    public enum Action: Sendable, Equatable { case follow, following, source, juggluco, nightscout, libreLinkUp }
+    public enum Action: Sendable, Equatable {
+        case follow, following, source, juggluco, nightscout, libreLinkUp, update
+    }
 
     /// LibreView's maintenance: an expected wait (the clock symbol, never the "no readings" or an error mark).
     public var isMaintenance: Bool {
@@ -118,6 +124,7 @@ public enum NoDataReason: Codable, Sendable, Equatable {
             .libreLinkUp(.stopped), .libreLinkUp(.maintenance):
             .libreLinkUp
         case .libreLinkUp: nil
+        case .updateToFollow(let thisApp): thisApp ? .update : nil
         case .offlineBuild, .wearerSilent: nil
         }
     }

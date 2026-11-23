@@ -5,6 +5,7 @@ package app.mauri.sukrara.share.follower
 
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.LinkState
+import app.mauri.sukrara.core.model.LinkUpdate
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.core.model.SensorState
@@ -31,6 +32,7 @@ import app.mauri.sukrara.protocol.event.TreatmentCodec
 import app.mauri.sukrara.protocol.event.WireReading
 import app.mauri.sukrara.protocol.follow.FollowResult
 import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.protocol.follow.FollowUpdate
 import app.mauri.sukrara.protocol.follow.FollowerState
 import app.mauri.sukrara.protocol.follow.Item
 import app.mauri.sukrara.protocol.follow.NearbyPair
@@ -1211,7 +1213,15 @@ class FollowerEngine(
                         ?.takeIf { r.stream.status == FollowStatus.New || r.stream.status == FollowStatus.Requested }
                         ?.let { PairingCheck(it.code, it.confirmed) },
             )
-        setLink(LinkState(r.wearer?.name, r.lastHeardAt?.let(Instant::ofEpochSecond), revoked, r.stream.status == FollowStatus.Active))
+        val update =
+            when (r.stream.update) {
+                FollowUpdate.ThisApp -> LinkUpdate.ThisApp
+                FollowUpdate.Wearer -> LinkUpdate.Wearer
+                null -> null
+            }
+        setLink(
+            LinkState(r.wearer?.name, r.lastHeardAt?.let(Instant::ofEpochSecond), revoked, r.stream.status == FollowStatus.Active, update),
+        )
     }
 
     private fun sensorState(life: SensorLife?): SensorState =

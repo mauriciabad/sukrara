@@ -582,6 +582,12 @@ all unmerged as of 2026-10.)
   a key delivery newer than the revoked notice re-approves the follower (the wearer invited the same `F` again), even
   when it carries a key the follower already holds. A follower must persist both times
   ([sync/revoke-reapprove.json](sync/revoke-reapprove.json)).
+- Another version (THE VERSION RULE, [docs/48](../../docs/48-release-versioning.md#when-versions-differ)): a payload
+  whose `v` is a whole number other than the one this app reads, found once the event passed its signature, epoch,
+  author and decryption (so a stranger can't cause it), is rejected as `version`, and the follower keeps which app to
+  update: this one when the `v` is newer, else the wearer's. The next event it accepts clears it; it isn't persisted
+  (the relays bring the wearer's events again). The app shows it as the no-data reason, over the last value too
+  ([sync/other-version.json](sync/other-version.json)).
 - Key delivery: sealed by `I`, and its `sid` equal to the one already known (if any).
 - Settings: author ∈ `roster.devices`, known `gk`, decrypts, `d == H("cgm2:settings:"+sid)`, `type == "settings"`,
   newest `u` wins ([Settings](#settings--v2-addition-2026-10-21-round-f28)).

@@ -1191,6 +1191,10 @@ private fun route(
             updateGarmin(context, backStack, action.app, action.newer)
         }
 
+        HomeAction.UpdateSukrara -> {
+            AppUpdate.open(context, context.graph.updates != null) { backStack.push(SettingsKey("about")) }
+        }
+
         HomeAction.AllowTaps -> {
             TagIntents.openAllow(context)
         }

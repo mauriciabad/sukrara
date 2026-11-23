@@ -3123,17 +3123,27 @@ each reads only the current version, but every mismatch is detected and **the de
   app's Connect IQ listing; then *Look at your phone*, 5 s); its glance says the title alone; entries logged from the
   Log complication wait (*Waiting: update Sukrara*). The **data field**'s label says *UPDATE PHONE* / *UPDATE FIELD*
   over the current glucose; the **complications** keep the glucose.
-- Still to come (#262): setup's Garmin step, followers, the wearer's Share rows, invites, the Mac's *Update Sukrara*
+- **Setup's Garmin step** shows the same notice under its switch while a watch app reads another version.
+- **Followers** (Android and Mac): the wearer's events of another version are refused (`rejected:version`) and the
+  no-data reason names the app to update, over the last value too (every new reading is dropped): *Update Sukrara* ·
+  "Until then, Ana's new readings can't be shown here." + **Update** (Android: the GitHub version's About and updater,
+  Google Play's listing; Mac: Sparkle's check, the App Store version's page), or *Ana needs to update Sukrara* ·
+  "Their Sukrara is older than this one. New readings come once they update it." (nothing to tap); the following line
+  on Android's home says it too, the Mac's widgets in their words. The first readable event clears it.
+- Still to come (#262): the follower's *No data* alarm naming it, the wearer's Share rows, Bluetooth's hello, invites
   (docs/48's table).
 
-**States and exits**: *versions match* → nothing shown. *The watch reads another version* → the Garmin page's notice,
+**States and exits**: *versions match* → nothing shown. *A follower reads another version* → the no-data reason
+(Android home, the Mac's panel, widgets) names the app to update; *Update* opens this copy's update (this one older),
+nothing to tap when the wearer's is older; the stored readings stay, ageing, and alerts go on over them. Out: updating
+either app, which clears it at the first event read (no tap). *The watch reads another version* → the Garmin page's notice,
 the watch's line and the app's row name the app to update, with one button to that update; on the watch the face's
 update line, the watch app's page (*Open on phone* → *Look at your phone* 5 s → the button again; BACK leaves the app),
 its glance and the data field's label say it; the watch keeps showing the current glucose (ageing by the freshness
 steps), its entries wait in its outbox. Out: updating, which clears it at the first report or payload of the same
 version (no tap; the watch app's pages come back by themselves); Back leaves the page; nothing to close or mute because
 it ends by itself. Reachable without a notification: home's banner, the Garmin page (Settings › Share with apps ›
-Garmin), the watch face, the watch app and its glance. TalkBack reads the notice's title, text and button like any notice.
+Garmin), setup's Garmin step, the watch face, the watch app and its glance; a follower's home and the Mac's panel. TalkBack reads the notice's title, text and button like any notice.
 
 ## Sukrara on Garmin watches: the app and the data field (the watch)
 

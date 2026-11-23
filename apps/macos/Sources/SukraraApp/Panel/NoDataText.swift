@@ -19,7 +19,9 @@ struct NoDataText: Equatable {
     }
 
     /// `lastData`: the Keychain retrying while the alerts go on over the stored readings (`AppModel.alertingOnLastData`).
-    static func of(_ reason: NoDataReason, now: TimeInterval, lastData: Bool = false) -> NoDataText {
+    static func of(_ reason: NoDataReason, now: TimeInterval, lastData: Bool = false, wearer: String? = nil)
+        -> NoDataText
+    {
         let follow = L10n.t("Follow Someone…")
         let ask = L10n.t("Ask them for a new invite to follow again.")
         switch reason {
@@ -71,6 +73,19 @@ struct NoDataText: Equatable {
         case .broken(let problem):
             return NoDataText(
                 title: L10n.t("Not monitoring: \(problem.text)"), action: L10n.t("Following Settings…"))
+        case .updateToFollow(let thisApp):
+            let name = wearer
+            if thisApp {
+                return NoDataText(
+                    title: L10n.t("Update Sukrara"),
+                    body: name.map { L10n.t("Until then, \($0)'s new readings can't be shown here.") }
+                        ?? L10n.t("Until then, new readings can't be shown here."),
+                    action: L10n.t("Update Sukrara…"))
+            }
+            return NoDataText(
+                title: name.map { L10n.t("\($0) needs to update Sukrara") }
+                    ?? L10n.t("Their phone needs to update Sukrara"),
+                body: L10n.t("Their Sukrara is older than this one. New readings come once they update it."))
         case .wearerSilent(let since):
             let why = L10n.t("Their phone may be off, offline or out of battery.")
             guard let since else {

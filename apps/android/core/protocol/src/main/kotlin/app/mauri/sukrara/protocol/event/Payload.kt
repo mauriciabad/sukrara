@@ -15,7 +15,16 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.longOrNull
 
 /** A payload that breaks the spec: the event carrying it is rejected with [reason]. */
-class InvalidPayload(val reason: String) : Exception(reason)
+open class InvalidPayload(val reason: String) : Exception(reason)
+
+/**
+ * A payload of another version [v] (THE VERSION RULE, docs/48: until 1.0.0 every app reads only the current one): the
+ * smaller version is the app to update.
+ */
+class OtherVersion(val v: Long, val want: Int) : InvalidPayload("unsupported v=$v") {
+    /** The payload is newer than this app reads: this app is the one to update. */
+    val newer: Boolean get() = v > want
+}
 
 /** Strict readers over decrypted JSON, after the reference's `_int` / `_num` / `_v` (5.0 is accepted as 5). */
 internal object Payload {
@@ -56,7 +65,8 @@ internal object Payload {
     fun JsonObject.obj(key: String): JsonObject? = this[key] as? JsonObject
 
     fun JsonObject.requireV(want: Int) {
-        if (longOrNull("v") != want.toLong()) throw InvalidPayload("unsupported v=${this["v"]}")
+        val v = longOrNull("v")
+        if (v != want.toLong()) throw if (v != null) OtherVersion(v, want) else InvalidPayload("unsupported v=null")
     }
 
     /** Rates on the wire: rounded to 2 decimals, JSON null when unknown. */

@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.home
 
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.LinkUpdate
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
@@ -116,6 +117,18 @@ sealed interface NoDataReason {
         override val action = HomeAction.OpenSetup
     }
 
+    /**
+     * Follower: the wearer's readings are of another version (THE VERSION RULE, docs/48): [update] names the app to
+     * update, this one (*Update*: Sukrara's own update) or the wearer's [wearer] (nothing to tap here). Shown even while
+     * the last value shows: every new reading is being dropped.
+     */
+    data class UpdateToFollow(
+        val update: LinkUpdate,
+        val wearer: String?,
+    ) : NoDataReason {
+        override val action: HomeAction? = HomeAction.UpdateSukrara.takeIf { update == LinkUpdate.ThisApp }
+    }
+
     /** Follower: nothing heard from the wearer's phone since [since] (null = never). */
     data class WearerSilent(val since: Instant?) : NoDataReason {
         override val action: HomeAction? = null
@@ -208,6 +221,11 @@ sealed interface NoDataReason {
                 // even while the last value shows: every new reading is being dropped, and its age reads wrong
                 clock != null -> {
                     ClockBehind(clock.ahead)
+                }
+
+                // the same: the wearer's new readings can't be read until one of the apps updates
+                follower && state.link?.update != null -> {
+                    UpdateToFollow(state.link!!.update!!, state.link?.wearerName)
                 }
 
                 sensor is SensorState.WarmingUp && look.state == GlucoseLook.State.WARMING_UP -> {
@@ -356,6 +374,9 @@ sealed interface HomeAction {
 
     /** *Turn on* on the Garmin tip: *Send to Sukrara on your watch* goes on. */
     data object TurnOnGarmin : HomeAction
+
+    /** Sukrara's own update (the GitHub version: About's updater; Google Play: its listing). */
+    data object UpdateSukrara : HomeAction
 
     /** The update banner's *Update*: Sukrara's own update ([newer]), else [app]'s Connect IQ listing. */
     data class UpdateGarmin(

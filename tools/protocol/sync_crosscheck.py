@@ -17,8 +17,8 @@ read-only (no bytecode written next to it) and the PROTOCOL-v2 rules it predates
 `Follower` (rosters ranked by a newer epoch's key, rekey `have` = the newest held gk and only for events newer than
 the latest key, revoked notice vs key delivery ordered by the rumor's `created_at`, a restart, events from an author
 not yet in the roster not remembered, the settings rule, readings in the future (a live event rejected whole, its
-sensor fields too), a roster without a profile keeping the last one) and `aligned_vectors` (the rekey
-request's `have`). Both apps implement the same rules (Android `StreamFollower`, Mac `FollowerSession`). Standard
+sensor fields too), a roster without a profile keeping the last one, a payload of another version refused as `version`
+and naming the app to update) and `aligned_vectors` (the rekey request's `have`). Both apps implement the same rules (Android `StreamFollower`, Mac `FollowerSession`). Standard
 library only.
 """
 from __future__ import annotations
@@ -55,13 +55,35 @@ class Follower(ref.Follower):
         self.last_key_at = 0  # the newest key delivery's rumor created_at
         self.revoked_at = 0
         self.settings: dict | None = None
+        self.update: str | None = None  # THE VERSION RULE: "this" or "wearer", until the next event accepted
 
     def restart(self):
         """An app restart: trust state and stored data kept; seen ids and the rekey throttle forgotten."""
         self._seen = set()
         self._rekey_at = {}
+        self.update = None  # not persisted: the relays bring the wearer's events again
 
     def _on_event(self, ev: dict, now: int) -> Result:
+        r = self._judge(ev, now)
+        if r.verdict == "accepted":
+            self.update = None
+        return r
+
+    def _invalid(self, e: Exception) -> Result:
+        """THE VERSION RULE (docs/48): the reference's `unsupported v=<n>` is a payload of another version, refused as
+        `version`; the smaller version is the app to update (against the stream's version: the fixtures' events)."""
+        text = str(e)
+        if text.startswith("unsupported v="):
+            try:
+                v = int(float(text.split("=", 1)[1]))
+            except ValueError:
+                v = None
+            if v is not None:
+                self.update = "this" if v > m.WIRE_V else "wearer"
+                return Result("rejected", "version", text)
+        return Result("rejected", "invalid", text)
+
+    def _judge(self, ev: dict, now: int) -> Result:
         eid = ev.get("id")
         if eid in self._seen:
             return Result("ignored", "duplicate")
@@ -95,7 +117,7 @@ class Follower(ref.Follower):
             else:
                 r = Result("ignored", "unknown-kind")
         except (ValueError, KeyError, TypeError) as e:
-            r = Result("rejected", "invalid", str(e))
+            r = self._invalid(e)
         if r.verdict == "rejected" and r.what in NOT_IN_ROSTER_YET:
             self._seen.discard(eid)  # the roster that adds the author may still be on its way: judged again then
         return r
@@ -163,7 +185,7 @@ class Follower(ref.Follower):
             if typ == "key":
                 return self._on_key_at(body, at)
         except (ValueError, KeyError, TypeError) as e:
-            return Result("rejected", "invalid", str(e))
+            return self._invalid(e)
         if typ == "revoked":
             if at < self.last_key_at:
                 return Result("ignored", "revoked-before-latest-key")
@@ -225,6 +247,7 @@ def state_json(f: Follower) -> dict:
                        for t in sorted(f.treatments.values(), key=lambda t: t.id)],
         "settings": f.settings,
         "alerts": len(f.alerts),
+        "update": f.update,
     }
 
 
@@ -245,6 +268,8 @@ def check_sequence(name: str, fx: dict) -> list[str]:
         want = [step["rekey"]] if "rekey" in step else []
         if have != want:
             fails.append(f"{label}: rekey have {want} expected, the reference sends {have}")
+        if "update" in step and f.update != step["update"]:
+            fails.append(f"{label}: update {step['update']} expected, the reference has {f.update}")
     got = state_json(f)
     for k, want in fx["expected"].items():
         if got.get(k) != want:

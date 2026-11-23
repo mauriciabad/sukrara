@@ -686,6 +686,7 @@ public actor FollowerRuntime: FollowerService {
         guard var session else { return }
         let started = generation
         let before = session.state
+        let updateBefore = session.update
         let outcome = session.receive(event, now: now)
         self.session = session
         for event in outcome.publish { await publish(event) }
@@ -700,7 +701,7 @@ public actor FollowerRuntime: FollowerService {
             await nearby?.update(identity: nearbyIdentity)
         }
         persist(force: false)
-        if !outcome.deltas.isEmpty { await publishSnapshot() }
+        if !outcome.deltas.isEmpty || session.update != updateBefore { await publishSnapshot() }
     }
 
     /// Store writes are skipped once `generation` moved on (each check runs right before its write is enqueued on the
@@ -858,7 +859,7 @@ public actor FollowerRuntime: FollowerService {
             await stores.readings.issue, await stores.treatments.issue, await stores.sensor.issue,
             await stores.settings.issue,
         ].compactMap { $0 }
-        let snapshot = FollowerSnapshot(
+        var snapshot = FollowerSnapshot(
             link: link, readings: (try? await stores.readings.load(since: since)) ?? [],
             sensor: await stores.sensor.load(), treatments: log.log.live.reversed(), unsentTreatments: log.unsentCount,
             deliveries: log.entries.compactMapValues(\.delivery), wearerSettings: await stores.settings.load(),
@@ -866,6 +867,7 @@ public actor FollowerRuntime: FollowerService {
             nearbyOffer: canJoin ? nearbyOffer : nil, keychainUnreadable: keychainUnreadable,
             me: session?.state.me ?? me, wearer: session?.state.wearer,
             untoldLeave: await leaver.outbox().untold.map(\.wearer), identity: session?.state.identity)
+        snapshot.update = session?.update
         guard snapshot != current else { return }
         current = snapshot
         for continuation in snapshotSubscribers.values { continuation.yield(snapshot) }

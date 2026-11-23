@@ -7,6 +7,7 @@ import app.mauri.sukrara.core.model.ClockBehind
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkState
+import app.mauri.sukrara.core.model.LinkUpdate
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SensorAction
@@ -78,6 +79,18 @@ class NoDataReasonTest {
             NoDataReason.PhoneAppSilent(PhoneAppProblem.Missing, null),
             NoDataReason.of(never, homeLook(never, NOW, GlucoseUnit.MGDL), PhoneAppProblem.Missing),
         )
+    }
+
+    @Test fun `a follower that can't read the wearer's version names the app to update, the value still shown`() {
+        val fresh = Samples.wearer(ageMin = 2).copy(spec = SourceSpec.TheirSukrara)
+        val newer = reason(fresh.copy(link = LinkState("Ana", NOW, update = LinkUpdate.ThisApp)))
+        assertEquals(NoDataReason.UpdateToFollow(LinkUpdate.ThisApp, "Ana"), newer)
+        assertEquals(HomeAction.UpdateSukrara, newer?.action)
+        val older = reason(fresh.copy(link = LinkState("Ana", NOW, update = LinkUpdate.Wearer)))
+        assertEquals(NoDataReason.UpdateToFollow(LinkUpdate.Wearer, "Ana"), older)
+        assertEquals(null, older?.action)
+        // once the versions match: nothing while the value shows
+        assertEquals(null, reason(fresh.copy(link = LinkState("Ana", NOW))))
     }
 
     @Test fun `follower silence names when the wearer was last heard`() {

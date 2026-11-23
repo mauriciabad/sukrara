@@ -48,6 +48,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   - Choose who can add treatments to your log when you invite them; change it any time from their sheet.
   - When someone stops following, your phone is told and lists them as a past follower, even if their phone was
     offline then; following again takes a new invite.
+  - When the phones (or the phone and the watch) run different versions, the one you look at says which app to
+    update, with one button to that update; the watch keeps showing your glucose meanwhile.
 - Can read glucose data from Juggluco.
 - Can read your (or someone else's) Nightscout site as the source, on the phone and on a Mac without Sukrara on the
   phone: glucose a few minutes late, treatments both ways (the site's read-only), the sensor's life from its Sensor

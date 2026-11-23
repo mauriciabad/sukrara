@@ -10,6 +10,13 @@ import Foundation
 ///
 /// Unfollowing = discarding the state (and its Keychain item); there is nothing to send.
 public struct FollowerSession: Sendable {
+    /// THE VERSION RULE (docs/48 "When versions differ"): the wearer's events are of another version, so the app to
+    /// update is this one (theirs is newer) or the wearer's.
+    public enum FollowUpdate: String, Equatable, Sendable {
+        case thisApp = "this"
+        case wearer
+    }
+
     public enum Verdict: Equatable, Sendable, CustomStringConvertible {
         case accepted(String)
         case rejected(String)
@@ -53,6 +60,9 @@ public struct FollowerSession: Sendable {
     }
 
     public private(set) var state: FollowerState
+    /// The last event from the wearer was of another version (THE VERSION RULE): which app to update; the next event
+    /// accepted clears it. Not persisted: the relays bring the wearer's events again at the next start.
+    public private(set) var update: FollowUpdate?
     private let crypto: any NostrCrypto
     private let messages: FollowerMessages
     private let followerPublic: String
@@ -207,6 +217,20 @@ public struct FollowerSession: Sendable {
     // MARK: - incoming
 
     public mutating func receive(_ event: SignedEvent, now: Int) -> Outcome {
+        let outcome = judge(event, now: now)
+        if case .accepted = outcome.verdict { update = nil }
+        return outcome
+    }
+
+    /// A payload error's outcome: another version says which app to update (read only after the event's signature,
+    /// epoch and author passed: a stranger can't ask for an update), anything else is invalid.
+    private mutating func refused(_ error: PayloadError) -> Outcome {
+        guard let newer = error.newer else { return Outcome(.rejected("invalid")) }
+        update = newer ? .thisApp : .wearer
+        return Outcome(.rejected("version"))
+    }
+
+    private mutating func judge(_ event: SignedEvent, now: Int) -> Outcome {
         if seen[event.id] != nil {
             seenClock += 1
             seen[event.id]?.used = seenClock  // the most recent now
@@ -231,7 +255,7 @@ public struct FollowerSession: Sendable {
             default: return Outcome(.ignored("unknown-kind"))
             }
         } catch {
-            return Outcome(.rejected("invalid"))
+            return refused(error)
         }
     }
 
@@ -386,7 +410,9 @@ public struct FollowerSession: Sendable {
             return Outcome(.rejected("wrap-not-from-identity"))
         }
         let message: ToFollowerMessage
-        do { message = try ToFollowerMessage.decode(rumor.content) } catch { return Outcome(.rejected("invalid")) }
+        do throws(PayloadError) { message = try ToFollowerMessage.decode(rumor.content) } catch {
+            return refused(error)
+        }
         switch message {
         case .key(let delivery): return receiveKey(delivery, sentAt: rumor.createdAt)
         case .revoked:

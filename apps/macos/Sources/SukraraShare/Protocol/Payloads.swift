@@ -6,7 +6,24 @@ import Foundation
 /// Why a payload was refused. The text names the field, never a value (values can be health data).
 public struct PayloadError: Error, Equatable, Sendable {
     public let reason: String
-    init(_ reason: String) { self.reason = reason }
+    /// A payload of another version (THE VERSION RULE, docs/48: until 1.0.0 every app reads only the current one):
+    /// its `v`, and the one this app reads.
+    public let version: Int?
+    public let want: Int?
+    init(_ reason: String) {
+        self.reason = reason
+        version = nil
+        want = nil
+    }
+
+    init(version: Int, want: Int) {
+        reason = "unsupported v"
+        self.version = version
+        self.want = want
+    }
+
+    /// Another version that is newer than this app reads: this app is the one to update.
+    public var newer: Bool? { version.flatMap { v in want.map { v > $0 } } }
 }
 
 /// A decrypted JSON object with the strict number rules of the reference (`spec/reference/ogs/model.py`): integers
@@ -54,7 +71,8 @@ struct JSONObject {
     }
 
     func requireVersion(_ want: Int) throws(PayloadError) {
-        guard (try? int("v")) == want else { throw PayloadError("unsupported v") }
+        let v = try? int("v")
+        guard v == want else { throw v.map { PayloadError(version: $0, want: want) } ?? PayloadError("unsupported v") }
     }
 
     static func number(_ value: Any) -> Double? {

@@ -14,6 +14,7 @@ import app.mauri.sukrara.protocol.event.AlertPayload
 import app.mauri.sukrara.protocol.event.ChunkPayload
 import app.mauri.sukrara.protocol.event.InvalidPayload
 import app.mauri.sukrara.protocol.event.LivePayload
+import app.mauri.sukrara.protocol.event.OtherVersion
 import app.mauri.sukrara.protocol.event.ReadingsCodec
 import app.mauri.sukrara.protocol.event.RosterCodec
 import app.mauri.sukrara.protocol.event.RosterPayload
@@ -32,6 +33,12 @@ import app.mauri.sukrara.protocol.invite.NearbyPairing
  * only: nothing on the wire says it, the follower knows the invite's expiry.
  */
 enum class FollowStatus { New, Requested, Active, Declined, InviteUsed, Revoked, Expired }
+
+/**
+ * THE VERSION RULE (docs/48 "When versions differ"): the wearer's events are of another version, so the app to update
+ * is [ThisApp] (theirs is newer) or the [Wearer]'s.
+ */
+enum class FollowUpdate { ThisApp, Wearer }
 
 /** A read key the follower holds: epoch [n] and its key pair (secret redacted in logs). */
 data class Epoch(val n: Int, val key: KeyPair)
@@ -91,6 +98,11 @@ data class FollowerState(
     val revokedAt: Long = 0,
     /** Joined with *Pair nearby*: the numeric comparison, until and after the person confirmed it. */
     val pair: NearbyPair? = null,
+    /**
+     * The last event from the wearer was of another version: which app to update; cleared by the next event accepted.
+     * Not persisted: the relays bring the wearer's events again at the next start.
+     */
+    val update: FollowUpdate? = null,
 ) {
     override fun toString() = "FollowerState(status=$status, epochs=${epochs.values.map { it.n }}, devices=${devices.size})"
 }
@@ -218,11 +230,18 @@ class StreamFollower(private val crypto: NostrCrypto, initial: FollowerState) {
         val seen = state.seen + (ev.id to (ev.expiration ?: (ev.createdAt + 31 * Wire.DAY)))
         state = state.copy(seen = if (seen.size > SEEN_LIMIT) seen.entries.drop(seen.size - SEEN_LIMIT).associate { it.toPair() } else seen)
         if (ev.isExpired(now)) return FollowResult.Ignored("expired")
-        return try {
-            if (ev.kind == Wire.KIND_WRAP) onWrap(ev) else onStreamEvent(ev, now)
-        } catch (e: InvalidPayload) {
-            FollowResult.Rejected("invalid", e.reason)
-        }
+        val result =
+            try {
+                if (ev.kind == Wire.KIND_WRAP) onWrap(ev) else onStreamEvent(ev, now)
+            } catch (e: OtherVersion) {
+                // read only after its signature, epoch and author passed: a stranger can't ask for an update
+                state = state.copy(update = if (e.newer) FollowUpdate.ThisApp else FollowUpdate.Wearer)
+                FollowResult.Rejected("version", e.v.toString())
+            } catch (e: InvalidPayload) {
+                FollowResult.Rejected("invalid", e.reason)
+            }
+        if (result is FollowResult.Accepted && state.update != null) state = state.copy(update = null)
+        return result
     }
 
     private fun prune(now: Long) {
