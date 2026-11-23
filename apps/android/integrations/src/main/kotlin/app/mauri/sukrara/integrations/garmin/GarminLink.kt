@@ -72,6 +72,8 @@ data class AppLink(
     val failingSince: Instant? = null,
     /** The last few deliveries, oldest first: a report is judged against the one made before it. */
     val deliveries: List<Delivery> = emptyList(),
+    /** What the last delivered message said rings on the wrist (its `ring`; null = none delivered yet, or it has none). */
+    val ring: Any? = null,
 ) {
     /** No message has arrived for [GarminLink.STUCK] (#242). */
     fun stuck(now: Instant) = failingSince != null && now >= failingSince + GarminLink.STUCK
@@ -581,7 +583,7 @@ class GarminLink(
                 devices.map { d ->
                     val before = _state.value.watches.firstOrNull { it.id == d.id }
                     val links = LinkedHashMap(before?.links.orEmpty())
-                    for (app in GarminApp.entries) {
+                    for (app in order(p, d.id, links)) {
                         // the app with this watch's own display settings (SPEC §11)
                         val payload = p.of(app.profile, d.id) ?: continue
                         for (id in app.ids) {
@@ -620,6 +622,7 @@ class GarminLink(
                                                 reading = reading,
                                                 failingSince = null,
                                                 deliveries = (l.deliveries + Delivery(at, reading)).takeLast(AppLink.KEPT),
+                                                ring = payload["ring"],
                                             )
                                         }
 
@@ -646,6 +649,27 @@ class GarminLink(
             if (retry) wait = (wait * 2).coerceAtMost(RETRY_MAX_MS)
         }
     }
+
+    /**
+     * The order [p] goes to watch [watch]'s apps in: first the ones whose `ring` changes from the last they got (a new
+     * alert, or one that ended), then the rest in [GarminApp]'s order. Garmin Connect sends one message at a time, a few
+     * seconds each (the app's, with its day of history, the longest), so an alert no longer waits behind the face's
+     * value (2026-11-23, the owner's watch: the face's message first held the app's back 2 – 8 s).
+     */
+    private fun order(
+        p: Payloads,
+        watch: Long,
+        links: Map<String, AppLink>,
+    ): List<GarminApp> =
+        GarminApp.entries.sortedBy { app ->
+            val ring = p.of(app.profile, watch)?.get("ring") ?: return@sortedBy 1
+            val got =
+                app.ids
+                    .mapNotNull { links[it] }
+                    .firstOrNull { it.delivered != null }
+                    ?.ring ?: emptyList<Any?>()
+            if (got != ring) 0 else 1
+        }
 
     /**
      * Which of Sukrara's apps each connected watch has, asked of Garmin Connect without sending anything (the switch is

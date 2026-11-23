@@ -161,6 +161,31 @@ class GarminLinkTest {
         }
 
     @Test
+    fun anAlertGoesToTheAppsThatSayItBeforeTheFace() =
+        runTest {
+            // Garmin Connect sends one message at a time: a change of what rings goes to the app and the data field
+            // first, then the face; an unchanged ring keeps the usual order
+            val port = FakePort().apply { apps = mutableSetOf(GarminApp.Aura.id, GarminApp.App.id, GarminApp.Field.id) }
+            val seen = AlertUiState(firingKinds = setOf("high"))
+            val glucose = MutableStateFlow(state(-30L to 210).copy(alerts = seen))
+            link(port, glucose)
+            settle()
+            assertEquals(listOf("face", "app", "field"), port.sent.map { it["p"] })
+            port.sent.clear()
+            glucose.value = glucose.value.copy(alerts = seen.copy(wristKinds = setOf("high")))
+            settle()
+            assertEquals("rang with the phone locked", listOf("app", "field", "face"), port.sent.map { it["p"] })
+            port.sent.clear()
+            glucose.value = state(-30L to 210, 30L to 214).copy(alerts = seen.copy(wristKinds = setOf("high")))
+            settle()
+            assertEquals("the next reading, the same alert", listOf("face", "app", "field"), port.sent.map { it["p"] })
+            port.sent.clear()
+            glucose.value = glucose.value.copy(alerts = seen)
+            settle()
+            assertEquals("unlocked: the wrist goes quiet first", listOf("app", "field", "face"), port.sent.map { it["p"] })
+        }
+
+    @Test
     fun eachWatchGetsTheAppWithItsOwnValuesAndItsId() =
         runTest {
             val port =

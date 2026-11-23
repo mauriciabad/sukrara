@@ -2999,7 +2999,9 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   swiped or tapped away). A ring with the phone in hand stays on the phone, also once the phone is locked again;
   unlocking takes it off the wrist (seen), and locking again brings back nothing: only the alert's next ring (a repeat,
   a reminder) does, if the phone is locked then. The watch keeps showing the value, its colour and the pill. An unlock,
-  a swipe, a Mute or a clear is pushed within seconds; a lock sends nothing. A restart is no ring: what is on the wrist
+  a swipe, a Mute or a clear is pushed within seconds; a lock sends nothing. Garmin Connect sends one message at a time
+  (2 – 14 s each on the owner's Descent, the app's with its day of history the longest), so a change of what the wrist
+  says goes to the app and the data field first and the faces after (`GarminLink.order`; otherwise faces, app, field). A restart is no ring: what is on the wrist
   stays (saved with the runtime's record). One rule on the phone (the runtime's `AlertUiState.wristKinds`); a
   follower's phone applies it to its own rings and its own lock (`GarminLinkTest`, `WatchPayloadFixtureTest`,
   `AlertRuntimeTest`).
