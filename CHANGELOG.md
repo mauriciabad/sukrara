@@ -2,7 +2,9 @@
 
 Sukrara's releases. 0.x versions are previews.
 
-## Unreleased — Extremely high stays quiet after insulin
+## Unreleased
+
+## 0.17.1 — Extremely high stays quiet after insulin
 
 - **Extremely high stays quiet after insulin**: rapid insulin you log now quiets the extremely high alert too, for the
   same time as high and very high (Settings › Alerts › *Quiet highs after insulin*, 60 min by default). Before, it rang

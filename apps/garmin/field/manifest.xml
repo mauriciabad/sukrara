@@ -6,7 +6,7 @@
      shared link. Its id is contracts/watchface/payload/apps.json's. Every watch with API 5 or newer (docs/47 §9), 73
      products; not yet the Instinct 3 Solar / Instinct E (1-bit screens, 32 KB data fields: later, docs/47 "Choice"). -->
 <iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
-    <iq:application id="2adf061b-0ed1-4215-bdec-2468c537e8ec" type="datafield" name="@Strings.AppName" entry="FieldApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.0.0" version="0.17.0">
+    <iq:application id="2adf061b-0ed1-4215-bdec-2468c537e8ec" type="datafield" name="@Strings.AppName" entry="FieldApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.0.0" version="0.17.1">
         <iq:products>
             <iq:product id="approachs50"/>
             <iq:product id="approachs7042mm"/>
