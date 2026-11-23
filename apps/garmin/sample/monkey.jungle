@@ -7,5 +7,5 @@ project.manifest = manifest.xml
 project.typecheck = 1
 base.sourcePath = source
 base.resourcePath = resources
-# the SukraraFace barrel, as its project here; your face names the downloaded file: base.barrelPath = barrels/SukraraFace-5.0.0.barrel
+# the SukraraFace barrel, as its project here; your face names the downloaded file: base.barrelPath = barrels/SukraraFace.barrel
 base.barrelPath = ../sdk/monkey.jungle

@@ -88,8 +88,9 @@ module SukraraFace {
     }
 
     // The payload at one watch time. Times are the watch clock's (epoch s), the phone's clock lead already applied.
-    // (:face): what a face draws with (text, trend, level); Sukrara's watch app and data field leave them out (their
-    // jungles exclude face: the app's glance has 64 KB)
+    // (:sukraraFace): what a face draws with (text, trend, level); Sukrara's watch app and data field leave them out
+    // (their jungles exclude sukraraFace: the app's glance has 64 KB). Named for the barrel, so it never clashes with an
+    // annotation of the face that uses it.
     class Reading {
         var now as Number; // the watch time it was worked out for
         var unit as String = "mgdl"; // mgdl, mmol
@@ -222,13 +223,13 @@ module SukraraFace {
         }
 
         // The value as the person reads it ("112", "6.2", "LO", "HI"); null with no value to show (none, or GONE).
-        (:face)
+        (:sukraraFace)
         function text() as String? {
             return mgdl == null || freshness == GONE ? null : SukraraFace.text(mgdl as Number, unit);
         }
 
         // Whether to draw the trend arrow now: a trend, a value that isn't struck through, not LO / HI.
-        (:face)
+        (:sukraraFace)
         function trend() as Boolean {
             return deg != null && freshness <= LATE && (mgdl as Number) >= 40 && (mgdl as Number) <= 400;
         }
@@ -236,7 +237,7 @@ module SukraraFace {
         // The value's place among the person's limits, as Sukrara colours it: −2 very low (≤ veryLow), −1 low
         // (< low), 0 in range, 1 high (≥ high), 2 very high (≥ veryHigh), 3 extremely high (≥ extremelyHigh); null
         // without a value.
-        (:face)
+        (:sukraraFace)
         function level() as Number? {
             if (mgdl == null) {
                 return null;

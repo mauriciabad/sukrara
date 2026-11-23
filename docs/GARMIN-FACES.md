@@ -21,10 +21,24 @@ level can use it.
 
 Add it:
 
-1. Copy `apps/garmin/sdk` into your project (say as `SukraraFace/`) and name it in your `monkey.jungle`:
-   `base.barrelPath = SukraraFace/monkey.jungle`. (Or build the `.barrel` file with `barrelbuild -o
-   SukraraFace.barrel -f SukraraFace/monkey.jungle`, and name that; SDK 9.3's `barrelbuild` also needs
-   `--override-devices-json` with your SDK's `Devices` folder, or it stops on a NullPointerException.)
+1. Get the barrel: every [Sukrara release](https://github.com/mauriciabad/sukrara/releases) carries it as
+   `SukraraFace-<version>.barrel` (built for every watch Sukrara's own apps run on, checked before the release goes
+   out) and as `SukraraFace.barrel`, whose link always gets the newest one:
+
+   ```sh
+   mkdir -p barrels
+   curl -fL -o barrels/SukraraFace.barrel https://github.com/mauriciabad/sukrara/releases/latest/download/SukraraFace.barrel
+   ```
+
+   In your `monkey.jungle`: `base.barrelPath = barrels/SukraraFace.barrel` (in VS Code, *Monkey C: Configure Monkey
+   Barrels* writes it for you). Pin a version by downloading `SukraraFace-<version>.barrel` from that release
+   instead.
+   **From source** instead (to read or change it, or to follow `next`): copy `apps/garmin/sdk` into your project (say as
+   `SukraraFace/`) and name its jungle: `base.barrelPath = SukraraFace/monkey.jungle`. A git submodule of this
+   repository works the same way (`base.barrelPath = sukrara/apps/garmin/sdk/monkey.jungle`), at the cost of the whole
+   repository. Build the `.barrel` yourself with `barrelbuild -o SukraraFace.barrel -f SukraraFace/monkey.jungle`;
+   SDK 9.3's `barrelbuild` also needs `--override-devices-json` with your SDK's `Devices` folder, or it stops on a
+   NullPointerException.
 2. In your `manifest.xml`: the `Background` and `Communications` permissions, and
    `<iq:barrels><iq:depends name="SukraraFace" version="5.0.0"/></iq:barrels>`.
 3. Four calls (the sample face below has them in place):
@@ -257,9 +271,36 @@ on the Mac with the payload's test cases: `python3 apps/garmin/tools/fake_phone.
   [privacy policy](https://sukrara.mauri.app/privacy/) says so (*Sukrara on your Garmin watch*). Your face adds nothing to that.
 - **Not a medical device.** Neither Sukrara nor a face that reads it is cleared or approved by any regulator.
 
+## Known barrel bugs
+
+Connect IQ's, not SukraraFace's; what to do about each:
+
+- **Everything a face's background or glance calls needs that scope.** SukraraFace's module is `(:background
+  :glance)`, so your background can call `SukraraFace.fetch()` and `receive()`; a symbol of a barrel outside the
+  caller's scope fails at run time with *Illegal Access (Out of Bounds)*, not at build time
+  [[forum]](https://forums.garmin.com/developer/connect-iq/f/discussion/409623/3d-party-barrel---can-t-get-it-to-work/1941848).
+- **`excludeAnnotations` don't carry over from a barrel's jungle.** `barrelbuild` ignores the barrel's own
+  `excludeAnnotations`, while a barrel used as a project (`base.barrelPath = …/monkey.jungle`) applies them
+  [[bug report]](https://forums.garmin.com/developer/connect-iq/i/bug-reports/excludeannotations-work-inconsistently-in-barrels-vs-barrel-projects).
+  SukraraFace has none, so both ways build the same code. Its face-only functions carry `(:sukraraFace)`, a name of
+  its own: exclude it in your jungle only if you never call `text()`, `trend()` or `level()`.
+- **SDK 9.3's `barrelbuild`** stops on a NullPointerException without `--override-devices-json` (above, *From
+  source*).
+
 ## Versions
 
 `v` is raised when a face reading the old format would misread the new one; a key added that an old face can ignore
 keeps `v`. Each raise is listed here.
 
-- **5** (2026-11): the face profile at `/sukrara/face`, open to every watch face; SukraraFace 5.0.0.
+SukraraFace follows [semantic versioning](https://semver.org/) tied to `v`: its **major** version is the payload's
+`v` (5.x reads `v` 5), a **minor** adds something a face can use without changing what it already gets, a **patch**
+fixes the barrel. A face keeps working on any newer 5.x; update the file and the `<iq:depends>` version together.
+
+**A major version** means Sukrara for Android sends the new format: a face still on the old major gets nothing it can
+read from then on. It keeps its last payload, which ages on the watch like any reading (struck through after 5
+minutes, gone after 20), so it never shows an old value as current, and then shows no glucose until it is updated to
+the new major. Each major comes in a Sukrara release whose notes and this section say so. To hear of one: *Watch ›
+Custom › Releases* on [the repository](https://github.com/mauriciabad/sukrara), or this section.
+
+- **5** (2026-11): the face profile at `/sukrara/face`, open to every watch face; SukraraFace 5.0.0, on every Sukrara
+  release from 0.17.0 (`SukraraFace-5.0.0.barrel`).

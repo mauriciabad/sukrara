@@ -8,7 +8,7 @@ project.typecheck = 1
 base.sourcePath = source;../shared/link;../sdk/source/read;../shared/input;../shared/format;../shared/alert
 base.resourcePath = resources
 base.lang.spa = resources-spa
-base.excludeAnnotations = face;app
+base.excludeAnnotations = face;app;sukraraFace
 # BEGIN launcher icon sizes (apps/garmin/tools/launcher_icons.py)
 # each watch's launcher icon at its launcherIcon size (MIP: the 64-colour one)
 approachs50.resourcePath = $(approachs50.resourcePath);resources-launcher56

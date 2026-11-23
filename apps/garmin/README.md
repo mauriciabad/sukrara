@@ -29,7 +29,9 @@ faces only, so no app carries it): one implementation for Sukrara's apps and eve
 face against its own copy, 2026-11-22). A folder an app doesn't name never lands in its
 build (the face's 128 KB are nearly full, #217: it takes `link` only). Where the apps differ inside a shared file (the
 fetch URL, the payload profile), the code carries an annotation per payload profile (`(:face)` for every watch face, `(:app)`, `(:field)`) and
-each jungle excludes the others' (`base.excludeAnnotations`), so no app carries another's.
+each jungle excludes the others' (`base.excludeAnnotations`), so no app carries another's. The barrel's face-only
+functions carry `(:sukraraFace)` (a name no face that uses the barrel has of its own), which the app and the data field
+exclude too.
 
 | Folder | What | Used by |
 |---|---|---|
