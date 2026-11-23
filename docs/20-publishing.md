@@ -187,7 +187,7 @@ the site build copies `website/public/` unchanged), and the file is reviewed in
 git like the rest. The enclosures stay on GitHub Releases (the same dmg as the download and the cask).
 
 **No channels.** Until 0.14.5 every 0.x release was a GitHub prerelease in Sparkle's `prerelease` channel, which 0.x
-installs allowed. Since 2026-11-12 every release is a normal GitHub release (marked *Latest*), so `appcast.py` writes
+installs allowed. Since 2026-11-12 every release is a normal GitHub release, so `appcast.py` writes
 items without a channel and the app takes the default channel only (`UpdatesTests`: no item has one). Installs from
 before still allow the old channel too, so they take the new items as well.
 
@@ -196,8 +196,9 @@ Sparkle's `sign_update` (from the SwiftPM artifact, `apps/macos/.build/artifacts
 the key in the login keychain (macOS may ask once to let `sign_update` use it: *Always Allow*), checks the signature,
 checks the keychain's public key is the app's `SUPublicEDKey`, and `tools/release/appcast.py` adds the item to
 `website/public/appcast.xml`: version and build, `minimumSystemVersion` 15.0, the channel, the GitHub release page as the full
-notes, the version's `CHANGELOG.md` section as the notes Sparkle shows, and the enclosure
-`https://github.com/mauriciabad/sukrara/releases/download/v<version>/Sukrara-<version>.dmg` with its length and EdDSA
+notes, the version's `apps/macos/CHANGELOG.md` entry as the notes Sparkle shows, and the enclosure
+`https://github.com/mauriciabad/sukrara/releases/download/mac-v<version>/Sukrara-<version>.dmg` (the Mac's own release,
+docs/48; the items up to 0.17.1 keep their `v<version>` URLs) with its length and EdDSA
 signature (re-running replaces that version's item). Only the dmg is the update; the zip stays a plain download. An
 unnotarized build never goes in. Then, in this order: publish the GitHub release with that exact dmg (any rebuild
 changes the signature: run `mac-release.sh` again), **then** commit `website/public/appcast.xml` and merge it to `main`; Pages
@@ -834,7 +835,7 @@ Steps 1–2 above are done; step 3's migration is dropped (the app starts clean)
 
 Run `tools/release/android-smoke.sh --final` on the commit you're about to release (emulator only; it never
 touches a phone). It builds the APK with the release key (no key or no pinned Juggluco → the build stops; it never
-falls back to the debug key), runs `verify-apk.sh` (signer = `android-cert.sha256`, package / version from `VERSION`,
+falls back to the debug key), runs `verify-apk.sh` (signer = `android-cert.sha256`, package / version from `apps/android/VERSION`,
 not debuggable, Libre 3 core inside, R8 full mode with the mapping that belongs to this APK, no debug classes or
 debug-tool strings, no exported component without a permission beyond the launcher and the alert sound provider,
 `POST_PROMOTED_NOTIFICATIONS` declared), then installs it fresh and launches it (see `docs/QA.md` Q10
@@ -844,28 +845,32 @@ module's `consumer-rules.pro` (the module that uses the reflective / JNI library
 
 ### Cutting a release
 
-**One command does it** (#187): `tools/release/release.py <version>` on the release Mac, from a clean checkout at
-`origin/next`, a worktree included ([docs/DEVELOPMENT.md › Release](DEVELOPMENT.md#release) has the steps;
-[One-command release](#one-command-release-187) below has the store parts). What it runs, and what a release by hand would be: with `tools/check/strict` committed,
-`tools/release/android-release.sh` (signed APK →
+**One command does it** (#187): `tools/release/release.py <app> …` (each app its own version and release, only when
+it changed: docs/48-release-versioning.md) on the release Mac, from a clean checkout at `origin/next`, a worktree
+included ([docs/DEVELOPMENT.md › Release](DEVELOPMENT.md#release) has the steps; [One-command
+release](#one-command-release-187) below has the store parts). What it runs for Android and the Mac, and what a release
+by hand would be: with `tools/check/strict` committed, `tools/release/android-release.sh` (signed APK →
 `apps/android/app/build/dist/Sukrara-<version>.apk`, verified, and its R8 mapping gzipped next to it as
-`Sukrara-<version>-android-mapping.txt.gz`, about 4 MB, with a copy in `~/.android/sukrara-mappings/`) and
-`tools/release/mac-release.sh` (bundle → `verify-app.sh` → dmg + zip in `apps/macos/build/`). Then tag `v<version>`
-on `main` and `gh release create v<version> --verify-tag --latest` with the four files (`Sukrara-<version>.apk`, `Sukrara-<version>-android-mapping.txt.gz`, `Sukrara-<version>.dmg`,
-`Sukrara-mac-<version>.zip`). The mapping is a release asset (#96) so it lives as long as the APK it decodes and anyone
+`Sukrara-<version>-android-mapping.txt.gz`, about 4 MB, with a copy in `~/.android/sukrara-mappings/`), then tag
+`v<version>` on `main` and `gh release create v<version> --verify-tag --latest` with those two files; and
+`tools/release/mac-release.sh` (bundle → `verify-app.sh` → dmg + zip in `apps/macos/build/`), then tag
+`mac-v<version>` and `gh release create mac-v<version> --verify-tag --latest=false` with `Sukrara-<version>.dmg` and
+`Sukrara-mac-<version>.zip`. Android's tags stay `v<version>`: every installed GitHub build's updater (up to 0.17.1)
+reads only those, and Android's release stays GitHub's *Latest*, which Obtainium and IzzyOnDroid take the APK from. The mapping is a release asset (#96) so it lives as long as the APK it decodes and anyone
 reading a crash trace in an issue can use it (`retrace` from the Android SDK's cmdline-tools: `gunzip` it, then `retrace
 mapping.txt trace.txt`); it isn't secret (the source is public under the GPL). About lists no download (*Sukrara on
 other devices* opens the website, #179). The Android GitHub version's updater (#188) takes only the asset named exactly
 `Sukrara-<version>.apk` of a release, and only with the SHA-256 GitHub lists for it (the asset's `digest`, which GitHub
 computes on upload): keep that name. **Releases are immutable** since 2026-11-15 (Settings › General › Releases, the
 owner's OK): once published, a release's assets and tag can't change, and GitHub keeps a signed record of them, which
-`gh release verify-asset v<version> <file> -R mauriciabad/sukrara` checks a download against (the website's *Check
+`gh release verify-asset <tag> <file> -R mauriciabad/sukrara` checks a download against (the website's *Check
 it's the real Sukrara* shows the command; `gh release create` with the files uploads them to a draft first, so the
 one-command release is unaffected). A wrong asset needs a new version. Play builds need no
 separate mapping: they are app bundles with the mapping inside (`BUNDLE-METADATA`), which Play reads to deobfuscate
-crash reports (the API's `deobfuscationfiles` upload is only for APKs). Every release is a normal one and becomes *Latest* (since
-2026-11-12; v0.12.0 … v0.14.5 were switched from prereleases then); it bumps the Homebrew cask (`homebrew-tap.yml` on
-*published*), a GitHub prerelease (a release candidate) never does (also when dispatched by hand). **Mac notarization switches on by itself** once the Developer ID identity and the notarytool profile exist on
+crash reports (the API's `deobfuscationfiles` upload is only for APKs). Every release is a normal one (since
+2026-11-12; v0.12.0 … v0.14.5 were switched from prereleases then); Android's becomes *Latest*, the others don't. A Mac
+release (`mac-v…`) bumps the Homebrew cask (`homebrew-tap.yml` on *published*), no other release does, nor a GitHub
+prerelease (a release candidate; also when dispatched by hand). **Mac notarization switches on by itself** once the Developer ID identity and the notarytool profile exist on
 the release Mac ([Mac release: Developer ID and notarization](#mac-release-developer-id-and-notarization)); they do
 since 0.12.0, and a Developer ID build is never released unnotarized.
 
@@ -1429,11 +1434,12 @@ the same way, so they don't automate anything either; useful only to try the fac
 version.
 
 **The flow.** Every pushed change: the `garmin` job builds and tests the apps and the barrel. A release
-(`release.py`, once `tools/release/garmin-key.sha256` exists, which it does from 0.17.0): the `version` step writes
-the version into every manifest; the preconditions check each app's listing; the gate builds, per app, the store
-package and a zip of every watch's sideload `.prg` with the store key (debug code compiled out), and the SukraraFace
-barrel; `github` puts them on the normal GitHub release (the zips for people who sideload, the barrel for other
-faces' developers); the `garmin` step prints each upload for the owner: the file, the version, the listing (first
+(`release.py aura garmin-app …`: each Garmin app and the barrel is its own app with its own version, released only
+when it changed, docs/48): the `version` step writes the app's version into its manifest; the preconditions check
+each app's listing; the gate builds, per app, the store package and a zip of every watch's sideload `.prg` with the
+store key (debug code compiled out), or the SukraraFace barrel; `github` puts them on the app's own normal GitHub
+release (`aura-v…`, `garmin-app-v…`, `garmin-field-v…`, `face-sdk-v…`: the zips for people who sideload, the barrel
+for other faces' developers); the `garmin` step prints each upload for the owner: the file, the version, the listing (first
 upload) or the What's New (later ones) and the dashboard link, and `summary` lists them as the manual steps. If
 Garmin publishes an upload API, that step becomes a call like `play` and `appstore`.
 
@@ -1569,18 +1575,17 @@ screen, the pictures.
   its part numbers are exactly those of the manifest's devices (the SDK's `compiler.json`; one device can have
   several), its `dev_key.pub` is the store key's public key, and each `.prg` in it passes `verify_prg.sh` (the id, no
   debug code).
-- `tools/release/garmin-release.sh sdk` → `SukraraFace-<its version>.barrel` and `SukraraFace.barrel` (the same file;
-  the second name makes `https://github.com/mauriciabad/sukrara/releases/latest/download/SukraraFace.barrel` the
-  newest): `build.sh sdk release` for every product of `apps/garmin/sdk/manifest.xml`, checked to be the SukraraFace
-  barrel of that version. Not signed. Its version is its own (the payload's major; docs/GARMIN-FACES.md › Versions).
+- `tools/release/garmin-release.sh sdk` → `SukraraFace-<its version>.barrel`, its own release `face-sdk-v<version>`
+  (GARMIN-FACES.md links the newest, rewritten by the release): `build.sh sdk release` for every product of
+  `apps/garmin/sdk/manifest.xml`, checked to be the SukraraFace barrel of that version. Not signed. Its version is its own (the payload's major; docs/GARMIN-FACES.md › Versions).
 - Dry run on the release Mac, 2026-11-23, version 0.16.0 (the manifests'): Aura 9 watches in 1 min (`.iq` 6.3 MB,
   zip 5.5 MB), the app 73 in 10 min (22 MB, 14 MB), the data field 73 in 5 min (14 MB, 10 MB), the barrel in 12 s
   (8 KB; a copy of the sample face built against it). Nothing was uploaded.
 - **The beta gets pushes like the public app** (#199): the phone pushes to every Sukrara app id Garmin Connect says is
   installed, the beta ids included, and opens the 5-minute fetch while a watch has any of them.
 - **The pin.** `tools/release/garmin-key.sha256` (the store key's public SHA-256,
-  `1e34106fdcd521d2f6676bf5b0f3d92691a8535cbe667f44064b886e7cdf111f`) is the switch that puts the Garmin apps and the
-  barrel in `release.py`: committed 2026-11-23 for 0.17.0, the first public release of all three.
+  `1e34106fdcd521d2f6676bf5b0f3d92691a8535cbe667f44064b886e7cdf111f`): committed 2026-11-23 for 0.17.0, the first
+  public release of all three; `garmin-release.sh` signs only with that key.
 
 ### Connect IQ store: the owner's steps
 
@@ -1589,7 +1594,7 @@ name `mauri.app`, 2026-11-16).
 
 **Each release** (`release.py`; the gate built the files, `github` put them on the release): the `garmin` step prints,
 per app, **Upload a new version** at https://apps-developer.garmin.com/developer/dashboard with the file, the version
-and the What's new (the CHANGELOG entry's Garmin lines). **[owner]** **Submit**: Garmin reviews each version, which
+and the What's new (the app's CHANGELOG entry). **[owner]** **Submit**: Garmin reviews each version, which
 stays off the store until approved.
 
 **A new app**: its first upload is by hand, before its entry in `contracts/watchface/payload/apps.json` lands (the

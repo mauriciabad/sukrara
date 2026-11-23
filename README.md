@@ -135,8 +135,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   during the activity if you turn it on, and your glucose saved in the activity, charted in Garmin Connect.
 - Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server, and any Connect IQ watch face can
   read Sukrara's own watch-face data with the SukraraFace Monkey Barrel (`apps/garmin/sdk`, 0BSD: the fetch, the
-  version, never an old value as current, the unit and LO / HI, typed fields; built on every release as
-  `SukraraFace-<version>.barrel`, the newest always at `releases/latest/download/SukraraFace.barrel`) and its JSON
+  version, never an old value as current, the unit and LO / HI, typed fields; its own releases, `face-sdk-v<version>`
+  with `SukraraFace-<version>.barrel`) and its JSON
   Schema (the developer page: sukrara.mauri.app/developers/garmin-faces/, with a sample face in `apps/garmin/sample`).
 - Getting the Garmin apps going from the phone: a setup step when Garmin Connect is on the phone (what each app gives,
   sending on or off, each one's Connect IQ store link), and a home tip with *Turn on* when a watch has
@@ -276,10 +276,14 @@ the rules in [CLAUDE.md](CLAUDE.md); the design in [docs/ARCHITECTURE.md](docs/A
 | Website: live preview / what CI runs | `cd website && npm run dev` / `npm run build && npm run check` |
 | Mac: app bundle with the widget | `cd apps/macos && Bundle/bundle.sh` (`--unsigned` without the signing identity; the provisioning profiles in `~/.apple-dev/profiles` are used when there, `--no-profile` skips them) |
 | Settings code after a schema change | `python3 tools/settings/gen.py` |
-| A release to every channel (GitHub, Sparkle, Homebrew, Play internal testing, TestFlight) | `tools/release/release.py <version>` ([docs/DEVELOPMENT.md › Release](docs/DEVELOPMENT.md#release)) |
+| What waits for a release (each app has its own version) | `tools/release/release.py` (the change files in `changes/`) |
+| Release apps to their channels (GitHub, Sparkle, Homebrew, Google Play, TestFlight / App Store, Connect IQ) | `tools/release/release.py android mac …` ([docs/DEVELOPMENT.md › Release](docs/DEVELOPMENT.md#release)) |
 | Release builds | `tools/release/android-release.sh`, `tools/release/play-bundle.sh` (Google Play), `tools/release/mac-release.sh`, `tools/release/mac-appstore.sh` (Mac App Store) |
 
-Manual checks per surface: [docs/QA.md](docs/QA.md). Release history: [CHANGELOG.md](CHANGELOG.md). The investigations, one
+Manual checks per surface: [docs/QA.md](docs/QA.md). Release history: each app's own CHANGELOG
+([Android](apps/android/CHANGELOG.md), [Mac](apps/macos/CHANGELOG.md), [Sukrara Aura](apps/garmin/aura/CHANGELOG.md),
+[watch app](apps/garmin/app/CHANGELOG.md), [data field](apps/garmin/field/CHANGELOG.md),
+[SukraraFace](apps/garmin/sdk/CHANGELOG.md)), up to 0.17.1 [CHANGELOG.md](CHANGELOG.md). The investigations, one
 report each: `docs/NN-*.md`.
 
 ## Legal

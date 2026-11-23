@@ -17,7 +17,7 @@ root="$(repo_root)"
 if [ ! -e "$root/tools/check/strict" ]; then
   echo "refusing: tools/check/strict is missing (every registry file must exist before a release)" >&2; exit 2
 fi
-set -- $(version_info)
+set -- $(version_info android)
 version="$1"
 
 JAVA_HOME="$(dirname "$(dirname "$(jdk_tool java)")")"

@@ -16,7 +16,7 @@ import org.gradle.kotlin.dsl.configure
 import java.io.File
 
 /**
- * The app module: id `app.mauri.sukrara` for debug and release (one install per phone), version from `<repo>/VERSION`,
+ * The app module: id `app.mauri.sukrara` for debug and release (one install per phone), version from `apps/android/VERSION`,
  * arm64 only, R8 + resource shrinking on release, release signed with the dedicated Sukrara key.
  *
  * Two product flavors in the `store` dimension, one package and one key (docs/20-publishing.md › Flavors): `full`
@@ -37,7 +37,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
         pluginManager.apply("com.android.application")
         pluginManager.apply("sukrara.quality")
-        val version = AppVersion.parse(repoRoot.file("VERSION").asFile.readText())
+        val version = AppVersion.parse(repoRoot.file("apps/android/VERSION").asFile.readText())
         val keystore = providers.environmentVariable("SUKRARA_KEYSTORE").orNull?.let(::File)
             ?: File(System.getProperty("user.home"), ".android/sukrara-release.jks")
         val password = providers.environmentVariable("SUKRARA_KEYSTORE_PASSWORD").orNull
@@ -88,7 +88,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
         val buildInfoScript = repoRoot.file("tools/release/build-info.sh").asFile.path
         val buildInfo =
             providers.exec {
-                commandLine("sh", buildInfoScript)
+                commandLine("sh", buildInfoScript, "android")
                 environment("SUKRARA_RELEASE_BUILD", releaseFlag.get())
                 isIgnoreExitValue = true
             }

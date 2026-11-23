@@ -16,6 +16,9 @@ Modes
 Checks
   parity      path groups that must change together (parity.json), skip: 'Parity-skip: <group>: <reason>'
   features    app code changes need docs/FEATURES.md, skip: 'Features-skip: <reason>'
+  changes     a change to an app's paths (contracts/apps/apps.json) without a change file (changes/*.md) naming the
+              app: a NOTE, skip: 'Changes-skip: <reason>'; a change file that doesn't parse (its apps, kind, bullet;
+              changes/README.md) fails
   parity-globs  every glob in parity.json (group sides, features) matches a tracked file: a dead glob turns its group
               off without a word. Whole tree.
   java        no .java source (Android is Kotlin only)
@@ -126,6 +129,9 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "release"))
+import versions  # noqa: E402  the registry of apps and the change files (tools/release/versions.py)
+
 ROOT = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=HERE, capture_output=True, text=True,
                       check=True).stdout.strip()
 
@@ -363,6 +369,44 @@ def check_features(ch, messages, strict, rep):
     if not readme:
         rep.add("NOTE", "features", "README.md not changed: if what Sukrara does changed, the README and the website's Features page\n"
                 "say so too.")
+
+
+def registry_apps(ch):
+    """contracts/apps/apps.json at the change's revision ([] when it isn't there)."""
+    text = ch.blob(versions.REGISTRY)
+    return versions.load_apps(text) if text.strip() else []
+
+
+def check_change_files(ch, rep):
+    """Every change file the change adds or edits parses: apps of the registry, kind fix | feature, a bullet."""
+    apps = registry_apps(ch)
+    for p in sorted(ch.live()):
+        if versions.is_change_file(p):
+            try:
+                versions.parse_change(ch.blob(p), [a["id"] for a in apps] or None)
+            except ValueError as e:
+                rep.add("FAIL", "changes", "%s: %s (the format: changes/README.md)" % (p, e))
+
+
+def check_changes(ch, messages, rep):
+    """A change to an app's paths (contracts/apps/apps.json) comes with a change file naming the app, or says why not
+    with 'Changes-skip: <reason>' (internal work: refactors, tests, tooling). A NOTE, never a failure: whether a person
+    notices it needs judgement."""
+    if trailers(messages, "Changes-skip"):
+        return
+    named = set()
+    for p in ch.live():
+        if versions.is_change_file(p):
+            try:
+                named.update(versions.parse_change(ch.blob(p))["apps"])
+            except ValueError:
+                pass  # check_change_files says what's wrong
+    for app in registry_apps(ch):
+        touched = sorted(p for p in ch.files if versions.concerns(app, p))
+        if touched and app["id"] not in named:
+            rep.add("NOTE", "changes", "%s changed (%s%s) without a change file naming %s: add changes/<slug>.md\n"
+                    "(changes/README.md) if a person notices it, else the trailer  Changes-skip: <reason>"
+                    % (app["name"], ", ".join(touched[:3]), " …" if len(touched) > 3 else "", app["id"]))
 
 
 SECRET_PATHS = re.compile(r"(^|/)(secrets|build|\.build|\.gradle|\.kotlin|\.cxx)/|\.(jks|keystore|p12|pem|key|apk|aab|ipa|dmg)$"
@@ -1480,8 +1524,10 @@ def main(argv):
     if only in (None, "coupling"):
         check_parity(ch, messages, strict, rep)
         check_features(ch, messages, strict, rep)
+        check_changes(ch, messages, rep)
     if only in (None, "static"):
         check_static(ch, rep)
+        check_change_files(ch, rep)
         check_paths(ch, rep)
         check_room_schema(ch, rep)
         check_parity_globs(ch, rep)

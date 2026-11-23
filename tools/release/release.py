@@ -2,61 +2,70 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""One command publishes a version to every channel (#187, docs/DEVELOPMENT.md › Release):
+"""One command releases the apps that changed, each with its own version (docs/48-release-versioning.md,
+docs/DEVELOPMENT.md › Release):
 
-    tools/release/release.py <version> [--dry-run] [--from <step>]
+    tools/release/release.py                              every app: its version, its change files, its next version
+    tools/release/release.py <app>[=<version>] … [--dry-run] [--from <step>]
+
+<app> is an id of contracts/apps/apps.json (android, mac, aura, garmin-app, garmin-field, face-sdk). Each app's next
+version comes from the change files naming it (changes/*.md: the highest kind, fix → patch, feature → minor);
+<app>=<version> sets it. An app without a change file isn't released.
 
 Runs on the release Mac (the keys stay there), in any clean checkout whose HEAD is origin/next: the main checkout or a
 worktree, on any branch or a detached HEAD. Every push names its refspec (HEAD:next, HEAD:main); nothing needs a local
-`next` or `main` branch. The steps, in order; each checks its result and stops on failure with what's done and what's
-left (resume with --from <step>; every step can run again):
+`next` or `main` branch. The steps, in order, each only for the apps released; each checks its result and stops on
+failure with what's done and what's left (resume with --from <step>; every step from gate on can run again):
 
   preconditions  a clean tree, HEAD = origin/next, its Checks run green or still running (not awaited: the version
-                 commit's run covers it; a failed one stops), the new version above VERSION, CHANGELOG.md's Unreleased section, the Play notes
+                 commit's run covers it; a failed one stops), per app: a change file, the new version above the
+                 current one, no tag <tag><version> yet; android: the Play notes
                  (apps/android/fastlane/metadata/android/<en-US|es-ES>/changelogs/<versionCode>.txt, at most 500
-                 characters) and the App Store notes (apps/macos/AppStore/whats-new/…, see appstore), no tag yet,
-                 the keys and gh; once the Garmin apps are released (tools/release/garmin-key.sha256): the store key
-                 and each app's Connect IQ listing (apps/garmin/<app>/store: listing_problems)
-  version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md) and the Garmin apps' manifests,
-                 CHANGELOG's Unreleased → the version's entry; commit, push to next (fast-forward; its Checks run is
-                 awaited before github)
-  gate           android-release.sh (verify-apk.sh inside), android-smoke.sh --final --no-build on the emulator,
-                 play-bundle.sh, mac-release.sh (notarized, Sparkle-signed, verify-app.sh --notarized inside, writes
-                 website/public/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate), garmin-release.sh for
-                 every app of contracts/watchface/payload/apps.json (Sukrara Aura, the watch app, the data field: each
-                 one's .iq and sideload zip, verified, signed with the pinned store key) and garmin-release.sh sdk (the
-                 SukraraFace barrel for other developers' faces). ./gradlew check and swift test
-                 aren't repeated: the release commit's green Checks run ran them (the Mac job on the newest green
-                 commit with the same Mac sources: VERSION reaches only the bundle, which this gate builds and smokes).
+                 characters) and its keys; mac: the App Store notes (apps/macos/AppStore/whats-new/…, see appstore)
+                 and the App Store Connect key; a Garmin app: the store key and its Connect IQ listing
+                 (apps/garmin/<app>/store: listing_problems); then every RELEASE_CHECKS function (#262); gh
+  version        per app: its version source, its CHANGELOG.md entry from its change files (each file loses the app,
+                 and goes once it names none), the files that link its release ('mentions'); one commit, pushed to
+                 next (fast-forward; its Checks run is awaited before github)
+  gate           android: android-release.sh (verify-apk.sh inside), android-smoke.sh --final --no-build on the
+                 emulator, play-bundle.sh; mac: mac-release.sh (notarized, Sparkle-signed, verify-app.sh --notarized
+                 inside, writes website/public/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate);
+                 a Garmin app: garmin-release.sh <app> <version> (its .iq and sideload zip, verified, signed with the
+                 pinned store key); face-sdk: garmin-release.sh sdk (the SukraraFace barrel). ./gradlew check and
+                 swift test aren't repeated: the release commit's green Checks run ran them (the Mac job on the newest
+                 green commit with the same Mac sources: apps/macos/VERSION reaches only the bundle, which this gate
+                 builds and smokes).
   github         the release commit's Checks run green (its push or one started by hand, any branch; the one wait for
-                 CI); main fast-forwarded, tag v<version>, the GitHub release (a normal one, Latest) with the APK, the
-                 Android mapping, the dmg and the zip (and each Garmin app's .iq and sideload zip, and the SukraraFace barrel as
-                 SukraraFace-<its version>.barrel and SukraraFace.barrel: BARREL_LATEST_URL), notes from the CHANGELOG
-                 entry. main's own run isn't awaited:
+                 CI); main fast-forwarded once; per app a tag <tag><version> and a normal GitHub release titled
+                 "<name> <version>" with only its files, its CHANGELOG entry as notes; Android's is GitHub's Latest
+                 (the updater, Obtainium, IzzyOnDroid), every other one --latest=false. main's own run isn't awaited:
                  the commit's green run is what it finds (tools/ci/changes.py)
-  sparkle        website/public/appcast.xml committed to main and next once the release's dmg is there, Pages deployed, the feed
-                 at https://sukrara.mauri.app/appcast.xml serves the item
-  homebrew       the tap's workflow committed the cask for this version (the dmg's sha256)
-  play           the play bundle on Google Play's internal and production tracks with the en-US / es-ES notes (Android
-                 Publisher API; managed publishing is off, so production goes live once Google approves it)
-  testflight     the App Store pkg the gate built and validated (built once by mac-appstore.sh if it's missing, e.g.
-                 --from testflight in a fresh checkout), its version and build number checked, uploaded by
+  sparkle        mac: website/public/appcast.xml committed to main and next once the release's dmg is there, Pages
+                 deployed, the feed at https://sukrara.mauri.app/appcast.xml serves the item
+  homebrew       mac: the tap's workflow committed the cask for this version (the dmg's sha256)
+  play           android: the play bundle on Google Play's internal and production tracks with the en-US / es-ES
+                 notes (Android Publisher API; managed publishing is off, so production goes live once Google
+                 approves it)
+  testflight     mac: the App Store pkg the gate built and validated (built once by mac-appstore.sh if it's missing,
+                 e.g. --from testflight in a fresh checkout), its version and build number checked, uploaded by
                  mac-appstore.sh --upload; then App Store Connect processes the build (export compliance: summary)
-  appstore       the App Store version: created (or the editable one reused), the build attached, What's New from
+  appstore       mac: the App Store version: created (or the editable one reused), the build attached, What's New from
                  apps/macos/AppStore/whats-new/<en-US|es-ES>/<versionCode>.txt (at most 4000 characters), released
                  after approval, submitted for App Review (needs the App Manager key); while another version is in
                  review it waits on TestFlight, and a later release submits the newest
-  garmin         the Connect IQ store has no upload API: per app, the release's .iq (built and signed with the store key
-                 in the gate, on the GitHub release) and what to enter at the developer dashboard, for the owner's
-                 upload: Upload a new version, with its What's new (an app's first upload, with its listing, is by
-                 hand, before its apps.json entry lands: docs/20-publishing.md › Connect IQ store: the owner's steps)
+  garmin         a Garmin app: the Connect IQ store has no upload API: the release's .iq (built and signed with the
+                 store key in the gate, on its GitHub release) and what to enter at the developer dashboard, for the
+                 owner's upload: Upload a new version, with its What's new (an app's first upload, with its listing,
+                 is by hand: docs/20-publishing.md › Connect IQ store: the owner's steps)
   summary        every channel's state
 
 --dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
                exits 1 when a check would stop the release
---from STEP    starts at STEP (the release commit must be checked out: VERSION = <version>)
+--from STEP    starts at STEP, gate or later (the release commit must be checked out; the versions are the apps'
+               current ones)
 """
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -71,6 +80,8 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import stores  # noqa: E402
+import versions  # noqa: E402
+from versions import parse_version, version_code  # noqa: E402,F401
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 REPO = "mauriciabad/sukrara"
@@ -79,6 +90,7 @@ TAP = "mauriciabad/homebrew-tap"
 FEED_URL = "https://sukrara.mauri.app/appcast.xml"
 STEPS = ["preconditions", "version", "gate", "github", "sparkle", "homebrew", "play", "testflight", "appstore",
          "garmin", "summary"]
+RESUMABLE = STEPS[2:]  # the version step consumes the change files: a new release starts at preconditions
 PLAY_LANGS = ["en-US", "es-ES"]
 PLAY_TRACKS = ["internal", "production"]
 PLAY_NOTES = "apps/android/fastlane/metadata/android/%s/changelogs/%d.txt"
@@ -86,19 +98,13 @@ ASC_LANGS = ["en-US", "es-ES"]
 ASC_NOTES = "apps/macos/AppStore/whats-new/%s/%d.txt"
 DIST = "apps/android/app/build/dist"
 MAC_BUILD = "apps/macos/build"
-DOCS_WITH_VERSION = ["docs/DEVELOPMENT.md", "docs/QA.md", "docs/FEATURES.md"]
-# The Garmin apps (Sukrara Aura, the watch app, the data field: contracts/watchface/payload/apps.json): released once
-# the store key's public SHA-256 is committed (GARMIN_KEY_PIN, the switch; docs/20-publishing.md › Garmin). Every
-# Garmin app's manifest version follows VERSION either way.
+APPCAST = "website/public/appcast.xml"
+# The Garmin apps (contracts/watchface/payload/apps.json; apps.json's 'garmin' names the entry)
 GARMIN_REGISTRY = "contracts/watchface/payload/apps.json"
-GARMIN_MANIFESTS = ["apps/garmin/aura/manifest.xml", "apps/garmin/app/manifest.xml", "apps/garmin/field/manifest.xml"]
 GARMIN_FILES = {"aura": "SukraraAura", "app": "Sukrara", "field": "SukraraField"}  # garmin-release.sh's <Name>
 GARMIN_KINDS = {"watchface": "watch face", "watch-app": "watch app", "datafield": "data field"}
-GARMIN_KEY_PIN = "tools/release/garmin-key.sha256"
 GARMIN_DIST = "apps/garmin/bin/dist"
 GARMIN_DASHBOARD = "https://apps-developer.garmin.com/developer/dashboard"
-BARREL_MANIFEST = "apps/garmin/sdk/manifest.xml"
-BARREL_LATEST_URL = REPO_URL + "/releases/latest/download/SukraraFace.barrel"
 # the listing's rules (docs/20-publishing.md › Connect IQ store: what it asks and checks)
 GARMIN_LANGS = ["en", "es"]
 GARMIN_DESCRIPTION_MAX = 4000
@@ -108,57 +114,42 @@ GARMIN_MUST_SAY = {"en": ["not a medical device", "Android", "Garmin Connect", "
                           "not affiliated with Garmin"],
                    "es": ["no es un producto sanitario", "Android", "Garmin Connect", "No funciona con iPhone",
                           "no está afiliada a Garmin"]}
+# Checks across the apps a release takes (#262: the shared formats): each is f(root, {app id: version}) → [problem],
+# run in preconditions; a problem stops the release.
+RELEASE_CHECKS = []
 
 
 # --- pure parts (tools/release/test_release.py) ----------------------------------------------------------------------
 
-def parse_version(v):
-    m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", v or "")
-    if not m or int(m.group(2)) >= 1000 or int(m.group(3)) >= 1000:
-        raise ValueError("version %r is not MAJOR.MINOR.PATCH (minor and patch < 1000)" % v)
-    return tuple(int(x) for x in m.groups())
+def plan(apps, current, changes, asked):
+    """{id: (next version, [change file names])} for the apps asked ({id: version or None}), in the registry's order.
+    ValueError says why an app can't be released: unknown, no change file, a version not above the current one."""
+    known = versions.by_id(apps)
+    out = {}
+    for app_id, v in asked.items():
+        if app_id not in known:
+            raise ValueError("%s isn't an app of %s (%s)" % (app_id, versions.REGISTRY, ", ".join(known)))
+        names = [n for n, _ in versions.pending(changes, app_id)]
+        if not names:
+            raise ValueError("%s: no change file names it (changes/*.md): nothing to release" % app_id)
+        nxt = v or versions.next_version(current[app_id], changes, app_id)
+        if parse_version(nxt) <= parse_version(current[app_id]):
+            raise ValueError("%s: %s is not above its version %s" % (app_id, nxt, current[app_id]))
+        out[app_id] = (nxt, names)
+    return {a["id"]: out[a["id"]] for a in apps if a["id"] in out}
 
 
-def version_code(v):
-    major, minor, patch = parse_version(v)
-    return major * 1000000 + minor * 1000 + patch  # = lib.sh version_info
-
-
-def sections(changelog):
-    """[(heading line, start, end)] of every `## ` section (end = the next one's start)."""
-    starts = [m.start() for m in re.finditer(r"^## ", changelog, re.M)]
-    out = []
-    for i, s in enumerate(starts):
-        end = starts[i + 1] if i + 1 < len(starts) else len(changelog)
-        out.append((changelog[s:changelog.index("\n", s) if "\n" in changelog[s:] else end].rstrip(), s, end))
+def parse_args_apps(words):
+    """['android', 'mac=0.18.0'] → {'android': None, 'mac': '0.18.0'}."""
+    out = {}
+    for w in words:
+        app_id, _, v = w.partition("=")
+        if v:
+            parse_version(v)
+        if app_id in out:
+            raise ValueError("%s named twice" % app_id)
+        out[app_id] = v or None
     return out
-
-
-def changelog_release(changelog, version):
-    """CHANGELOG.md with the Unreleased section turned into `## <version>[ — <summary>]` and a new,
-    empty Unreleased section above it. `## Unreleased — <summary>` gives the summary. Refuses an empty Unreleased
-    section and a version that already has an entry."""
-    secs = sections(changelog)
-    if any(re.match(r"## %s(\s|$)" % re.escape(version), h) for h, _, _ in secs):
-        raise ValueError("CHANGELOG.md already has a %s entry" % version)
-    unreleased = [x for x in secs if re.match(r"## Unreleased(\s|$)", x[0])]
-    if not unreleased:
-        raise ValueError("CHANGELOG.md has no '## Unreleased' section")
-    heading, start, end = unreleased[0]
-    body = changelog[start + len(heading):end].strip("\n")
-    if not body.strip():
-        raise ValueError("CHANGELOG.md's Unreleased section is empty: nothing to release")
-    summary = re.sub(r"^## Unreleased\s*(—|-)?\s*", "", heading).strip()
-    title = "## " + version + (" — " + summary if summary else "")
-    return changelog[:start] + "## Unreleased\n\n" + title + "\n\n" + body + "\n\n" + changelog[end:].lstrip("\n")
-
-
-def changelog_entry(changelog, version):
-    """(heading, body) of the version's CHANGELOG.md entry, or None."""
-    for heading, start, end in sections(changelog):
-        if re.match(r"## %s(\s|$)" % re.escape(version), heading):
-            return heading, changelog[start + len(heading):end].strip("\n")
-    return None
 
 
 LIST_OR_BLOCK = re.compile(r"^\s*([-*+] |\d+\. |#|\||>|```)")
@@ -181,49 +172,63 @@ def unwrap(md):
     return "\n".join(out)
 
 
-def absolute_links(md, version):
-    """Repo-relative links → the files at the tag (GitHub release notes have no base path)."""
+def absolute_links(md, tag_name, base=""):
+    """Relative links → the files at the tag (GitHub release notes have no base path); base: the folder they are
+    relative to (a CHANGELOG's: apps/android for apps/android/CHANGELOG.md)."""
     return re.sub(r"\]\((?!https?://|#|mailto:)([^)\s]+)\)",
-                  lambda m: "](%s/blob/v%s/%s)" % (REPO_URL, version, m.group(1).lstrip("./")), md)
+                  lambda m: "](%s/blob/%s/%s)" % (REPO_URL, tag_name, os.path.normpath(os.path.join(base, m.group(1)))),
+                  md)
 
 
-def github_notes(changelog, version, cert_sha256, garmin=(), barrel=None):
-    """The GitHub release notes: the medical disclaimer, the CHANGELOG entry and the files (the Garmin apps' and the
-    SukraraFace barrel's once they are released: garmin, garmin_apps()'s list; barrel, its version)."""
-    entry = changelog_entry(changelog, version)
-    if not entry:
-        raise ValueError("CHANGELOG.md has no %s entry" % version)
+def release_files(app, version, garmin=None):
+    """{key: path} of the files the app's GitHub release carries (garmin: its garmin_apps() entry)."""
     v = version
-    head = ("**Not a medical device.** Every behaviour, with its rules and numbers: [docs/FEATURES.md](%s/blob/v%s/"
-            "docs/FEATURES.md)." % (REPO_URL, v))
-    files = "\n".join([
-        "## Files",
-        "",
-        "- `Sukrara-%s.apk`: Android 16+, arm64. Signed with Sukrara's release key, certificate SHA-256 `%s`."
-        % (v, cert_sha256),
-        "- `Sukrara-%s.dmg` (or `Sukrara-mac-%s.zip`): Mac, Apple Silicon, macOS 15+. Notarized. The GitHub and "
-        "Homebrew Mac app updates itself (Sparkle)." % (v, v),
-        "- `Sukrara-%s-android-mapping.txt.gz`: the R8 mapping that makes an Android crash trace readable (for bug "
-        "reports; not something to install)." % v,
-    ] + ["- `%s-%s.iq` and `%s-%s-sideload.zip`: %s, the Garmin %s. The `.iq` is the Connect IQ store package (the "
-         "store installs it, not by hand); the zip has one `%s-<watch>.prg` per watch model, to copy into the watch's "
-         "`GARMIN/APPS` folder over USB without the store." % (a["file"], v, a["file"], v, a["name"], a["kind"], a["file"])
-         for a in garmin] + ([
-        "- `SukraraFace-%s.barrel` (the same file as `SukraraFace.barrel`, whose link %s always gets the latest): "
-        "SukraraFace %s, the Monkey Barrel a Connect IQ watch face reads Sukrara's glucose with, for developers (0BSD; "
-        "[docs/GARMIN-FACES.md](%s/blob/v%s/docs/GARMIN-FACES.md))." % (barrel, BARREL_LATEST_URL, barrel, REPO_URL, v)]
-        if barrel else []))
-    return head + "\n\n" + absolute_links(unwrap(entry[1]), v).strip() + "\n\n" + files + "\n"
+    if app["id"] == "android":
+        return {"apk": "%s/Sukrara-%s.apk" % (DIST, v), "mapping": "%s/Sukrara-%s-android-mapping.txt.gz" % (DIST, v)}
+    if app["id"] == "mac":
+        return {"dmg": "%s/Sukrara-%s.dmg" % (MAC_BUILD, v), "zip": "%s/Sukrara-mac-%s.zip" % (MAC_BUILD, v)}
+    if app["id"] == "face-sdk":
+        return {"barrel": "%s/SukraraFace-%s.barrel" % (GARMIN_DIST, v)}
+    if garmin:
+        return {"iq": "%s/%s-%s.iq" % (GARMIN_DIST, garmin["file"], v),
+                "sideload": "%s/%s-%s-sideload.zip" % (GARMIN_DIST, garmin["file"], v)}
+    raise ValueError("release.py doesn't know the files of %s" % app["id"])
 
 
-def bump_docs(path, text, old, new):
-    """The version written in the docs: DEVELOPMENT.md's `version.sh` example, QA.md / FEATURES.md's About texts
-    (*<version> · … version*)."""
-    if path.endswith("DEVELOPMENT.md"):
-        text = re.sub(r"(`tools/release/version\.sh` → `)[^`]*(`)",
-                      lambda m: "%s%s %d%s" % (m.group(1), new, version_code(new), m.group(2)),
-                      text)
-    return text.replace("*%s · " % old, "*%s · " % new)
+def files_notes(app, version, cert_sha256=None, garmin=None):
+    """The release notes' Files section: each file the release carries, what it is."""
+    v = version
+    if app["id"] == "android":
+        lines = ["- `Sukrara-%s.apk`: Android 16+, arm64. Signed with Sukrara's release key, certificate SHA-256 `%s`."
+                 % (v, cert_sha256),
+                 "- `Sukrara-%s-android-mapping.txt.gz`: the R8 mapping that makes an Android crash trace readable (for "
+                 "bug reports; not something to install)." % v]
+    elif app["id"] == "mac":
+        lines = ["- `Sukrara-%s.dmg` (or `Sukrara-mac-%s.zip`): Mac, Apple Silicon, macOS 15+. Notarized. The GitHub and "
+                 "Homebrew Mac app updates itself (Sparkle)." % (v, v)]
+    elif app["id"] == "face-sdk":
+        lines = ["- `SukraraFace-%s.barrel`: SukraraFace %s, the Monkey Barrel a Connect IQ watch face reads Sukrara's "
+                 "glucose with, for developers (0BSD; [docs/GARMIN-FACES.md](%s/blob/%s/docs/GARMIN-FACES.md))."
+                 % (v, v, REPO_URL, versions.tag(app, v))]
+    else:
+        g = garmin
+        lines = ["- `%s-%s.iq` and `%s-%s-sideload.zip`: %s, the Garmin %s. The `.iq` is the Connect IQ store package (the "
+                 "store installs it, not by hand); the zip has one `%s-<watch>.prg` per watch model, to copy into the "
+                 "watch's `GARMIN/APPS` folder over USB without the store." % (g["file"], v, g["file"], v, g["name"],
+                                                                               g["kind"], g["file"])]
+    return "## Files\n\n" + "\n".join(lines)
+
+
+def github_notes(app, changelog, version, cert_sha256=None, garmin=None):
+    """The app's GitHub release notes: the medical disclaimer, its CHANGELOG entry and its files."""
+    entry = versions.changelog_entry(changelog, version)
+    if not entry:
+        raise ValueError("%s has no %s entry" % (app["changelog"], version))
+    t = versions.tag(app, version)
+    head = ("**Not a medical device.** Every behaviour, with its rules and numbers: [docs/FEATURES.md](%s/blob/%s/"
+            "docs/FEATURES.md)." % (REPO_URL, t))
+    body = absolute_links(unwrap(entry[1]), t, os.path.dirname(app["changelog"])).strip()
+    return head + "\n\n" + body + "\n\n" + files_notes(app, version, cert_sha256, garmin) + "\n"
 
 
 def read_play_notes(root, version):
@@ -266,57 +271,16 @@ def appcast_item(feed, version):
     return {"url": e.group(1), "length": int(e.group(2)), "signature": e.group(3)} if e else None
 
 
-def artifacts(version):
-    return {
-        "apk": "%s/Sukrara-%s.apk" % (DIST, version),
-        "mapping": "%s/Sukrara-%s-android-mapping.txt.gz" % (DIST, version),
-        "dmg": "%s/Sukrara-%s.dmg" % (MAC_BUILD, version),
-        "zip": "%s/Sukrara-mac-%s.zip" % (MAC_BUILD, version),
-    }
-
-
-def manifest_with_version(manifest, version):
-    """The Connect IQ manifest with <iq:application version="…"> set to the version (the store shows it). Refuses a
-    manifest whose application has no version attribute."""
-    new, n = re.subn(r'(<iq:application\b[^>]*?\sversion=")[^"]*(")', r"\g<1>%s\g<2>" % version, manifest, count=1)
-    if not n:
-        raise ValueError("a Garmin manifest's <iq:application> has no version attribute")
-    return new
-
-
 def garmin_apps(registry):
-    """Sukrara's Garmin apps from the registry (contracts/watchface/payload/apps.json, its text), in its order: app (the
-    folder under apps/garmin), name, kind, file (garmin-release.sh's <Name>), manifest."""
-    out = []
+    """Sukrara's Garmin apps from the payload registry (contracts/watchface/payload/apps.json, its text), by its
+    'app': {app: {app, name, kind, file (garmin-release.sh's <Name>), manifest}}."""
+    out = {}
     for a in json.loads(registry)["apps"]:
         if a["app"] not in GARMIN_FILES:
             raise ValueError("apps.json: release.py doesn't know the Garmin app %r (GARMIN_FILES)" % a["app"])
-        out.append({"app": a["app"], "name": a["name"], "kind": GARMIN_KINDS[a["type"]], "file": GARMIN_FILES[a["app"]],
-                    "manifest": a["manifest"]})
+        out[a["app"]] = {"app": a["app"], "name": a["name"], "kind": GARMIN_KINDS[a["type"]],
+                         "file": GARMIN_FILES[a["app"]], "manifest": a["manifest"]}
     return out
-
-
-def garmin_artifacts(version, apps):
-    """garmin-release.sh's files per app: the store package and the zip of sideload .prgs."""
-    out = {}
-    for a in apps:
-        out[a["app"] + "-iq"] = "%s/%s-%s.iq" % (GARMIN_DIST, a["file"], version)
-        out[a["app"] + "-sideload"] = "%s/%s-%s-sideload.zip" % (GARMIN_DIST, a["file"], version)
-    return out
-
-
-def barrel_version(manifest):
-    """SukraraFace's own version (apps/garmin/sdk/manifest.xml's <iq:barrel version>): the payload's major."""
-    m = re.search(r'<iq:barrel\b[^>]*\smodule="SukraraFace"[^>]*\sversion="([0-9]+\.[0-9]+\.[0-9]+)"', manifest)
-    if not m:
-        raise ValueError("apps/garmin/sdk/manifest.xml has no SukraraFace barrel version")
-    return m.group(1)
-
-
-def barrel_artifacts(version):
-    """garmin-release.sh sdk's files: the barrel under its version, and under the one name the latest release's stable
-    URL (BARREL_LATEST_URL) needs."""
-    return {"sdk": "%s/SukraraFace-%s.barrel" % (GARMIN_DIST, version), "sdk-latest": "%s/SukraraFace.barrel" % GARMIN_DIST}
 
 
 def png_size(data):
@@ -405,28 +369,20 @@ def listing_problems(root, app):
     return problems
 
 
-def garmin_whats_new(changelog, version, app):
-    """The CHANGELOG entry's bullets about Garmin or the app, unwrapped: the What's new of a later version."""
-    entry = changelog_entry(changelog, version)
-    if not entry:
-        return ["(no CHANGELOG entry for %s)" % version]
-    bullets = re.split(r"\n(?=- )", unwrap(entry[1]).strip())
-    return [b for b in bullets if b.startswith("- ") and ("Garmin" in b or app["name"] in b)]
-
-
-def garmin_upload_kit(version, app, iq, changelog):
+def garmin_upload_kit(version, garmin, iq, changelog):
     """What the owner does at the Connect IQ developer dashboard (no upload API) for one app: the lines release.py
-    prints. Every app in apps.json has its listing (its first upload is by hand), so: Upload a new version with the
-    What's new."""
-    notes = garmin_whats_new(changelog, version, app) or ["(no Garmin lines in the CHANGELOG entry: say what changed)"]
+    prints. Every Garmin app has its listing (its first upload is by hand), so: Upload a new version with the What's new
+    (its CHANGELOG entry)."""
+    entry = versions.changelog_entry(changelog, version)
+    notes = unwrap(entry[1]).strip() if entry else "(no CHANGELOG entry for %s: say what changed)" % version
     return "\n".join([
         "%s (%s), Connect IQ store, by hand at %s (sign in as the developer account):" % (
-            app["name"], app["kind"], GARMIN_DASHBOARD),
-        "  1. %s → Upload a new version" % app["name"],
+            garmin["name"], garmin["kind"], GARMIN_DASHBOARD),
+        "  1. %s → Upload a new version" % garmin["name"],
         "  2. File: %s" % iq,
         "  3. App Version: %s" % version,
-        "  4. What's new (the CHANGELOG entry's Garmin lines; trim to what changed on the watch):",
-    ] + ["       " + line for line in "\n".join(notes).splitlines()] + [
+        "  4. What's new (its CHANGELOG entry):",
+    ] + ["       " + line for line in notes.splitlines()] + [
         "  5. Submit. Garmin reviews it; the new version stays off the store until it is approved (e-mail).",
     ])
 
@@ -463,10 +419,10 @@ def start_problems(head, origin_next, dirty):
 
 
 def resume_problems(dirty):
-    """Why --from a later step can't go on ([] when it can): changes besides website/public/appcast.xml, which the gate writes
-    and the sparkle step commits. The branch doesn't matter; main() checks VERSION is the release's."""
-    extra = [f for f in dirty if f != "website/public/appcast.xml"]
-    return ["the tree has changes besides website/public/appcast.xml: %s" % ", ".join(extra)] if extra else []
+    """Why --from a later step can't go on ([] when it can): changes besides website/public/appcast.xml, which the gate
+    writes and the sparkle step commits. The branch doesn't matter."""
+    extra = [f for f in dirty if f != APPCAST]
+    return ["the tree has changes besides %s: %s" % (APPCAST, ", ".join(extra))] if extra else []
 
 
 def commit_runs(runs):
@@ -500,13 +456,35 @@ def sha256(path):
 
 
 class Release:
-    def __init__(self, version, dry):
-        self.v = version
-        self.code = version_code(version)
+    def __init__(self, releases, dry, today=None, apps=None):
+        """releases: {app id: version}, in the registry's order; apps: the registry's (default: read from ROOT)."""
+        self.apps = versions.by_id(apps or versions.load_apps(self.read(versions.REGISTRY)))
+        self.v = dict(releases)
         self.dry = dry
-        self.changelog = None  # dry run: the CHANGELOG the version step would write
+        self.today = today or datetime.date.today()
+        self.changelogs = {}  # dry run: the CHANGELOGs the version step would write
         self.notes_state = []  # what the summary reports as still manual
         self.would_stop = []  # dry run: every check that would have stopped the release
+
+    def has(self, app_id):
+        return app_id in self.v
+
+    def name(self, app_id):
+        return "%s %s" % (self.apps[app_id]["name"], self.v[app_id])
+
+    def tag(self, app_id):
+        return versions.tag(self.apps[app_id], self.v[app_id])
+
+    def garmin_ids(self):
+        return [i for i in self.v if self.apps[i].get("garmin")]
+
+    def garmin(self, app_id):
+        """The app's entry of the payload registry (name, kind, file), or None for a non-Garmin app."""
+        g = self.apps[app_id].get("garmin")
+        return garmin_apps(self.read(GARMIN_REGISTRY))[g] if g else None
+
+    def files(self, app_id):
+        return release_files(self.apps[app_id], self.v[app_id], self.garmin(app_id))
 
     # shell
     def sh(self, cmd, mutate=True, capture=True, cwd=None, check=True, env=None):
@@ -567,12 +545,12 @@ class Release:
     def git_ok(self, args):
         return subprocess.run(["git"] + args, cwd=ROOT, capture_output=True).returncode == 0
 
-    def remote_tag(self):
-        """The commit tag v<version> on origin points at, or ''."""
-        out = self.sh(["git", "ls-remote", "--tags", "origin", "refs/tags/v%s*" % self.v], mutate=False)
-        refs = dict(reversed(l.split("\t")) for l in out.splitlines() if "\t" in l)
-        tag = "refs/tags/v" + self.v
-        return refs.get(tag + "^{}") or refs.get(tag, "")  # an annotated tag's commit is the peeled ^{} line
+    def remote_tag(self, tag_name):
+        """The commit the tag on origin points at, or ''."""
+        out = self.sh(["git", "ls-remote", "--tags", "origin", "refs/tags/%s*" % tag_name], mutate=False)
+        refs = dict(reversed(line.split("\t")) for line in out.splitlines() if "\t" in line)
+        ref = "refs/tags/" + tag_name
+        return refs.get(ref + "^{}") or refs.get(ref, "")  # an annotated tag's commit is the peeled ^{} line
 
     def resume_check(self):
         """--from a later step: the release commit (or the appcast commit on it) checked out, nothing else changed."""
@@ -593,8 +571,8 @@ class Release:
         if self.git_ok(["merge-base", "--is-ancestor", mine, "origin/next"]):
             return  # next has it already (a re-run)
         self.sh(["git", "reset", "--keep", "origin/next"])
-        merged = self.git_ok(["merge", "--no-ff", "-m", "Merge %s (Sukrara %s, on main) into next" % (mine[:8], self.v),
-                              mine])  # git's default message would name this checkout's branch, not next
+        merged = self.git_ok(["merge", "--no-ff", "-m", "Merge %s (%s, on main) into next" % (
+            mine[:8], ", ".join(self.name(i) for i in self.v)), mine])  # git's default would name this checkout's branch
         if not merged:
             self.git_ok(["merge", "--abort"])
         pushed = merged and self.git_ok(["push", "origin", "HEAD:next"])
@@ -618,62 +596,57 @@ class Release:
                              check=True).stdout  # not stripped: " M README.md" starts with a space
         return [e[3:] for e in out.split("\0") if len(e) > 3]
 
-    def current_changelog(self):
-        return self.changelog if self.changelog is not None else self.read("CHANGELOG.md")
+    def current_version(self, app_id):
+        return versions.read_version(self.apps[app_id], self.read(self.apps[app_id]["version"]))
 
-    def garmin_on(self):
-        """The Garmin apps are released once the store key is pinned (GARMIN_KEY_PIN)."""
-        return os.path.exists(self.path(GARMIN_KEY_PIN))
+    def changelog(self, app_id):
+        return self.changelogs.get(app_id) or self.read(self.apps[app_id]["changelog"])
 
-    def garmin_apps(self):
-        return garmin_apps(self.read(GARMIN_REGISTRY)) if self.garmin_on() else []
-
-    def barrel(self):
-        """SukraraFace's version once the Garmin apps are released (it goes with them), else None."""
-        return barrel_version(self.read(BARREL_MANIFEST)) if self.garmin_on() else None
-
-    def garmin_files(self):
-        """Every Garmin file the gate leaves and the release attaches: the apps' and the barrel's."""
-        files = garmin_artifacts(self.v, self.garmin_apps())
-        if self.garmin_on():
-            files.update(barrel_artifacts(self.barrel()))
-        return files
+    def skip(self, step, needs):
+        """True (and said) when no app this step serves is released."""
+        if any(self.has(i) for i in needs):
+            return False
+        print("  nothing for %s: %s isn't released" % (step, " or ".join(needs)))
+        return True
 
     # steps
     def preconditions(self):
-        current = self.read("VERSION").strip()
-        self.ok(parse_version(self.v) > parse_version(current), "%s is not above VERSION (%s)" % (self.v, current))
         self.sh(["git", "fetch", "--quiet", "--tags", "origin"], mutate=False)
         sha = self.head()
         for problem in start_problems(sha, self.sh(["git", "rev-parse", "origin/next"], mutate=False), self.dirty()):
             self.ok(False, problem)
         self.ok(self.git_ok(["merge-base", "--is-ancestor", "origin/main", "HEAD"]),
                 "origin/main has commits next doesn't: main can't be fast-forwarded")
-        self.ok(not self.sh(["git", "ls-remote", "--tags", "origin", "v" + self.v], mutate=False),
-                "tag v%s exists on origin" % self.v)
         self.ok(os.path.exists(self.path("tools/check/strict")), "tools/check/strict is missing")
-        try:
-            changelog_release(self.read("CHANGELOG.md"), self.v)
-        except ValueError as e:
-            self.ok(False, str(e))
-        for read in (read_play_notes, read_appstore_notes):
+        for i in self.v:
+            self.ok(not self.sh(["git", "ls-remote", "--tags", "origin", self.tag(i)], mutate=False),
+                    "tag %s exists on origin" % self.tag(i))
+        if self.has("android"):
             try:
-                read(ROOT, self.v)
+                read_play_notes(ROOT, self.v["android"])
             except ValueError as e:
                 self.ok(False, str(e))
-        for f, what in [("~/.android/sukrara-release.jks", "the Android release key"),
-                        ("~/.android/sukrara-play.json", "the Play service account key")]:
-            self.ok(os.path.exists(os.path.expanduser(f)), "no %s (%s)" % (what, f))
-        key, issuer = stores.asc_key_paths()
-        self.ok(bool(key and issuer), "no App Store Connect API key / issuer (~/.apple-dev)")
-        if self.garmin_on():
+            for f, what in [("~/.android/sukrara-release.jks", "the Android release key"),
+                            ("~/.android/sukrara-play.json", "the Play service account key")]:
+                self.ok(os.path.exists(os.path.expanduser(f)), "no %s (%s)" % (what, f))
+        if self.has("mac"):
+            try:
+                read_appstore_notes(ROOT, self.v["mac"])
+            except ValueError as e:
+                self.ok(False, str(e))
+            key, issuer = stores.asc_key_paths()
+            self.ok(bool(key and issuer), "no App Store Connect API key / issuer (~/.apple-dev)")
+        if self.garmin_ids():
             try:
                 self.sh(["tools/release/garmin-release.sh", "--key-check"], mutate=False)
             except Stop as e:
                 self.ok(False, str(e))
-            for a in self.garmin_apps():
-                for problem in listing_problems(ROOT, a["app"]):
+            for i in self.garmin_ids():
+                for problem in listing_problems(ROOT, self.apps[i]["garmin"]):
                     self.ok(False, "Connect IQ listing: " + problem)
+        for check in RELEASE_CHECKS:
+            for problem in check(ROOT, dict(self.v)):
+                self.ok(False, problem)
         self.sh(["gh", "auth", "status"], mutate=False)
         # Not awaited here: the version commit's run (awaited in github) covers every change since the newest green
         # commit (tools/ci/changes.py), this one's included. Only a run that already failed stops the release.
@@ -682,66 +655,99 @@ class Release:
         if state == "pending":
             print("  Checks on %s still running: the version commit's run covers it" % sha[:8])
 
+    def change_files(self):
+        """{name: parsed} of every change file (a broken one stops: check `changes` names it)."""
+        out = {}
+        d = self.path(versions.CHANGES)
+        for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+            rel = versions.CHANGES + f
+            if versions.is_change_file(rel):
+                try:
+                    out[rel] = versions.parse_change(self.read(rel), list(self.apps))
+                except ValueError as e:
+                    raise Stop("%s: %s" % (rel, e))
+        return out
+
     def version(self):
-        current = self.read("VERSION").strip()
-        changelog = self.read("CHANGELOG.md")
-        if current == self.v and changelog_entry(changelog, self.v):
-            print("  VERSION is %s and CHANGELOG.md has its entry: already done" % self.v)
-        else:
-            new_changelog = changelog_release(changelog, self.v)
-            files = {"VERSION": self.v + "\n", "CHANGELOG.md": new_changelog}
-            for rel in DOCS_WITH_VERSION:
-                files[rel] = bump_docs(rel, self.read(rel), current, self.v)
-            for m in GARMIN_MANIFESTS:
-                if os.path.exists(self.path(m)):
-                    files[m] = manifest_with_version(self.read(m), self.v)
-            if self.dry:
-                self.changelog = new_changelog
-                for rel, text in files.items():
-                    if text != self.read(rel):
-                        print("  would write %s" % rel)
-                print("  the entry's heading: " + changelog_entry(new_changelog, self.v)[0])
+        changes = self.change_files()
+        files = {}
+        for i, v in self.v.items():
+            app = self.apps[i]
+            folder = os.path.dirname(app["changelog"])  # a change file's links are from the root: rebased for it
+            bullets = [versions.rebase_links(c["body"], folder) for _, c in versions.pending(changes, i)]
+            files[app["version"]] = versions.with_version(app, self.read(app["version"]), v)
+            files[app["changelog"]] = versions.changelog_with_entry(self.read(app["changelog"]), v, self.today, bullets)
+            self.changelogs[i] = files[app["changelog"]]
+            for m in app.get("mentions", []):
+                text = files.get(m["file"]) or self.read(m["file"])
+                files[m["file"]] = versions.with_mentions(text, m["pattern"], app, v)
+        gone = []
+        for rel, text in versions.consumed(changes, list(self.v)).items():
+            if text is None:
+                gone.append(rel)
             else:
-                for rel, text in files.items():
-                    with open(self.path(rel), "w", encoding="utf-8") as f:
-                        f.write(text)
-            self.sh(["git", "add", "--"] + list(files))
-            self.sh(["git", "commit", "-q", "-m", "Version %s: CHANGELOG entry, the version in the docs" % self.v,
-                     "-m", "Features-skip: version bump only; every behaviour in it is already in docs/FEATURES.md"])
+                files[rel] = text
+        if self.dry:
+            for rel, text in files.items():
+                if text != self.read(rel):
+                    print("  would write %s" % rel)
+            for rel in gone:
+                print("  would delete %s" % rel)
+            for i in self.v:
+                print("  %s's entry: %s" % (i, versions.changelog_entry(self.changelogs[i], self.v[i])[0]))
+        else:
+            for rel, text in files.items():
+                with open(self.path(rel), "w", encoding="utf-8") as f:
+                    f.write(text)
+            for rel in gone:
+                os.unlink(self.path(rel))
+        self.sh(["git", "add", "-A", "--"] + list(files) + gone)
+        self.sh(["git", "commit", "-q", "-m", "Release %s: versions and CHANGELOG entries" % ", ".join(
+            self.name(i) for i in self.v), "-m",
+            "Features-skip: version bump only; every behaviour in it is already in docs/FEATURES.md", "-m",
+            "Changes-skip: the release consumes the change files"])
         self.sh(["git", "push", "origin", "HEAD:next"])  # fast-forward only: git refuses anything else
         print("  its Checks run is awaited before anything is published (github), the gate runs meanwhile")
 
     def gate(self):
         r = "tools/release/"
-        self.sh([r + "android-release.sh"], capture=False)
-        self.sh([r + "android-smoke.sh", "--final", "--no-build"], capture=False)
-        self.sh([r + "play-bundle.sh"], capture=False)
-        self.sh([r + "mac-release.sh"], capture=False)
-        self.sh(["apps/macos/Bundle/smoke.sh"], capture=False)
-        # rebuilds build/Sukrara.app as the App Store version; its validated pkg is the one testflight uploads
-        self.sh([r + "mac-appstore.sh"], capture=False)
-        for a in self.garmin_apps():
-            self.sh([r + "garmin-release.sh", a["app"], self.v], capture=False)
-        if self.garmin_on():  # a barrel that doesn't build stops the release
+        if self.has("android"):
+            self.sh([r + "android-release.sh"], capture=False)
+            self.sh([r + "android-smoke.sh", "--final", "--no-build"], capture=False)
+            self.sh([r + "play-bundle.sh"], capture=False)
+        if self.has("mac"):
+            self.sh([r + "mac-release.sh"], capture=False)
+            self.sh(["apps/macos/Bundle/smoke.sh"], capture=False)
+            # rebuilds build/Sukrara.app as the App Store version; its validated pkg is the one testflight uploads
+            self.sh([r + "mac-appstore.sh"], capture=False)
+        for i in self.garmin_ids():
+            self.sh([r + "garmin-release.sh", self.apps[i]["garmin"], self.v[i]], capture=False)
+        if self.has("face-sdk"):  # a barrel that doesn't build stops the release
             self.sh([r + "garmin-release.sh", "sdk"], capture=False)
         if self.dry:
-            print("  would check the files it leaves, website/public/appcast.xml's %s item, and that nothing else changed" % self.v)
+            print("  would check the files it leaves%s, and that nothing else changed"
+                  % (", website/public/appcast.xml's %s item" % self.v["mac"] if self.has("mac") else ""))
             return
-        for rel in (list(artifacts(self.v).values()) + list(self.garmin_files().values())
-                    + ["%s/Sukrara-%s-play.aab" % (DIST, self.v), appstore_pkg(self.v)]):
+        left = [p for i in self.v for p in self.files(i).values()]
+        if self.has("android"):
+            left.append("%s/Sukrara-%s-play.aab" % (DIST, self.v["android"]))
+        if self.has("mac"):
+            left.append(appstore_pkg(self.v["mac"]))
+            self.ok(appcast_item(self.read(APPCAST), self.v["mac"]),
+                    "%s has no item for %s (was the build notarized?)" % (APPCAST, self.v["mac"]))
+        for rel in left:
             self.ok(os.path.exists(self.path(rel)), "the gate left no %s" % rel)
-        self.ok(appcast_item(self.read("website/public/appcast.xml"), self.v),
-                "website/public/appcast.xml has no item for %s (was the build notarized?)" % self.v)
-        extra = [f for f in self.dirty() if f != "website/public/appcast.xml"]
+        extra = [f for f in self.dirty() if f != APPCAST]
         self.ok(not extra, "the gate changed files it shouldn't: %s" % ", ".join(extra))
 
     def check_dmg_is_the_signed_one(self):
         if self.dry:
-            print("  would check the dmg is the one website/public/appcast.xml signs (length, sign_update --verify)")
+            print("  would check the dmg is the one %s signs (length, sign_update --verify)" % APPCAST)
             return
-        item = appcast_item(self.read("website/public/appcast.xml"), self.v)
-        dmg = self.path(artifacts(self.v)["dmg"])
-        if not self.ok(item is not None, "website/public/appcast.xml has no item for %s: run the gate (mac-release.sh)" % self.v):
+        v = self.v["mac"]
+        item = appcast_item(self.read(APPCAST), v)
+        dmg = self.path(self.files("mac")["dmg"])
+        if not self.ok(item is not None, "%s has no item for %s: run the gate (mac-release.sh)" % (APPCAST, v)):
             return
         if not self.ok(os.path.exists(dmg), "no %s" % dmg):
             return
@@ -751,70 +757,82 @@ class Release:
 
     def github(self):
         sha = self.head()
-        self.ok(self.read("VERSION").strip() == self.v or (self.dry and self.changelog is not None),
-                "VERSION isn't %s: check out the release commit" % self.v)
+        for i in self.v:
+            self.ok(self.current_version(i) == self.v[i] or (self.dry and i in self.changelogs),
+                    "%s's version isn't %s: check out the release commit" % (i, self.v[i]))
         self.wait("Checks on %s" % sha[:8], lambda: self.checks_state(sha), 150 * 60)
-        self.check_dmg_is_the_signed_one()
-        files = dict(artifacts(self.v), **self.garmin_files())
-        for rel in files.values():
-            self.ok(self.dry or os.path.exists(self.path(rel)), "no %s: run the gate" % rel)
-        # main: fast-forward to the release commit
+        if self.has("mac"):
+            self.check_dmg_is_the_signed_one()
+        for i in self.v:
+            for rel in self.files(i).values():
+                self.ok(self.dry or os.path.exists(self.path(rel)), "no %s: run the gate" % rel)
+        # main: fast-forward to the release commit, once for every app
         self.sh(["git", "fetch", "--quiet", "--tags", "origin"], mutate=False)
         if self.sh(["git", "rev-parse", "origin/main"], mutate=False) != sha:
             self.sh(["git", "push", "origin", "HEAD:main"])
-        # the tag
-        remote = self.remote_tag()
-        if remote:
-            self.ok(remote == sha, "tag v%s on origin isn't %s" % (self.v, sha[:8]))
-        else:
-            if not self.sh(["git", "tag", "-l", "v" + self.v], mutate=False):
-                self.sh(["git", "tag", "-a", "v" + self.v, "-m", "Sukrara " + self.v, sha])
-            self.sh(["git", "push", "origin", "refs/tags/v" + self.v])
-        # the release
-        exists = subprocess.run(["gh", "release", "view", "v" + self.v, "-R", REPO], capture_output=True).returncode == 0
-        if not exists:
-            cert = self.read("tools/release/android-cert.sha256").strip()
-            notes = github_notes(self.current_changelog(), self.v, cert, self.garmin_apps(), self.barrel())
-            if self.dry:
-                print("  the notes:\n" + "\n".join("    " + l for l in notes.splitlines()))
-            with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
-                f.write(notes)
-            self.sh(["gh", "release", "create", "v" + self.v, "-R", REPO, "--verify-tag", "--title",
-                     "Sukrara " + self.v, "--notes-file", f.name, "--latest"] + [self.path(p) for p in files.values()])
-            os.unlink(f.name)
-        if not self.dry:
-            assets = {a["name"]: a for a in self.gh_json(["release", "view", "v" + self.v, "-R", REPO, "--json",
-                                                          "assets"])["assets"]}
-            for rel in files.values():
-                name, want = os.path.basename(rel), "sha256:" + sha256(self.path(rel))
-                if name not in assets:
-                    self.sh(["gh", "release", "upload", "v" + self.v, "-R", REPO, self.path(rel)])
-                elif assets[name].get("digest") and assets[name]["digest"] != want:
-                    raise Stop("the release's %s isn't the local file (%s)" % (name, assets[name]["digest"]))
+        cert = self.read("tools/release/android-cert.sha256").strip()
+        for i in self.v:
+            self.github_release(i, sha, cert)
         # No second wait on main: main now points at the commit whose run is green above, and that run is what main's
         # own run finds (tools/ci/changes.py: an already green commit needs nothing again).
 
+    def github_release(self, i, sha, cert):
+        """The app's tag on the release commit and its GitHub release with its files (Latest only for the 'latest'
+        app: GitHub keeps one Latest per repository, and Obtainium / IzzyOnDroid take Android's APK from it)."""
+        t, app = self.tag(i), self.apps[i]
+        remote = self.remote_tag(t)
+        if remote:
+            self.ok(remote == sha, "tag %s on origin isn't %s" % (t, sha[:8]))
+        else:
+            if not self.sh(["git", "tag", "-l", t], mutate=False):
+                self.sh(["git", "tag", "-a", t, "-m", self.name(i), sha])
+            self.sh(["git", "push", "origin", "refs/tags/" + t])
+        files = self.files(i)
+        exists = subprocess.run(["gh", "release", "view", t, "-R", REPO], capture_output=True).returncode == 0
+        if not exists:
+            notes = github_notes(app, self.changelog(i), self.v[i], cert, self.garmin(i))
+            if self.dry:
+                print("  %s's notes:\n%s" % (t, "\n".join("    " + line for line in notes.splitlines())))
+            with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+                f.write(notes)
+            latest = "--latest" if app.get("latest") else "--latest=false"
+            self.sh(["gh", "release", "create", t, "-R", REPO, "--verify-tag", "--title", self.name(i),
+                     "--notes-file", f.name, latest] + [self.path(p) for p in files.values()])
+            os.unlink(f.name)
+        if not self.dry:
+            assets = {a["name"]: a for a in self.gh_json(["release", "view", t, "-R", REPO, "--json", "assets"])["assets"]}
+            for rel in files.values():
+                name, want = os.path.basename(rel), "sha256:" + sha256(self.path(rel))
+                if name not in assets:
+                    self.sh(["gh", "release", "upload", t, "-R", REPO, self.path(rel)])
+                elif assets[name].get("digest") and assets[name]["digest"] != want:
+                    raise Stop("%s's %s isn't the local file (%s)" % (t, name, assets[name]["digest"]))
+
     def sparkle(self):
-        item = appcast_item(self.read("website/public/appcast.xml"), self.v)
-        if self.dry and item is None:
-            print("  would check website/public/appcast.xml has the %s item (mac-release.sh writes it in the gate) and the "
-                  "release's dmg matches it" % self.v)
-            print("  would run: git commit website/public/appcast.xml; git push origin HEAD:main")
-            self.push_next()
-            print("  would wait for GitHub Pages and %s to serve %s" % (FEED_URL, self.v))
+        if self.skip("sparkle", ["mac"]):
             return
-        self.ok(item is not None, "website/public/appcast.xml has no item for %s" % self.v)
-        committed = "website/public/appcast.xml" not in self.dirty()
+        v = self.v["mac"]
+        item = appcast_item(self.read(APPCAST), v)
+        if self.dry and item is None:
+            print("  would check %s has the %s item (mac-release.sh writes it in the gate) and the release's dmg "
+                  "matches it" % (APPCAST, v))
+            print("  would run: git commit %s; git push origin HEAD:main" % APPCAST)
+            self.push_next()
+            print("  would wait for GitHub Pages and %s to serve %s" % (FEED_URL, v))
+            return
+        self.ok(item is not None, "%s has no item for %s" % (APPCAST, v))
+        committed = APPCAST not in self.dirty()
         if not committed:
             # the download the item names must be there first (#91)
-            asset = self.gh_json(["release", "view", "v" + self.v, "-R", REPO, "--json", "assets"]) if not self.dry else None
+            asset = self.gh_json(["release", "view", self.tag("mac"), "-R", REPO, "--json", "assets"]) if not self.dry \
+                else None
             if asset is not None:
                 dig = {a["name"]: a.get("digest") for a in asset["assets"]}.get(os.path.basename(item["url"]))
-                self.ok(dig == "sha256:" + sha256(self.path(artifacts(self.v)["dmg"])),
+                self.ok(dig == "sha256:" + sha256(self.path(self.files("mac")["dmg"])),
                         "the release has no dmg matching the appcast (%s)" % dig)
-            self.sh(["git", "add", "website/public/appcast.xml"])
-            self.sh(["git", "commit", "-q", "-m", "Sparkle feed: Sukrara %s" % self.v, "-m",
-                     "The GitHub release v%s with its dmg is published (#91)." % self.v, "-m",
+            self.sh(["git", "add", APPCAST])
+            self.sh(["git", "commit", "-q", "-m", "Sparkle feed: %s" % self.name("mac"), "-m",
+                     "The GitHub release %s with its dmg is published (#91)." % self.tag("mac"), "-m",
                      "Features-skip: the update feed only"])
         sha = self.head()
         self.sh(["git", "push", "origin", "HEAD:main"])  # fast-forward: main is the release commit
@@ -828,21 +846,24 @@ class Release:
                     body = r.read().decode()
             except OSError:
                 return "pending"
-            return "success" if appcast_item(body, self.v) == item else "pending"
-        self.wait("%s to serve %s" % (FEED_URL, self.v), served, 20 * 60)
+            return "success" if appcast_item(body, v) == item else "pending"
+        self.wait("%s to serve %s" % (FEED_URL, v), served, 20 * 60)
 
     def homebrew(self):
-        dmg = self.path(artifacts(self.v)["dmg"])
+        if self.skip("homebrew", ["mac"]):
+            return
+        v = self.v["mac"]
+        dmg = self.path(self.files("mac")["dmg"])
 
         def cask():
             out = self.sh(["gh", "api", "repos/%s/contents/Casks/sukrara.rb" % TAP, "-H",
                            "Accept: application/vnd.github.raw"], mutate=False)
             ver = re.search(r'^  version "([^"]+)"', out, re.M)
             sha = re.search(r'^  sha256 "([^"]+)"', out, re.M)
-            if not ver or ver.group(1) != self.v:
+            if not ver or ver.group(1) != v:
                 runs = self.gh_json(["run", "list", "-R", REPO, "--workflow", "homebrew-tap.yml", "--event", "release",
                                      "--json", "displayTitle,status,conclusion,url", "-L", "10"]) or []
-                mine = [r for r in runs if r.get("displayTitle") == "Sukrara " + self.v]
+                mine = [r for r in runs if r.get("displayTitle") == self.name("mac")]
                 if mine and pick_run(mine) == "failure":
                     return "failure: the tap workflow failed (%s)" % mine[0].get("url")
                 return "pending"
@@ -851,22 +872,26 @@ class Release:
             if "auto_updates true" not in out:
                 return "failure: the cask lacks auto_updates true (#91)"
             return "success"
-        self.wait("the Homebrew cask at %s (%s)" % (self.v, TAP), cask, 20 * 60)
+        self.wait("the Homebrew cask at %s (%s)" % (v, TAP), cask, 20 * 60)
 
     def play(self):
         """The play bundle on the internal and the production track (every release goes to production: 0.x is public
         work in progress, the owner's 2026-11-13 decision). Managed publishing is off, so production goes live once
         Google approves it. A track that already has the version code is left alone (re-running is safe)."""
-        aab = self.path("%s/Sukrara-%s-play.aab" % (DIST, self.v))
+        if self.skip("play", ["android"]):
+            return
+        v = self.v["android"]
+        code = version_code(v)
+        aab = self.path("%s/Sukrara-%s-play.aab" % (DIST, v))
         try:
-            notes = read_play_notes(ROOT, self.v)
+            notes = read_play_notes(ROOT, v)
         except ValueError as e:
             self.ok(False, str(e))
             return
-        bodies = [stores.play_track_body(t, self.v, self.code, notes) for t in PLAY_TRACKS]
+        bodies = [stores.play_track_body(t, v, code, notes) for t in PLAY_TRACKS]
         if self.dry:
             print("  would upload %s (versionCode %d) to the %s tracks:"
-                  % (os.path.relpath(aab, ROOT), self.code, " and ".join(PLAY_TRACKS)))
+                  % (os.path.relpath(aab, ROOT), code, " and ".join(PLAY_TRACKS)))
             print("    edits.insert → bundles.upload")
             for body in bodies:
                 print("    tracks.update " + json.dumps(body, ensure_ascii=False))
@@ -876,18 +901,18 @@ class Release:
         play = stores.Play()
         edit = play.insert_edit()
         try:
-            todo = [b for b in bodies if not stores.track_has(play.track(edit, b["track"]), self.code)]
+            todo = [b for b in bodies if not stores.track_has(play.track(edit, b["track"]), code)]
             for b in bodies:
                 if b not in todo:
-                    print("  the %s track already has %d" % (b["track"], self.code))
+                    print("  the %s track already has %d" % (b["track"], code))
             if not todo:
                 play.delete_edit(edit)
                 return
-            if self.code not in [int(b["versionCode"]) for b in play.bundles(edit)]:
+            if code not in [int(b["versionCode"]) for b in play.bundles(edit)]:
                 up = play.upload_bundle(edit, aab)
-                self.ok(int(up["versionCode"]) == self.code, "Play read versionCode %s" % up["versionCode"])
+                self.ok(int(up["versionCode"]) == code, "Play read versionCode %s" % up["versionCode"])
                 self.ok(up.get("sha256") == sha256(aab), "Play's sha256 of the bundle isn't the local one")
-                print("  uploaded versionCode %d" % self.code)
+                print("  uploaded versionCode %d" % code)
             for b in todo:
                 play.update_track(edit, b)
             try:
@@ -906,12 +931,12 @@ class Release:
             raise
         check = play.insert_edit()
         try:
-            rels = {t: stores.track_has(play.track(check, t), self.code) for t in PLAY_TRACKS}
+            rels = {t: stores.track_has(play.track(check, t), code) for t in PLAY_TRACKS}
         finally:
             play.delete_edit(check)
         for t, rel in rels.items():
-            self.ok(rel is not None, "the %s track doesn't list %d after the commit" % (t, self.code))
-            print("  %s track: %s %d %s" % (t, rel["name"], self.code, rel["status"]))
+            self.ok(rel is not None, "the %s track doesn't list %d after the commit" % (t, code))
+            print("  %s track: %s %d %s" % (t, rel["name"], code, rel["status"]))
 
     def pkg_distribution(self, pkg):
         """The Distribution file of a productbuild pkg (pkgutil --expand into a temporary directory)."""
@@ -926,19 +951,23 @@ class Release:
     def appstore_build(self):
         """The build number of the App Store pkg the gate built and validated, its version and build number checked.
         Without the pkg (--from testflight in a fresh checkout), mac-appstore.sh builds and validates it, once."""
-        pkg = self.path(appstore_pkg(self.v))
+        v = self.v["mac"]
+        pkg = self.path(appstore_pkg(v))
         if not os.path.exists(pkg):
-            print("  no %s (the gate builds it): building it" % appstore_pkg(self.v))
+            print("  no %s (the gate builds it): building it" % appstore_pkg(v))
             self.sh(["tools/release/mac-appstore.sh"], capture=False)
-        return pkg_build(self.pkg_distribution(pkg), self.v)
+        return pkg_build(self.pkg_distribution(pkg), v)
 
     def testflight(self):
-        pkg = appstore_pkg(self.v)
+        if self.skip("testflight", ["mac"]):
+            return
+        v = self.v["mac"]
+        pkg = appstore_pkg(v)
         if self.dry:
-            print("  would look for a %s build in App Store Connect, else upload %s" % (self.v, pkg))
+            print("  would look for a %s build in App Store Connect, else upload %s" % (v, pkg))
             if os.path.exists(self.path(pkg)):
                 try:
-                    print("  %s is build %s" % (pkg, pkg_build(self.pkg_distribution(self.path(pkg)), self.v)))
+                    print("  %s is build %s" % (pkg, pkg_build(self.pkg_distribution(self.path(pkg)), v)))
                 except ValueError as e:
                     self.ok(False, str(e))
             else:
@@ -948,7 +977,7 @@ class Release:
             return
         asc = stores.AppStoreConnect()
         app = asc.app_id()
-        live = [b for b in asc.builds(app, version=self.v) if b["state"] in ("PROCESSING", "VALID") and not b["expired"]]
+        live = [b for b in asc.builds(app, version=v) if b["state"] in ("PROCESSING", "VALID") and not b["expired"]]
         if live:
             build = live[0]["build"]
             print("  App Store Connect has %s (%s) already: not uploaded again" % (build, live[0]["state"]))
@@ -977,60 +1006,65 @@ class Release:
         """The App Store version of this release, with its TestFlight build and "What's New", submitted for App Review
         and released automatically once approved (like Play production). Apple reviews one version at a time: while
         another is in review the release stays on TestFlight, and a later release submits the newest."""
+        if self.skip("appstore", ["mac"]):
+            return
+        v = self.v["mac"]
         try:
-            notes = read_appstore_notes(ROOT, self.v)
+            notes = read_appstore_notes(ROOT, v)
         except ValueError as e:
             self.ok(False, str(e))
             return
         if self.dry:
             print("  would find the App Store versions, then create or reuse %s (release after approval), attach its "
                   "VALID build, set What's New (%s) and submit it for App Review; nothing while another version is "
-                  "in review" % (self.v, ", ".join(sorted(notes))))
+                  "in review" % (v, ", ".join(sorted(notes))))
             return
         asc = stores.AppStoreConnect()
         app = asc.app_id()
-        b = [x for x in asc.builds(app, version=self.v) if x["state"] == "VALID" and not x["expired"]]
-        self.ok(bool(b), "no VALID %s build in App Store Connect: run --from testflight" % self.v)
-        action, why = asc.submit_for_review(app, self.v, b[0]["id"], notes)
+        b = [x for x in asc.builds(app, version=v) if x["state"] == "VALID" and not x["expired"]]
+        self.ok(bool(b), "no VALID %s build in App Store Connect: run --from testflight" % v)
+        action, why = asc.submit_for_review(app, v, b[0]["id"], notes)
         print("  %s: %s (build %s)" % (action, why, b[0]["build"]))
         if action == "wait":
             self.notes_state.append("App Store: %s stays on TestFlight (%s); the next release after that review "
-                                    "submits the newest" % (self.v, why))
+                                    "submits the newest" % (v, why))
 
-    def garmin(self):
+    def garmin_step(self):
         """The Connect IQ store has no upload API (docs/20-publishing.md › Garmin): the gate built and signed the .iq,
-        github put it on the release; this prints what the owner uploads and types at the developer dashboard."""
-        if not self.garmin_on():
-            print("  the Garmin apps aren't released yet (no %s): nothing to upload" % GARMIN_KEY_PIN)
+        github put it on the app's release; this prints what the owner uploads and types at the developer dashboard."""
+        if self.skip("garmin", [i for i in self.apps if self.apps[i].get("garmin")]):
             return
-        for a in self.garmin_apps():
-            iq = self.path(garmin_artifacts(self.v, [a])[a["app"] + "-iq"])
+        for i in self.garmin_ids():
+            g = self.garmin(i)
+            iq = self.path(self.files(i)["iq"])
             self.ok(self.dry or os.path.exists(iq), "no %s: run the gate" % iq)
-            kit = garmin_upload_kit(self.v, a, iq, self.current_changelog())
+            kit = garmin_upload_kit(self.v[i], g, iq, self.changelog(i))
             print("\n".join("  " + line for line in kit.splitlines()) + "\n")
             self.notes_state.append("Connect IQ store: upload a new version of %s %s at %s (the garmin step's lines)" % (
-                a["name"], os.path.basename(iq), GARMIN_DASHBOARD))
+                g["name"], os.path.basename(iq), GARMIN_DASHBOARD))
 
     def summary(self):
-        print("Sukrara %s (%d):" % (self.v, self.code))
+        print(", ".join("%s (%s)" % (self.name(i), self.tag(i)) for i in self.v) + ":")
         if self.dry:
-            print("  would report GitHub, Sparkle, Homebrew, Play, TestFlight and the App Store")
+            print("  would report each GitHub release and the stores of the apps released")
             return
 
         def line(name, fn):
             try:
-                print("  %-10s %s" % (name, fn()))
+                print("  %-22s %s" % (name, fn()))
             except Exception as e:  # a summary reports, it doesn't stop
-                print("  %-10s unknown (%s)" % (name, e))
+                print("  %-22s unknown (%s)" % (name, e))
 
-        def github():
-            r = self.gh_json(["release", "view", "v" + self.v, "-R", REPO, "--json", "url,isPrerelease,assets"])
-            pre = ", marked prerelease: gh release edit v%s --prerelease=false --latest" % self.v if r["isPrerelease"] else ""
-            return "%s (%d files%s)" % (r["url"], len(r["assets"]), pre)
+        def github(i):
+            def get():
+                r = self.gh_json(["release", "view", self.tag(i), "-R", REPO, "--json", "url,isPrerelease,assets"])
+                pre = ", marked prerelease: gh release edit %s --prerelease=false" % self.tag(i) if r["isPrerelease"] else ""
+                return "%s (%d files%s)" % (r["url"], len(r["assets"]), pre)
+            return get
 
         def sparkle():
             with urllib.request.urlopen("%s?r=%d" % (FEED_URL, time.time()), timeout=30) as r:
-                return "%s %s" % (FEED_URL, "serves it" if appcast_item(r.read().decode(), self.v) else "NOT yet")
+                return "%s %s" % (FEED_URL, "serves it" if appcast_item(r.read().decode(), self.v["mac"]) else "NOT yet")
 
         def homebrew():
             out = self.sh(["gh", "api", "repos/%s/contents/Casks/sukrara.rb" % TAP, "-H",
@@ -1049,53 +1083,102 @@ class Release:
 
         def testflight():
             asc = stores.AppStoreConnect()
-            b = asc.builds(asc.app_id(), version=self.v, limit=1)
+            b = asc.builds(asc.app_id(), version=self.v["mac"], limit=1)
             if not b:
-                return "no %s build" % self.v
+                return "no %s build" % self.v["mac"]
             return "%s %s, export compliance %s" % (b[0]["build"], b[0]["state"],
                                                      "answered" if b[0]["encryption"] is not None else "MISSING")
+
         def appstore():
             asc = stores.AppStoreConnect()
             return ", ".join("%s %s" % (v["version"], v["state"]) for v in asc.versions(asc.app_id())[:3])
-        for name, fn in [("GitHub", github), ("Sparkle", sparkle), ("Homebrew", homebrew), ("Play", play),
-                         ("TestFlight", testflight), ("App Store", appstore)]:
-            line(name, fn)
+        for i in self.v:
+            line("GitHub " + i, github(i))
+        if self.has("mac"):
+            for name, fn in [("Sparkle", sparkle), ("Homebrew", homebrew), ("TestFlight", testflight),
+                             ("App Store", appstore)]:
+                line(name, fn)
+        if self.has("android"):
+            line("Play", play)
         for n in self.notes_state:
             print("  manual: " + n)
 
 
+STEP_METHODS = dict({s: s for s in STEPS}, garmin="garmin_step")
+
+
+def overview(rel_apps, current, changes):
+    """The lines release.py prints without apps: each app's version, its change files and its next version."""
+    out = []
+    for a in rel_apps:
+        mine = versions.pending(changes, a["id"])
+        nxt = versions.next_version(current[a["id"]], changes, a["id"])
+        if nxt:
+            out.append("%-13s %-8s → %-8s %s" % (a["id"], current[a["id"]], nxt, ", ".join(n for n, _ in mine)))
+        else:
+            out.append("%-13s %-8s   nothing to release" % (a["id"], current[a["id"]]))
+    return out
+
+
 def main(argv):
-    p = argparse.ArgumentParser(description="One command publishes a version to every channel (#187).")
-    p.add_argument("version")
+    p = argparse.ArgumentParser(description="Releases the apps that changed, each with its own version (docs/48).")
+    p.add_argument("apps", nargs="*", help="app ids of contracts/apps/apps.json, each optionally =<version>")
     p.add_argument("--dry-run", action="store_true")
-    p.add_argument("--from", dest="start", choices=STEPS, default=STEPS[0])
+    p.add_argument("--from", dest="start", choices=["preconditions"] + RESUMABLE, default=STEPS[0])
     a = p.parse_args(argv)
+    with open(os.path.join(ROOT, versions.REGISTRY), encoding="utf-8") as f:
+        registry = versions.load_apps(f.read())
+    current = {}
+    for app in registry:
+        with open(os.path.join(ROOT, app["version"]), encoding="utf-8") as f:
+            current[app["id"]] = versions.read_version(app, f.read())
     try:
-        parse_version(a.version)
+        asked = parse_args_apps(a.apps)
     except ValueError as e:
         sys.exit(str(e))
-    rel = Release(a.version, a.dry_run)
+    probe = Release({}, True)
+    try:
+        changes = probe.change_files()
+    except Stop as e:
+        sys.exit(str(e))
+    if not asked:
+        print("\n".join(overview(registry, current, changes)))
+        print("\nRelease: tools/release/release.py <app> … (see --help)")
+        return 0
+    if a.start == "preconditions":
+        try:
+            releases = {i: v for i, (v, _) in plan(registry, current, changes, asked).items()}
+        except ValueError as e:
+            sys.exit(str(e) + ("\nReleased already? Resume with --from gate (or a later step)." if "no change file" in
+                               str(e) else ""))
+    else:  # the release commit is checked out: its versions are the release's
+        unknown = [i for i in asked if i not in current]
+        if unknown:
+            sys.exit("%s isn't an app of %s" % (", ".join(unknown), versions.REGISTRY))
+        wrong = ["%s is %s, not %s" % (i, current[i], v) for i, v in asked.items() if v and v != current[i]]
+        if wrong and not a.dry_run:
+            sys.exit("--from %s: %s (check out the release commit)" % (a.start, "; ".join(wrong)))
+        releases = {app["id"]: asked[app["id"]] or current[app["id"]] for app in registry if app["id"] in asked}
+    rel = Release(releases, a.dry_run)
     steps = STEPS[STEPS.index(a.start):]
-    if a.start not in ("preconditions", "version") and not a.dry_run:
-        current = rel.read("VERSION").strip()
-        if current != a.version:
-            sys.exit("--from %s: VERSION is %s, not %s (check out the release commit)" % (a.start, current, a.version))
-    if a.start not in ("preconditions", "version"):
+    if a.start != "preconditions":
         try:
             rel.resume_check()
         except Stop as e:
             sys.exit("--from %s: %s" % (a.start, e))
+    print("Releasing " + ", ".join("%s (%s)" % (rel.name(i), rel.tag(i)) for i in releases))
     done = STEPS[:STEPS.index(a.start)]
     for step in steps:
         print("\n== %s%s" % (step, " (dry run)" if a.dry_run else ""), flush=True)
         try:
-            getattr(rel, step)()
+            getattr(rel, STEP_METHODS[step])()
         except (Stop, ValueError, OSError, stores.ApiError, RuntimeError) as e:
             left = steps[steps.index(step):]
             print("\nStopped at '%s': %s" % (step, e), file=sys.stderr)
             print("Done: %s" % (", ".join(done) or "nothing"), file=sys.stderr)
             print("Left: %s" % ", ".join(left), file=sys.stderr)
-            print("Resume: tools/release/release.py %s --from %s" % (a.version, step), file=sys.stderr)
+            if step in RESUMABLE:
+                print("Resume: tools/release/release.py %s --from %s" % (" ".join(releases), step), file=sys.stderr)
             return 1
         done.append(step)
     if rel.would_stop:

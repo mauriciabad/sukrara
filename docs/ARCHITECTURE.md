@@ -14,7 +14,10 @@ How the Sukrara apps are built. The rules are in
 | `assets/brand/` | icons and brand art for the apps and the docs |
 | `poc/` | the frozen research PoC and its investigations; buildable, never changed |
 | `tools/` | `check/` (the rules as checks), `hooks/`, `settings/gen.py`, `release/`, `install.sh` |
-| `VERSION` | the one version source (`0.12.0` → versionCode / CFBundleVersion 12000) |
+| `changes/` | the change files: what each app's next release says (`apps: [...]`, `kind: fix \| feature`, the bullet) |
+
+Each app has its own version, CHANGELOG and releases (`contracts/apps/apps.json`, docs/48): `apps/android/VERSION`,
+`apps/macos/VERSION`, each Connect IQ manifest's (`0.12.0` → versionCode / CFBundleVersion 12000).
 
 ## Identity and storage
 
@@ -230,7 +233,7 @@ so the live widget gallery is checked after `tools/install.sh mac`. Fallback if 
 proven raw `swiftc` command (poc/spikes/menubar/bundle.sh), same flags.
 
 `Bundle/bundle.sh` assembles `build/Sukrara.app` (+ `Contents/PlugIns/SukraraWidget.appex`) from
-`Bundle/Info.plist.in`, `Bundle/Widget-Info.plist.in` and the entitlement templates, version from `<repo>/VERSION`
+`Bundle/Info.plist.in`, `Bundle/Widget-Info.plist.in` and the entitlement templates, version from `apps/macos/VERSION`
 (`CFBundleVersion` = versionCode, `--dev` appends `.<yyMMddHHmm>`), and signs inside-out with an identity of team
 QWUV9H4A3G (hardened runtime; the app is not sandboxed, the widget is; both share the App Group). With the provisioning
 profiles in `~/.apple-dev/profiles` (Developer ID) it embeds them and signs with `app-profile.entitlements.in` /
@@ -598,10 +601,14 @@ every app). Alert scenario expectations change only with the owner's OK.
 
 ## Release
 
-`VERSION` → every app. Android: `tools/release/android-release.sh` (the `full` flavor's APK with the release key +
+`tools/release/release.py <app> …` releases the apps that changed, each from its own version source with its own
+tag and GitHub release (`contracts/apps/apps.json`; the change files in `changes/` give the CHANGELOG entry and the
+bump). Android: `tools/release/android-release.sh` (the `full` flavor's APK with the release key +
 `verify-apk.sh`) and `tools/release/play-bundle.sh` (the `play` flavor's app bundle for Google Play, the same key +
 `verify-apk.sh --play`; the play flavor has every feature, root and the LSPosed module included, but no updater:
 `app/src/play`, `Store`, no `:update`; Play approved root and exact alarms with 0.14.5);
 Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`; a notarized dmg is signed with the Sparkle
-EdDSA key and added to `website/public/appcast.xml` by `tools/release/appcast.py`). Every release is a normal GitHub release
-(marked *Latest*); every app's updater, and the Homebrew cask, skips a GitHub prerelease (a release candidate).
+EdDSA key and added to `website/public/appcast.xml` by `tools/release/appcast.py`). Every release is a normal GitHub release;
+Android's (tag `v<version>`, which every installed updater reads) is the one marked *Latest*; the Mac's are
+`mac-v<version>` (the Homebrew cask follows only those). Every app's updater, and the Homebrew cask, skips a GitHub
+prerelease (a release candidate).

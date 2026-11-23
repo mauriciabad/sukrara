@@ -451,7 +451,7 @@ survive it; the app's data is cleared before each path, so every path starts fro
   (a settings page's own pages, setup's later steps, a sensor's pairing) — R8 breaks screens nothing opens.
 - [ ] Not checkable on an emulator (phone, by the owner): the Live Update chip on the status bar with a real sensor,
   the NFC tag chooser and the `https://sukrara.mauri.app/join` App Link.
-- [ ] The version in `VERSION` matches what the release notes say.
+- [ ] The version in `apps/android/VERSION` matches what the release notes say (`apps/android/CHANGELOG.md`).
 - [ ] The release notes list every pre-release library `android-release.sh` printed (`tools/check/allow.json`
   `prerelease_ok`), each with its reason.
 
@@ -464,7 +464,7 @@ over nothing:
 
 - [ ] `play-bundle.sh` exits 0 with bundletool (`$BUNDLETOOL`), and `verify-apk.sh --play` FAILs on the full flavor's
   APK (the updater's classes, receiver and `REQUEST_INSTALL_PACKAGES`): the Play check bites.
-- [ ] Settings › About: *0.17.1 · Google Play version* (the version from `VERSION`), *About the versions* (opens
+- [ ] Settings › About: *<version> · Google Play version* (`apps/android/VERSION`), *About the versions* (opens
   sukrara.mauri.app/android/#versions, the *Versions* section), *Sukrara for Mac*, *Report a problem*, *Source code*,
   *Privacy policy* (opens sukrara.mauri.app/privacy); no update rows, no *Updates* switches, no disabled row,
   nothing that says to install another version. Searching "check again" or "install updates" finds nothing;
@@ -473,7 +473,7 @@ over nothing:
 - [ ] The same app as the GitHub build otherwise: Settings › Status bar & notification has *Status bar text* (searching "root" finds its
   rows) and setup has the *Root* step; a fresh install's alert checklist has no *Alarms and reminders* item (`USE_EXACT_ALARM` is granted at
   install).
-- [ ] The GitHub build's About says *0.17.1 · GitHub version* with the same *About the versions* link and its update
+- [ ] The GitHub build's About says *<version> · GitHub version* with the same *About the versions* link and its update
   rows.
 - [ ] TalkBack reads the About rows with their summaries.
 - [ ] Development and release builds (docs/FEATURES.md › Development and release builds): after `tools/install.sh
@@ -1027,7 +1027,7 @@ test password manager: create a vault, turn its *Educational hints* off, lock it
 
 docs/FEATURES.md › Updates (Android, GitHub version), #188. On an emulator only (never the owner's phone), a debug
 build of the GitHub version (`:app:assembleFullDebug`) as the running version and a newer one (the same code with a
-higher `VERSION`, never committed) as the "release", both signed with the debug key; a third copy re-signed with
+higher `apps/android/VERSION`, never committed) as the "release", both signed with the debug key; a third copy re-signed with
 another key (`apksigner sign --ks other.jks`) for the refusal:
 
 ```sh

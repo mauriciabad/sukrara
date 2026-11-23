@@ -100,6 +100,20 @@ case_ "hardcoded UI text fails" fail strings apps/android/x/src/main/kotlin/A.kt
 case_ "same under poc/ passes" pass "" poc/x/src/main/kotlin/A.kt '@Composable fun A() { Text("hi there") }'
 case_ "a debug fake in src/main fails" fail debug apps/android/app/src/main/kotlin/app/mauri/sukrara/DebugFakes.kt "$HDR
 object DebugFakes"
+case_ "a change file for two apps passes" pass "" changes/selftest.md '---
+apps: [android, mac]
+kind: fix
+---
+- **A fix**: what the person notices.'
+case_ "a change file naming no app of the registry fails" fail changes changes/selftest.md '---
+apps: [ios]
+kind: fix
+---
+- **A fix**: what the person notices.'
+case_ "a change file without a kind fails" fail changes changes/selftest.md '---
+apps: [android]
+---
+- **A fix**: what the person notices.'
 case_ "a debug fake in src/debug passes" pass "" apps/android/app/src/debug/kotlin/app/mauri/sukrara/DebugFakes.kt "$HDR
 object DebugFakes"
 case_ "src/main naming DebugReceiver fails" fail debug apps/android/app/src/main/kotlin/app/mauri/sukrara/App.kt "$HDR

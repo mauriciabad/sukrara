@@ -14,7 +14,8 @@ DIFFS = {
     "docs": ["docs/FEATURES.md", "CHANGELOG.md", "README.md"],
     "notes": ["apps/android/fastlane/metadata/android/en-US/changelogs/14004.txt",
               "apps/macos/AppStore/whats-new/es-ES/14004.txt"],
-    "version": ["VERSION", "CHANGELOG.md", "docs/DEVELOPMENT.md"],
+    "version": ["apps/android/VERSION", "apps/macos/VERSION", "apps/android/CHANGELOG.md", "apps/macos/CHANGELOG.md",
+                "apps/garmin/sdk/CHANGELOG.md", "changes/x.md"],
     "android": ["apps/android/app/build.gradle.kts"],
     "contracts": ["contracts/alerts/SPEC.md"],
     "mac": ["apps/macos/Sources/App.swift"],
@@ -29,8 +30,8 @@ class Groups(unittest.TestCase):
         self.assertEqual(changes.groups(["CHANGELOG.md", "README.md"]), none)
         self.assertEqual(changes.groups(DIFFS["docs"]), dict(none, website=True))  # the site publishes docs/
         self.assertEqual(changes.groups(DIFFS["notes"]), none)  # the Play / App Store notes: no build reads them
-        # the release gate bundles the Mac app; docs/DEVELOPMENT.md is on the site
-        self.assertEqual(changes.groups(DIFFS["version"]), dict(none, android=True, website=True))
+        # Android's version is an :app input; the release gate bundles the Mac app; no build reads a CHANGELOG
+        self.assertEqual(changes.groups(DIFFS["version"]), dict(none, android=True))
         self.assertEqual(changes.groups(["tools/check/check.py"]), dict(none, android=True))
         self.assertEqual(changes.groups(DIFFS["android"]), dict(none, android=True, website=True))
         self.assertEqual(changes.groups(DIFFS["contracts"]),

@@ -7,7 +7,7 @@
 # - what the build is (Info.plist SukraraBuild, tools/release/build-info.sh): with --release (mac-release.sh,
 #   mac-appstore.sh) "release"; without (tools/install.sh, CI) "development <commits> <commit> <date>", so About and
 #   Settings say "Development build · …": a build that isn't a published release never shows the release wording
-# - bundle id app.mauri.sukrara, version / build = tools/release/version.sh (dev builds may add .<yyMMddHHmm>)
+# - bundle id app.mauri.sukrara, version / build = tools/release/version.sh mac (dev builds may add .<yyMMddHHmm>)
 # - the widget extension (app.mauri.sukrara.widget) is inside
 # - the camera's usage description (the QR scanner; macOS ends an app that opens the camera without one)
 # - signed (unless --unsigned): codesign --verify --deep --strict, team QWUV9H4A3G on the app and the appex; the
@@ -45,7 +45,7 @@ fail=0
 bad() { echo "FAIL $*"; fail=1; }
 ok() { echo "ok   $*"; }
 plist() { /usr/libexec/PlistBuddy -c "Print :$2" "$1/Contents/Info.plist" 2>/dev/null || true; }
-VI=$(version_info) || exit 1
+VI=$(version_info mac) || exit 1
 set -- $VI
 want_name="$1" want_code="$2"
 

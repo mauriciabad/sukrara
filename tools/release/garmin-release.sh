@@ -8,8 +8,8 @@
 #   tools/release/garmin-release.sh <app> <version>  apps/garmin/bin/dist/<Name>-<version>.iq (the store package, every
 #                                                    manifest device) and <Name>-<version>-sideload.zip (one
 #                                                    <Name>-<device>.prg per device, to copy onto a watch by hand)
-#   tools/release/garmin-release.sh sdk              apps/garmin/bin/dist/SukraraFace-<its version>.barrel and
-#                                                    SukraraFace.barrel: the barrel for other developers' faces
+#   tools/release/garmin-release.sh sdk              apps/garmin/bin/dist/SukraraFace-<its version>.barrel: the
+#                                                    barrel for other developers' faces (its own release, face-sdk)
 #   tools/release/garmin-release.sh --key-check      only checks the key (release.py's preconditions)
 #   tools/release/garmin-release.sh <app> --beta     apps/garmin/bin/dist/<Name>-beta.iq: the store package under the
 #                                                    app's beta id (build.sh <app> export-beta), for a Connect IQ beta
@@ -92,10 +92,9 @@ if [ "${1:-}" = "--key-check" ]; then
   key_check
   exit 0
 fi
-# SukraraFace, the barrel other developers' faces read Sukrara with (apps/garmin/sdk, its own version: the payload's
-# major; docs/GARMIN-FACES.md): built for every product of its manifest, checked, and kept twice, as
-# SukraraFace-<its version>.barrel and as SukraraFace.barrel (the name the latest release's stable URL needs). A barrel
-# isn't signed: no key.
+# SukraraFace, the barrel other developers' faces read Sukrara with (apps/garmin/sdk, its own version, its own release
+# face-sdk-v<version>; docs/GARMIN-FACES.md): built for every product of its manifest, checked, and kept as
+# SukraraFace-<its version>.barrel. A barrel isn't signed: no key.
 if [ "${1:-}" = sdk ]; then
   MANIFEST="$GARMIN/sdk/manifest.xml"
   version="$(sed -n 's/.*<iq:barrel[^>]* version="\([^"]*\)".*/\1/p' "$MANIFEST")"
@@ -110,7 +109,6 @@ if [ "${1:-}" = sdk ]; then
   mkdir -p "$DIST"
   rm -f "$DIST"/SukraraFace*.barrel
   cp "$out" "$DIST/SukraraFace-$version.barrel"
-  cp "$out" "$DIST/SukraraFace.barrel"
   echo "verified: $out (SukraraFace $version, $want products)"
   ls -l "$DIST"/SukraraFace*.barrel
   exit 0

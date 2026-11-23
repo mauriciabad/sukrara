@@ -8,8 +8,8 @@
 
 The item: the version (sparkle:version = CFBundleVersion, shortVersionString), the minimum macOS (no channel: every
 release is a normal GitHub release, every install takes it), the GitHub release's dmg as the enclosure with its
-EdDSA signature and length, the CHANGELOG.md section of the version as the notes Sparkle shows, and the GitHub release
-page as the full notes. Re-running for the same version replaces its item; items stay newest first. Python 3.9 stdlib.
+EdDSA signature and length, the Mac's CHANGELOG entry of the version (apps/macos/CHANGELOG.md) as the notes Sparkle
+shows, and the GitHub release (tag mac-v<version>, contracts/apps/apps.json) as the full notes. Re-running for the same version replaces its item; items stay newest first. Python 3.9 stdlib.
 """
 import argparse
 import email.utils
@@ -20,6 +20,7 @@ import sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 REPO = "https://github.com/mauriciabad/sukrara"
+TAG = "mac-v"  # the Mac's tag prefix in contracts/apps/apps.json (test_release.py keeps them equal)
 
 
 def inline(text):
@@ -34,7 +35,7 @@ def inline(text):
 
 
 def notes(changelog, version):
-    """The CHANGELOG.md section `## <version> …` as HTML (paragraphs and bullet lists), or None."""
+    """The changelog's section `## <version> …` as HTML (paragraphs and bullet lists), or None."""
     lines, inside = [], False
     for line in changelog.splitlines():
         if line.startswith("## "):
@@ -73,7 +74,7 @@ def notes(changelog, version):
 
 
 def item(a, notes_html, date):
-    tag = "v" + a.version
+    tag = TAG + a.version
     lines = [
         "    <item>",
         "      <title>Sukrara %s</title>" % a.version,
@@ -102,7 +103,7 @@ def main(argv):
     p.add_argument("--length", type=int, required=True)
     p.add_argument("--min-os", default="15.0")
     p.add_argument("--feed", default=os.path.join(ROOT, "website/public/appcast.xml"))
-    p.add_argument("--changelog", default=os.path.join(ROOT, "CHANGELOG.md"))
+    p.add_argument("--changelog", default=os.path.join(ROOT, "apps/macos/CHANGELOG.md"))
     p.add_argument("--date", help="RFC 2822 date (default: now)")
     a = p.parse_args(argv)
     if not re.fullmatch(r"\d+\.\d+\.\d+", a.version) or not re.fullmatch(r"\d+", a.build):
@@ -129,7 +130,7 @@ def main(argv):
     with open(a.feed, "w", encoding="utf-8") as f:
         f.write(feed)
     print("%s: Sukrara %s (%s%s)" % (os.path.relpath(a.feed, ROOT), a.version, a.build,
-                                        ", notes from CHANGELOG.md" if notes_html else ", no CHANGELOG.md section"))
+                                        ", notes from its CHANGELOG entry" if notes_html else ", no CHANGELOG entry"))
 
 
 if __name__ == "__main__":

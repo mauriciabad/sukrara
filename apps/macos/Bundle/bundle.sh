@@ -34,7 +34,8 @@
 #                                SIGN_ID = an "Apple Distribution" identity and its "Mac App Store" profiles (app and
 #                                widget) it is signed for upload instead (tools/release/mac-appstore.sh), and no longer
 #                                runs here. Apple Distribution never signs the GitHub version.
-# Version: <repo>/VERSION (x.y.z); CFBundleVersion = versionCode = x*1000000 + y*1000 + z (0.12.0 → 12000).
+# Version: apps/macos/VERSION (x.y.z; contracts/apps/apps.json); CFBundleVersion = versionCode = x*1000000 + y*1000
+#   + z (0.12.0 → 12000).
 # What the build is: Info.plist SukraraBuild = tools/release/build-info.sh's line: "release" only with
 #   SUKRARA_RELEASE_BUILD=1 (mac-release.sh, mac-appstore.sh) at the release commit (else the build stops), every other
 #   build "development <commits> <commit> <date>" (About and Settings say "Development build · …"; verify-app.sh).
@@ -123,13 +124,13 @@ ungranted() {
 }
 
 # Version
-VERSION=$(tr -d ' \n' < "$REPO/VERSION")
-echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || die "VERSION '$VERSION' is not x.y.z"
+VERSION=$(tr -d ' \n' < "$PKG/VERSION")
+echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || die "apps/macos/VERSION says '$VERSION', not x.y.z"
 CODE=$(echo "$VERSION" | awk -F. '{ print $1 * 1000000 + $2 * 1000 + $3 }')
 BUILD=$CODE
 [ "$DEV" = 1 ] && BUILD="$CODE.$(date -u +%y%m%d%H%M)"
 [ "$APP_STORE" = 1 ] && BUILD="$CODE.$(date -u +%y%m%d.%H%M)"
-SUKRARA_BUILD=$("$REPO/tools/release/build-info.sh") || die "tools/release/build-info.sh refused (see above)"
+SUKRARA_BUILD=$("$REPO/tools/release/build-info.sh" mac) || die "tools/release/build-info.sh refused (see above)"
 
 # Identity and provisioning profiles (before building, so a missing one fails fast)
 SIGN=-; TS=--timestamp=none; PROFILE=; WIDGET_PROFILE=; STORE_SIGNED=0

@@ -25,18 +25,25 @@ channels, and the paths whose changes concern it.
 
 | id | App | Version source | Tag | Channels |
 |---|---|---|---|---|
-| `android` | Sukrara for Android | `apps/android/VERSION` | `android-v0.18.0` | GitHub APK (updater, Obtainium, IzzyOnDroid), Google Play |
+| `android` | Sukrara for Android | `apps/android/VERSION` | `v0.18.0` | GitHub APK (updater, Obtainium, IzzyOnDroid), Google Play |
 | `mac` | Sukrara for Mac | `apps/macos/VERSION` | `mac-v0.17.2` | GitHub dmg + zip, Sparkle, Homebrew, App Store |
 | `aura` | Sukrara Aura | `apps/garmin/aura/manifest.xml` | `aura-v…` | GitHub `.iq` + sideload zip, Connect IQ |
-| `garmin-app` | Sukrara (watch app) | `apps/garmin/app/manifest.xml` | `garmin-app-v…` | same |
+| `garmin-app` | Sukrara watch app | `apps/garmin/app/manifest.xml` | `garmin-app-v…` | same |
 | `garmin-field` | Sukrara data field | `apps/garmin/field/manifest.xml` | `garmin-field-v…` | same |
 | `face-sdk` | SukraraFace barrel | `apps/garmin/sdk/manifest.xml` (5.0.0) | `face-sdk-v…` | GitHub |
 
+- **Android keeps the plain `v` tags.** Every installed GitHub build up to 0.17.1 looks for updates in the `v…` tags
+  only (`Releases.compare` reads `android-v0.18.0` as version 0, older than anything) and downloads
+  `Sukrara-<tag without v>.apk`: an `android-v` tag would leave every one of them on its version without a word. Those
+  installs can't follow a rename, so the rename isn't made; the other apps' tags never start with `v`, so no reader
+  mistakes one for Android's.
 - Every line continues from where it is (0.17.1; the barrel 5.0.0); versionCode / CFBundleVersion keep the formula
   (major·1 000 000 + minor·1 000 + patch) from the app's own version, so Play and Apple only ever see higher numbers.
-- The root `VERSION` goes away. Everything that read it reads its app's version: Gradle, `bundle.sh`, `version.sh`,
-  `install.sh`, the build-info line (*0.18.0 + 23 commits* counts from the last commit that changed **that app's**
-  version), the docs' About texts.
+- The root `VERSION` goes away. Everything that read it reads its app's version: Gradle, `bundle.sh`, `version.sh
+  <app>`, `install.sh`, the build-info line (`build-info.sh <app>`: *0.18.0 + 23 commits* counts from the last commit
+  that changed **that app's** version). The docs no longer write a live version (their About texts say *<version> ·
+  GitHub version*), so a release rewrites no doc but the links to its files (`mentions` in apps.json: the barrel's
+  download link and `<iq:depends>` in GARMIN-FACES.md and the sample face).
 
 ## Change files
 
@@ -51,10 +58,11 @@ kind: fix          # fix → patch, feature → minor
 ```
 
 - The body is the CHANGELOG bullet, written so it reads right in each app's changelog; text that differs per app
-  goes in separate files.
+  goes in separate files. Its links are written from the repository's root; the release rebases them for each
+  CHANGELOG's folder (and makes them absolute at the tag in the GitHub notes).
 - Releasing an app takes every file naming it: the bullets become the app's entry in its own `CHANGELOG.md` (next to
-  the app), the highest `kind` sets the next version, and the app is removed from each file's `apps` (the file is
-  deleted when none is left).
+  the app, `## <version> — <date>`, features first), the highest `kind` sets the next version, and the app is removed
+  from each file's `apps` (the file is deleted when none is left).
 - No change file, no release: an internal change ships with the app's next real change.
 - The root `CHANGELOG.md` keeps the shared history up to 0.17.1 and points to the per-app files.
 - A commit that changes an app's paths without a change file naming it gets a NOTE (check `changes`, like
@@ -63,11 +71,17 @@ kind: fix          # fix → patch, feature → minor
 ## Release
 
 `tools/release/release.py` without apps lists, per app, its pending change files and the next version.
-`release.py android mac` releases those apps (`android=0.18.0` overrides a version):
+`release.py android mac` releases those apps (`android=0.18.0` overrides a version; `--from <step>` resumes from
+`gate` on with the checked-out release commit's versions: the `version` step consumes the change files, so it is never
+re-run):
 
-- **version**: each app's version source, its CHANGELOG entry, the change files consumed; one commit on `next`.
+- **preconditions**: per app a change file, a version above its current one and no tag yet, and its channels' needs
+  (Play notes, App Store notes, the Connect IQ listing and store key); then every function in `RELEASE_CHECKS`, the
+  hook #262's formats check plugs into.
+- **version**: each app's version source, its CHANGELOG entry, its `mentions`, the change files consumed; one commit
+  on `next`.
 - **gate**: only the released apps' builds and smoke tests.
-- **github**: `main` fast-forwarded once; per app a tag `<id>-v<version>` and a normal GitHub release with only its
+- **github**: `main` fast-forwarded once; per app a tag `<tag><version>` and a normal GitHub release with only its
   files and its entry as notes. Android's is GitHub's **Latest** (the updater, Obtainium and IzzyOnDroid read it);
   every other app's is `make_latest: false`.
 - **channels**, only for the apps released: Sparkle, Homebrew, TestFlight, App Store (mac); Play (android); the
@@ -78,12 +92,12 @@ What follows the tags:
 
 | Reader | Today | Then |
 |---|---|---|
-| Android updater (`Releases`) | every release, tag `v…` | only `android-v…` tags |
-| Website (`release.ts`) | `/releases/latest`, needs APK and dmg | the newest `android-v…` and the newest `mac-v…` release |
-| Homebrew tap workflow | every published release | only `mac-v…` |
-| SukraraFace download | `/releases/latest/download/SukraraFace.barrel` | the newest `face-sdk-v…` release (the website and GARMIN-FACES.md link it) |
+| Android updater (`Releases`) | every release, tag `v…` | only `v…` tags: unchanged for the installed ones (they read `mac-v…` as older than anything); the new one skips other tags and asks for 100 releases a page, so a run of other apps' releases never hides Android's |
+| Website (`release.ts`) | `/releases/latest`, needs APK and dmg | the newest `v…` (Android) and the newest `mac-v…` release |
+| Homebrew tap workflow | every published release | only `mac-v…` (the job's condition; one dispatched by hand is refused otherwise) |
+| SukraraFace download | `/releases/latest/download/SukraraFace.barrel` | `releases/download/face-sdk-v<version>/SukraraFace-<version>.barrel` in GARMIN-FACES.md, rewritten by each SukraraFace release (GitHub has no "latest of a tag prefix" link, so the unversioned `SukraraFace.barrel` copy goes) |
 | Website's Garmin page | "every release has a zip per app" | each Garmin app's newest release |
-| Obtainium, IzzyOnDroid | Latest's APK | the same: Latest stays Android's, the other releases have no APK |
+| Obtainium, IzzyOnDroid | Latest's APK | the same: Latest stays Android's with the same `v…` tags, the other releases have no APK; nothing to change in their settings |
 
 ## Shared formats
 
@@ -213,6 +227,24 @@ current); a watch app's entries wait in its outbox. Out: updating, which clears
 it at the first message read (no tap needed); Back / Cancel leave each screen; nothing to mute or close because it ends
 by itself. Reachable without a notification: the watch, the phone's Garmin page and home banner, a follower's card,
 the wearer's Share rows; a follower's *No data* alarm names it. TalkBack / VoiceOver read the lines and buttons.
+
+## Built (#261, 2026-11-23)
+
+`contracts/apps/apps.json` (each app: version source, tag prefix, Latest, CHANGELOG, paths, channels, the Garmin entry,
+`mentions`), `apps/android/VERSION` and `apps/macos/VERSION` (the root `VERSION` deleted), `tools/release/versions.py`
+(the registry, version sources, change files, CHANGELOG entries: pure, used by `release.py` and `tools/check`),
+`changes/` with its README, a CHANGELOG per app (the root one keeps the history up to 0.17.1), `release.py <app> …`
+(above), `version.sh <app>`, `build-info.sh <app>`, check `changes` (a NOTE for an app's change without a change file,
+`Changes-skip: <reason>`; a FAIL for a change file that doesn't parse), the Homebrew workflow, `appcast.py`
+(`mac-v…` URLs, the Mac's CHANGELOG), `tools/ci/changes.py` (a VERSION or CHANGELOG alone runs no app job). What
+differs from the design above, and why:
+
+- Android's tag stays `v<version>` (above: the installed updaters).
+- No doc carries the live version any more, instead of the release rewriting the About texts per app: one version per
+  app would have made every doc example name one app's version; only the links to a release's files are rewritten.
+- The Garmin key pin no longer switches the Garmin apps on: an app is released when it is named, and
+  `garmin-release.sh` still signs only with the pinned key.
+- The CHANGELOG entry is `## <version> — <date>`: no summary title (no change file owns one).
 
 ## Plan
 

@@ -4,7 +4,7 @@
 package app.mauri.sukrara.buildlogic
 
 /**
- * The app version from `<repo>/VERSION` (`major.minor.patch`, the one version source of both apps).
+ * The Android app version from `apps/android/VERSION` (`major.minor.patch`; contracts/apps/apps.json).
  * versionCode = major·1 000 000 + minor·1 000 + patch, so it grows with every release (0.12.0 → 12000); minor and
  * patch stay below 1000 so two versions never share a code.
  */

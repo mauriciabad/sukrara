@@ -73,8 +73,12 @@ sections your change touches.
   live only in Android `src/debug/` (DebugReceiver, DebugFakes, synthetic sources) and in Mac `#if DEBUG` code or the
   `sukrara-snap` / test targets; test them on the emulator. *(check `debug`; `verify-apk.sh` / `verify-app.sh` at
   install and release)*
-- **Releases:** every release is a normal GitHub release (marked Latest); a bug fix gets a release only after the
-  owner has confirmed the fix on their device. *(not checked)*
+- **Releases:** each app (`contracts/apps/apps.json`) has its own version and is released only when it changed, with
+  `tools/release/release.py <app> …`: its tag (`v…` Android, `mac-v…`, `aura-v…`, …) and its own normal GitHub release
+  (Android's marked Latest). Every change a person notices adds a change file, `changes/<slug>.md` (the apps, `fix` /
+  `feature`, the CHANGELOG bullet), never an edit of a CHANGELOG. A bug fix gets a release only after the owner has
+  confirmed the fix on their device. *(check `changes`: a NOTE when an app's code changes without a change file naming
+  it; `Changes-skip: <reason>` for internal work)*
 - **Alert rules are guarded by timeline scenarios** (`contracts/alerts/scenarios`: sequences of events → expected
   alerts, run by every app). Every alert-rule change adds or updates a scenario; never change a scenario's
   expectations without the owner's OK. *(parity groups `alerts`, `alert-scenarios`, `alert-spec`;

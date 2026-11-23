@@ -28,7 +28,7 @@ done
 if [ ! -e "$root/tools/check/strict" ]; then
   echo "refusing: tools/check/strict is missing (every registry file must exist before a release)" >&2; exit 2
 fi
-set -- $(version_info)
+set -- $(version_info mac)
 version="$1"
 build="$root/apps/macos/build"
 pkg="$build/Sukrara-$version-appstore.pkg"

@@ -77,9 +77,13 @@ if [ -n "$OTHER" ] && [ -f "$OTHER_RECORD" ]; then
   fi
 fi
 
-VI=$(version_info) || die "VERSION is not a valid MAJOR.MINOR.PATCH (see above)."
-set -- $VI
-VERSION=$1
+VERSION= # the app's own version (contracts/apps/apps.json); each Garmin app's is its manifest's
+case $TARGET in phone) APP=android ;; mac) APP=mac ;; *) APP= ;; esac
+if [ -n "$APP" ]; then
+  VI=$(version_info $APP) || die "the $APP version is not a valid MAJOR.MINOR.PATCH (see above)."
+  set -- $VI
+  VERSION=$1
+fi
 HEAD=$(git rev-parse --short HEAD)
 if [ "$TARGET" = phone ]; then
   # 2a. Signed release APK, verified, in-place update (keeps identity, followers, settings). Gradle reads the key's

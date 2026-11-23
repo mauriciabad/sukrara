@@ -15,7 +15,7 @@
 #   (META-INF/xposed, its manifest entries, every LSPosed hook class keeps `intercept`).
 # --unsigned: CI only (no release key, no Juggluco checkout): skips the signer and the Libre 3 core, checks the rest.
 # - signature verifies and the signer certificate is THE release key (tools/release/android-cert.sha256)
-# - package app.mauri.sukrara, versionName / versionCode = tools/release/version.sh, not debuggable
+# - package app.mauri.sukrara, versionName / versionCode = tools/release/version.sh android, not debuggable
 # - the Libre 3 native core lib/arm64-v8a/libsukrara_libre3.so is inside
 # - no debug code: the merged manifest names no DebugReceiver, and (R8 renames classes, so the dex names prove
 #   nothing) the build's R8 mapping lists no DebugReceiver / DebugFakes / DebugRelays / Synthetic* class
@@ -49,7 +49,7 @@ export JAVA_HOME
 apksigner="$(sdk_tool apksigner)"
 aapt2="$(sdk_tool aapt2)"
 want_cert="$(cat "$here/android-cert.sha256")"
-VI=$(version_info) || exit 1
+VI=$(version_info android) || exit 1
 set -- $VI
 want_name="$1" want_code="$2"
 
@@ -65,7 +65,7 @@ pkg="$(printf '%s\n' "$badging" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
 code="$(printf '%s\n' "$badging" | sed -n "s/^package: .*versionCode='\([^']*\)'.*/\1/p")"
 name="$(printf '%s\n' "$badging" | sed -n "s/^package: .*versionName='\([^']*\)'.*/\1/p")"
 [ "$pkg" = app.mauri.sukrara ] && ok "package $pkg" || bad "package '$pkg' (want app.mauri.sukrara)"
-[ "$code" = "$want_code" ] && ok "versionCode $code" || bad "versionCode '$code' (want $want_code from VERSION)"
+[ "$code" = "$want_code" ] && ok "versionCode $code" || bad "versionCode '$code' (want $want_code from apps/android/VERSION)"
 [ "$name" = "$want_name" ] && ok "versionName $name" || bad "versionName '$name' (want $want_name)"
 if printf '%s\n' "$badging" | grep -q "application-debuggable"; then bad "the APK is debuggable"; else ok "not debuggable"; fi
 

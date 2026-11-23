@@ -1,0 +1,74 @@
+{
+  "about": "THE registry of Sukrara's apps, one per store listing, each with its own version (docs/48-release-versioning.md). 'version': where the app's version lives (a VERSION file, or a Connect IQ manifest's <iq:application> / <iq:barrel> version); versionCode / CFBundleVersion = major*1000000 + minor*1000 + patch of it. 'tag': the prefix of its git tags and GitHub releases (<tag><version>; Android keeps the plain 'v' every installed GitHub build's updater reads). 'latest': the one app whose GitHub release is GitHub's Latest (Obtainium and IzzyOnDroid take its APK). 'changelog': its own CHANGELOG.md, written from the change files (changes/*.md) at each release. 'paths' (minus 'exclude'): the files whose change concerns it (check `changes`: a change there without a change file naming the app gets a NOTE). 'channels': where tools/release/release.py publishes it. 'garmin': its entry in contracts/watchface/payload/apps.json. 'mentions': files that link one of its release's files, and the pattern each one has ({tag} and {version} are the app's): the release rewrites them to the new release.",
+  "apps": [
+    {
+      "id": "android",
+      "name": "Sukrara for Android",
+      "version": "apps/android/VERSION",
+      "tag": "v",
+      "latest": true,
+      "changelog": "apps/android/CHANGELOG.md",
+      "paths": ["apps/android/"],
+      "exclude": ["apps/android/VERSION", "apps/android/CHANGELOG.md", "apps/android/README.md", "apps/android/fastlane/"],
+      "channels": ["github", "play"]
+    },
+    {
+      "id": "mac",
+      "name": "Sukrara for Mac",
+      "version": "apps/macos/VERSION",
+      "tag": "mac-v",
+      "changelog": "apps/macos/CHANGELOG.md",
+      "paths": ["apps/macos/"],
+      "exclude": ["apps/macos/VERSION", "apps/macos/CHANGELOG.md", "apps/macos/README.md", "apps/macos/AppStore/whats-new/"],
+      "channels": ["github", "sparkle", "homebrew", "testflight", "appstore"]
+    },
+    {
+      "id": "aura",
+      "name": "Sukrara Aura",
+      "version": "apps/garmin/aura/manifest.xml",
+      "tag": "aura-v",
+      "changelog": "apps/garmin/aura/CHANGELOG.md",
+      "paths": ["apps/garmin/aura/", "apps/garmin/shared/", "apps/garmin/sdk/source/", "apps/garmin/fonts/"],
+      "exclude": ["apps/garmin/aura/CHANGELOG.md", "apps/garmin/aura/README.md", "apps/garmin/aura/store/"],
+      "channels": ["github", "connectiq"],
+      "garmin": "aura"
+    },
+    {
+      "id": "garmin-app",
+      "name": "Sukrara watch app",
+      "version": "apps/garmin/app/manifest.xml",
+      "tag": "garmin-app-v",
+      "changelog": "apps/garmin/app/CHANGELOG.md",
+      "paths": ["apps/garmin/app/", "apps/garmin/shared/", "apps/garmin/sdk/source/", "apps/garmin/fonts/"],
+      "exclude": ["apps/garmin/app/CHANGELOG.md", "apps/garmin/app/README.md", "apps/garmin/app/store/"],
+      "channels": ["github", "connectiq"],
+      "garmin": "app"
+    },
+    {
+      "id": "garmin-field",
+      "name": "Sukrara data field",
+      "version": "apps/garmin/field/manifest.xml",
+      "tag": "garmin-field-v",
+      "changelog": "apps/garmin/field/CHANGELOG.md",
+      "paths": ["apps/garmin/field/", "apps/garmin/shared/", "apps/garmin/sdk/source/", "apps/garmin/fonts/"],
+      "exclude": ["apps/garmin/field/CHANGELOG.md", "apps/garmin/field/README.md", "apps/garmin/field/store/"],
+      "channels": ["github", "connectiq"],
+      "garmin": "field"
+    },
+    {
+      "id": "face-sdk",
+      "name": "SukraraFace",
+      "version": "apps/garmin/sdk/manifest.xml",
+      "tag": "face-sdk-v",
+      "changelog": "apps/garmin/sdk/CHANGELOG.md",
+      "paths": ["apps/garmin/sdk/"],
+      "exclude": ["apps/garmin/sdk/CHANGELOG.md"],
+      "channels": ["github"],
+      "mentions": [
+        {"file": "docs/GARMIN-FACES.md", "pattern": "releases/download/{tag}/SukraraFace-{version}.barrel"},
+        {"file": "docs/GARMIN-FACES.md", "pattern": "<iq:depends name=\"SukraraFace\" version=\"{version}\"/>"},
+        {"file": "apps/garmin/sample/manifest.xml", "pattern": "<iq:depends name=\"SukraraFace\" version=\"{version}\"/>"}
+      ]
+    }
+  ]
+}

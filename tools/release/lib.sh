@@ -36,15 +36,25 @@ cert_sha256() {
   "$1" -exportcert -keystore "$2" -alias "$3" -storepass:env SUKRARA_KS_PW | openssl dgst -sha256 | awk '{print toupper($NF)}'
 }
 
-# "0.12.0 12000" from VERSION: versionCode = major·1 000 000 + minor·1 000 + patch.
+# The version file of app $1: android | mac (contracts/apps/apps.json 'version'; the Garmin apps' is their manifest).
+version_file() {
+  case "${1:-}" in
+    android) echo "$(repo_root)/apps/android/VERSION" ;;
+    mac) echo "$(repo_root)/apps/macos/VERSION" ;;
+    *) echo "version_info: android or mac, not '${1:-}'" >&2; return 1 ;;
+  esac
+}
+
+# "0.12.0 12000": app $1's version (android | mac) and its versionCode = major·1 000 000 + minor·1 000 + patch.
 version_info() {
-  v="$(tr -d ' \n' < "$(repo_root)/VERSION")"
+  f="$(version_file "${1:-}")" || return 1
+  v="$(tr -d ' \n' < "$f")"
   case "$v" in
-    *[!0-9.]* | *..* | .* | *.) echo "VERSION '$v' is not MAJOR.MINOR.PATCH" >&2; return 1 ;;
+    *[!0-9.]* | *..* | .* | *.) echo "$f: '$v' is not MAJOR.MINOR.PATCH" >&2; return 1 ;;
   esac
   IFS=. read -r major minor patch <<EOF
 $v
 EOF
-  if [ -z "$patch" ] || [ "$minor" -ge 1000 ] || [ "$patch" -ge 1000 ]; then echo "VERSION '$v': minor and patch must be < 1000" >&2; return 1; fi
+  if [ -z "$patch" ] || [ "$minor" -ge 1000 ] || [ "$patch" -ge 1000 ]; then echo "$f: '$v': minor and patch must be < 1000" >&2; return 1; fi
   echo "$v $((major * 1000000 + minor * 1000 + patch))"
 }

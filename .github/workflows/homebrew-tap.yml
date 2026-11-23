@@ -1,9 +1,10 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Keeps the Homebrew cask (github.com/mauriciabad/homebrew-tap, Casks/sukrara.rb) on the current release: when a
-# release is published, read the version from its tag (v0.12.0 → 0.12.0), hash its Sukrara-<version>.dmg and commit
-# the new version + sha256 to the tap. Every release is a normal GitHub release (CLAUDE.md) and the cask follows them;
+# Keeps the Homebrew cask (github.com/mauriciabad/homebrew-tap, Casks/sukrara.rb) on the Mac's current release: when a
+# Mac release is published (tag mac-v<version>: each app has its own releases, contracts/apps/apps.json; every other
+# app's release is skipped), read the version from its tag (mac-v0.17.2 → 0.17.2), hash its Sukrara-<version>.dmg and
+# commit the new version + sha256 to the tap. Every release is a normal GitHub release (CLAUDE.md) and the cask follows them;
 # a GitHub prerelease (a release candidate, if one is ever published) is skipped, also when dispatched by hand, like
 # the apps' own update checks skip it. Only *published* triggers it: switching an existing prerelease to a release
 # (`released` / `edited`) doesn't; dispatch it by hand if the cask should take that one. Pushes with the tap's deploy key (write
@@ -17,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag (e.g. v0.11.14)
+        description: The Mac release's tag (e.g. mac-v0.17.2)
         required: true
 permissions:
   contents: read
@@ -27,7 +28,8 @@ concurrency:
 jobs:
   bump:
     if: >-
-      ${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (!github.event.release.prerelease && startsWith(github.event.release.tag_name, 'mac-v')) }}
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
@@ -41,7 +43,11 @@ jobs:
           if [ "$(gh release view "$TAG" -R "${{ github.repository }}" --json isPrerelease --jq .isPrerelease)" = true ]; then
             echo "::error::$TAG is a release candidate (a GitHub prerelease): the cask only follows releases"; exit 1
           fi
-          VER="${TAG#v}"
+          case "$TAG" in
+            mac-v[0-9]*) ;;
+            *) echo "::error::$TAG isn't a Mac release (mac-v<version>): the cask follows only those"; exit 1 ;;
+          esac
+          VER="${TAG#mac-v}"
           gh release download "$TAG" -R "${{ github.repository }}" -p "Sukrara-$VER.dmg" -D dl
           echo "version=$VER" >> "$GITHUB_OUTPUT"
           echo "sha256=$(sha256sum "dl/Sukrara-$VER.dmg" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"

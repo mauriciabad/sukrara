@@ -21,18 +21,17 @@ level can use it.
 
 Add it:
 
-1. Get the barrel: every [Sukrara release](https://github.com/mauriciabad/sukrara/releases) carries it as
-   `SukraraFace-<version>.barrel` (built for every watch Sukrara's own apps run on, checked before the release goes
-   out) and as `SukraraFace.barrel`, whose link always gets the newest one:
+1. Get the barrel: each SukraraFace release (its own version, GitHub tag `face-sdk-v<version>`; what changed:
+   [its changelog](../apps/garmin/sdk/CHANGELOG.md)) carries it as `SukraraFace-<version>.barrel`, built for every
+   watch Sukrara's own apps run on and checked before the release goes out. The newest:
 
    ```sh
    mkdir -p barrels
-   curl -fL -o barrels/SukraraFace.barrel https://github.com/mauriciabad/sukrara/releases/latest/download/SukraraFace.barrel
+   curl -fL -o barrels/SukraraFace.barrel https://github.com/mauriciabad/sukrara/releases/download/v0.17.0/SukraraFace-5.0.0.barrel
    ```
 
    In your `monkey.jungle`: `base.barrelPath = barrels/SukraraFace.barrel` (in VS Code, *Monkey C: Configure Monkey
-   Barrels* writes it for you). Pin a version by downloading `SukraraFace-<version>.barrel` from that release
-   instead.
+   Barrels* writes it for you).
    **From source** instead (to read or change it, or to follow `next`): copy `apps/garmin/sdk` into your project (say as
    `SukraraFace/`) and name its jungle: `base.barrelPath = SukraraFace/monkey.jungle`. A git submodule of this
    repository works the same way (`base.barrelPath = sukrara/apps/garmin/sdk/monkey.jungle`), at the cost of the whole
@@ -299,8 +298,9 @@ fixes the barrel. A face keeps working on any newer 5.x; update the file and the
 **A major version** means Sukrara for Android sends the new format: a face still on the old major gets nothing it can
 read from then on. It keeps its last payload, which ages on the watch like any reading (struck through after 5
 minutes, gone after 20), so it never shows an old value as current, and then shows no glucose until it is updated to
-the new major. Each major comes in a Sukrara release whose notes and this section say so. To hear of one: *Watch ›
+the new major. Each major is its own SukraraFace release (`face-sdk-v<major>.0.0`), out with the Sukrara for Android
+release that sends the new format; their notes and this section say so. To hear of one: *Watch ›
 Custom › Releases* on [the repository](https://github.com/mauriciabad/sukrara), or this section.
 
-- **5** (2026-11): the face profile at `/sukrara/face`, open to every watch face; SukraraFace 5.0.0, on every Sukrara
-  release from 0.17.0 (`SukraraFace-5.0.0.barrel`).
+- **5** (2026-11): the face profile at `/sukrara/face`, open to every watch face; SukraraFace 5.0.0, on the Sukrara
+  releases 0.17.0 and 0.17.1 (`SukraraFace-5.0.0.barrel`), its own releases (`face-sdk-v…`) since.

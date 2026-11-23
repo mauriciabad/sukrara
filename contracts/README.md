@@ -8,7 +8,8 @@ enforces it (parity groups `alert-scenarios`, `alert-spec`, `graph`, `trend`, `s
 `treatments`, `export`, `watchface-link`, `sources`; skip only with a `Parity-skip: <group>: <reason>` trailer) and CI runs every app's tests when
 anything here changes. **Alert scenario expectations never change without the owner's OK.**
 
-Formats are JSON / TXT / MD (+ the alert sound files). No file here names app source paths, except
+Formats are JSON / TXT / MD (+ the alert sound files). No file here names app source paths, except `apps/apps.json`
+(the apps, their version sources and paths) and
 `graph/surfaces/surfaces.json` (the surface registry, checked by `tools/check`). The frozen PoC keeps its own copies
 under [`poc/`](../poc/); the apps never read those.
 
@@ -19,6 +20,7 @@ directory. Mac tests resolve `Contracts.url(…)` (env `SUKRARA_CONTRACTS`, else
 
 | Path | What | Read by |
 |---|---|---|
+| `apps/apps.json` | THE registry of Sukrara's apps, one per store listing: each one's version source, tag prefix, CHANGELOG, paths and channels (docs/48) | `tools/release/release.py`, `versions.py`, `test_release.py`; `tools/check` (check `changes`) |
 | `alerts/SPEC.md` | the alert rules: kinds, thresholds, repeats, mutes, episodes, the alert settings JSON (§3) | `:core:alerts`, `SukraraAlerts` |
 | `alerts/scenarios/*.txt` | timeline scenarios: event sequences → expected alerts | `AlertScenarioTest` (Android), `AlertsTests` (Mac) |
 | `alerts/copy.json` | alert texts (titles, mute pill, actions) every platform must show | every alert notifier + tests |

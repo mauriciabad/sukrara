@@ -1,8 +1,10 @@
 # Changelog
 
-Sukrara's releases. 0.x versions are previews.
-
-## Unreleased
+Sukrara's releases up to 0.17.1, when every app shared one version. 0.x versions are previews. Since then each app has
+its own version and changelog: [Android](apps/android/CHANGELOG.md), [Mac](apps/macos/CHANGELOG.md),
+[Sukrara Aura](apps/garmin/aura/CHANGELOG.md), [the watch app](apps/garmin/app/CHANGELOG.md),
+[the data field](apps/garmin/field/CHANGELOG.md), [SukraraFace](apps/garmin/sdk/CHANGELOG.md); what waits for a release
+is in [changes/](changes/README.md).
 
 ## 0.17.1 — Extremely high stays quiet after insulin
 

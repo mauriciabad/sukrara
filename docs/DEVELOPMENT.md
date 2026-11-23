@@ -30,17 +30,19 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
 | Website: live preview | `cd website && npm run dev` (http://localhost:4321) |
 | Website: what CI runs | `cd website && npm run build && npm run check` (links, the apps' URLs, App Links, the feed) |
-| A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |
-| Version | `tools/release/version.sh` → `0.17.1 17001` (from `VERSION`) |
+| What waits for a release, per app | `tools/release/release.py` (the change files in `changes/`) |
+| Release apps | `tools/release/release.py android mac` (`--dry-run`, `--from <step>`): [Release](#release) |
+| An app's version | `tools/release/version.sh android` → `<version> <versionCode>` (from `apps/android/VERSION`; `mac`: `apps/macos/VERSION`) |
 
 CI (`.github/workflows/checks.yml`) runs on every push, each push its own run at once (pushes never queue behind or
 cancel each other; a pull request's newer push cancels its older run). Its `changes` job (`tools/ci/changes.py`)
 compares the commit with the newest ancestor that has a green run of its own, not with the push before: the rules
-run over that range, the Android jobs when `apps/android/` (but its `fastlane/` Play notes), `contracts/`, `tools/`,
-`VERSION` or `assets/` changed in it, the Mac job when `apps/macos/`, `contracts/` or `assets/` did (no Mac step reads
-`tools/`; `VERSION` reaches only the bundle, which the release gate builds and smokes), the `website` job (build +
-`website/scripts/check.mjs`) when `website/`, `docs/`, `assets/`, `contracts/` or `apps/` did (it publishes docs/,
-shows the goldens and checks every site URL the apps open); CHANGELOG.md alone runs only the rules. The PoC has no build jobs: it is frozen. A commit
+run over that range, the Android jobs when `apps/android/` (but its `fastlane/` Play notes and CHANGELOG.md),
+`contracts/`, `tools/` or `assets/` changed in it, the Mac job when `apps/macos/` (but `VERSION`, CHANGELOG.md and the
+App Store notes), `contracts/` or `assets/` did (no Mac step reads `tools/`; `apps/macos/VERSION` reaches only the
+bundle, which the release gate builds and smokes), the `website` job (build + `website/scripts/check.mjs`) when
+`website/`, `docs/`, `assets/`, `contracts/` or `apps/` (but the VERSION files and CHANGELOGs) did (it publishes docs/,
+shows the goldens and checks every site URL the apps open); a CHANGELOG or a change file alone runs only the rules. The PoC has no build jobs: it is frozen. A commit
 that already has a green run (main fast-forwarded to next's commit, a tag) runs nothing again. `gate` is the only
 required check. Android is four jobs side by side: `android` (`./gradlew check -x lint` + Roborazzi verify),
 `android-lint` (`lint`; the two together are exactly `check`), `android-release` (the shrunk release APK keeps the
@@ -116,99 +118,119 @@ Every build says what it is wherever the version shows, so nobody takes a build 
 the Mac Info.plist `SukraraBuild`):
 
 - **Release** (`release`): only with `SUKRARA_RELEASE_BUILD=1`, which only the release scripts set
-  (`android-release.sh`, `play-bundle.sh`, `mac-release.sh`, `mac-appstore.sh`), and only from the release commit (the
-  last commit that changed `VERSION`, with no other change and no untracked file; `website/public/appcast.xml` may differ:
-  `mac-release.sh` writes it in the gate and `release.py` commits it before `testflight`); anything else stops the
-  build. About and Settings keep *0.17.1 · GitHub version* / *Google Play version* / *App Store version*.
+  (`android-release.sh`, `play-bundle.sh`, `mac-release.sh`, `mac-appstore.sh`), and only from the app's release
+  commit (`build-info.sh android | mac`: the last commit that changed its `VERSION` file, with no other change and no
+  untracked file; `website/public/appcast.xml` may differ: `mac-release.sh` writes it in the gate and `release.py`
+  commits it before `testflight`); anything else stops the build. About and Settings keep the version with *GitHub
+  version* / *Google Play version* / *App Store version*.
 - **Development** (`development <commits> <commit> <date>`): every other build: `tools/install.sh` (which unsets the
   flag), CI, Android debug builds (`development` alone, so the build cache keeps them), `swift build` / `swift test`
   (no Info.plist). About and Settings say *Development build · 0.14.5 + 23 commits · d744fd74 · 14 Nov* (Spanish
-  *Versión de desarrollo · 0.14.5 + 23 cambios · …*): the commits since the release commit (those that change more than
-  `website/public/appcast.xml`), HEAD's hash and its commit date; what git can't tell (a shallow clone) is left out. Reports
-  (*Copy report*, sensor feedback, the import's issue, the Mac's *Copy Report*) say *0.14.5 development build +23
-  d744fd74 2026-11-14*.
+  *Versión de desarrollo · 0.14.5 + 23 cambios · …*): the commits since that app's release commit (those that change
+  more than `website/public/appcast.xml`), HEAD's hash and its commit date; what git can't tell (a shallow clone) is
+  left out. Reports (*Copy report*, sensor feedback, the import's issue, the Mac's *Copy Report*) say *0.14.5
+  development build +23 d744fd74 2026-11-14*.
 - **Checks**: `verify-apk.sh` / `verify-app.sh` expect a development build unless given `--release` (the release
   scripts pass it): a release can't carry the development wording, an install.sh build can't carry the release's.
   `test_release.py` (`BuildInfoTest`), `AppBuildTest` / `VersionSummaryTest` / `ManifestTest` (Android),
   `AppBuildTests` (Mac).
 - **Updates**: versionName / CFBundleShortVersionString and versionCode / CFBundleVersion stay the base release's
-  (`VERSION`), so `adb install -r` and the Mac install over a release keep working, and the updaters (Android's
-  `Releases.newer` + `ApkCheck`, Sparkle's CFBundleVersion) never offer the base release or an older one over a
-  development build, only a newer release (`VERSION` moves only at a release, so a newer release has everything the
-  development build has). The Google Play and App Store builds are always releases.
+  (the app's `VERSION`), so `adb install -r` and the Mac install over a release keep working, and the updaters
+  (Android's `Releases.newer` + `ApkCheck`, Sparkle's CFBundleVersion) never offer the base release or an older one
+  over a development build, only a newer release (a `VERSION` moves only at its app's release, so a newer release has
+  everything the development build has). The Google Play and App Store builds are always releases.
 
 ## Release
 
-One command on the release Mac publishes a version to every channel (#187); the keys never leave the Mac:
-`tools/release/release.py <version>` in a clean checkout whose HEAD is `origin/next` (its Checks run green): the main
-checkout or a worktree, on any branch or a detached HEAD (every push names its refspec, `HEAD:next` / `HEAD:main`; no
-local `next` or `main` is needed). Before it: write CHANGELOG.md's `## Unreleased` section (optionally
-`## Unreleased — <summary>`, which becomes the entry's title) and the Google Play notes,
-`apps/android/fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and `es-ES/…` (what's new on Android, at
-most 500 characters each; Fastlane's layout, which F-Droid and IzzyOnDroid read too), and the App Store notes,
-`apps/macos/AppStore/whats-new/en-US/<versionCode>.txt` and `es-ES/…` (what's new on the Mac, at most 4000 characters
-each; no build reads either). Then the steps, in order; each
-checks its result and stops with what's done, what's left and the `--from <step>` that resumes (every step can run
-again: it skips what's already there):
+Each app (`contracts/apps/apps.json`, one per store listing) has its own version and is released only when it changed
+(docs/48-release-versioning.md):
+
+| App | Version | Tag / GitHub release | Channels |
+|---|---|---|---|
+| `android` | `apps/android/VERSION` | `v<version>`, GitHub's **Latest** | APK (the updater, Obtainium, IzzyOnDroid), Google Play |
+| `mac` | `apps/macos/VERSION` | `mac-v<version>` | dmg + zip, Sparkle, Homebrew, TestFlight, App Store |
+| `aura`, `garmin-app`, `garmin-field` | the app's `manifest.xml` | `aura-v…`, `garmin-app-v…`, `garmin-field-v…` | `.iq` + sideload zip, Connect IQ store (by hand) |
+| `face-sdk` | `apps/garmin/sdk/manifest.xml` | `face-sdk-v<version>` | `SukraraFace-<version>.barrel` |
+
+Each has its own `CHANGELOG.md` next to its version source (CHANGELOG.md at the root keeps the shared history up to
+0.17.1).
+
+**Change files.** Every change a person would notice adds `changes/<slug>.md` in the same commit
+([changes/README.md](../changes/README.md)): front matter `apps: [android, mac]` and `kind: fix | feature`, then the
+CHANGELOG bullet. Check `changes` notes an app's change without one (`Changes-skip: <reason>` for internal work). A
+release takes each file naming the app: its bullet goes into the app's CHANGELOG entry (`## <version> — <date>`), the
+highest kind sets the version (fix → patch, feature → minor; versionCode / CFBundleVersion = major·1 000 000 +
+minor·1 000 + patch), and the app leaves the file (it goes once it names none). No change file, no release.
+
+`tools/release/release.py` alone lists each app's version, its change files and its next version. `release.py
+<app>[=<version>] …` releases those apps, from the release Mac (the keys never leave it), in a clean checkout whose
+HEAD is `origin/next` (its Checks run green): the main checkout or a worktree, on any branch or a detached HEAD (every
+push names its refspec, `HEAD:next` / `HEAD:main`; no local `next` or `main` is needed). Before it, for `android`: the
+Google Play notes, `apps/android/fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and `es-ES/…` (what's
+new on Android, at most 500 characters each; Fastlane's layout, which F-Droid and IzzyOnDroid read too); for `mac`:
+the App Store notes, `apps/macos/AppStore/whats-new/en-US/<versionCode>.txt` and `es-ES/…` (at most 4000 characters
+each; no build reads either). Then the steps, in order, each only for the apps released; each checks its result and
+stops with what's done, what's left and the `--from <step>` that resumes (every step from `gate` on can run again: it
+skips what's already there; `--from` takes the versions of the checked-out release commit):
 
 1. `preconditions`: a clean tree at `origin/next`, its Checks run green or still running (not awaited: a failed one
-   stops the release), the version above `VERSION`, a non-empty Unreleased section, the Play and App Store notes, no tag yet,
-   `tools/check/strict`, the keys, `gh`. A Checks run counts on any branch (the same commit is the same tree): the
-   commit's push run or one started by hand (`gh workflow run checks.yml --ref next` when the push run is stuck, e.g.
-   in a GitHub Actions incident); one green run is enough, a pull_request run doesn't count.
-2. `version`: `VERSION`, the version written in DEVELOPMENT.md / QA.md / FEATURES.md, Unreleased → `## <version> — …`
-   with a new empty Unreleased above; one commit, pushed to `next`. Its Checks run starts at once
-   (it never queues behind the run before it), goes on while the gate runs, and covers every change since the newest
-   green commit, the previous HEAD's included; it is the release's one wait for CI, in `github`.
-3. `gate`: `android-release.sh` (signed APK, `verify-apk.sh`, the mapping), `android-smoke.sh --final --no-build` on
-   the emulator, `play-bundle.sh`, `mac-release.sh` (notarized, Sparkle-signed, `verify-app.sh --notarized`, writes
-   `website/public/appcast.xml`), `Bundle/smoke.sh`, `mac-appstore.sh` (build + `altool --validate-app`: the pkg `testflight`
-   uploads). `./gradlew check` and `swift test` aren't run again: the release commit's green Checks run ran them (the
-   Mac job ran on the newest green commit with the same Mac sources: `VERSION` reaches only the bundle, which this
-   gate builds, notarizes and smokes).
-4. `github`: the release commit's Checks run green, `main` fast-forwarded, tag `v<version>`, `gh release create
-   --latest` (a normal release, *Latest*) with the APK, the Android mapping, the dmg and the zip, each Garmin app's `.iq` and sideload zip and the SukraraFace barrel (their
-   sha256 checked against the release's), notes from the CHANGELOG entry with the disclaimer and the files. `main`'s
-   own run isn't awaited: it finds the commit's green run and runs nothing again.
-5. `sparkle`: the dmg on the release is the one `website/public/appcast.xml` signs → the appcast committed and pushed to `main`
-   and `next` (if `next` moved meanwhile, the commit is merged into it; HEAD stays on the appcast commit, so a re-run
-   never brings `next`'s other work to `main`), Pages deployed, and https://sukrara.mauri.app/appcast.xml serves the
-   item.
-6. `homebrew`: the tap's cask (bumped by `homebrew-tap.yml`) at the version, with the dmg's sha256 and
-   `auto_updates true`.
-7. `play`: the play bundle on the **internal and production** tracks with the en-US / es-ES notes, through the
-   Android Publisher API (edits.insert → bundles.upload → tracks.update → edits.commit) with the service account
-   `~/.android/sukrara-play.json`; a track that already has the version code is left alone. Managed publishing is
-   off: production goes live once Google approves it.
-8. `testflight`: unless App Store Connect has a build of the version already, the gate's pkg
+   stops the release); per app a change file, the version above its current one and no tag yet; the Play notes
+   (`android`), the App Store notes (`mac`), each Garmin app's Connect IQ listing (`apps/garmin/<app>/store`) and the
+   store key; `tools/check/strict`, the keys, `gh`; then every check in `RELEASE_CHECKS` (#262: the formats the apps
+   share). A Checks run counts on any branch (the same commit is the same tree): the commit's push run or one started
+   by hand (`gh workflow run checks.yml --ref next` when the push run is stuck, e.g. in a GitHub Actions incident);
+   one green run is enough, a pull_request run doesn't count.
+2. `version`: per app its version source, its CHANGELOG entry, the change files consumed, and the files that link its
+   release (`mentions` in apps.json: GARMIN-FACES.md's barrel link); one commit (*Release Sukrara for Android 0.18.0,
+   …*), pushed to `next`. Its Checks run starts at once (it never queues behind the run before it), goes on while the
+   gate runs, and covers every change since the newest green commit, the previous HEAD's included; it is the
+   release's one wait for CI, in `github`.
+3. `gate`: `android`: `android-release.sh` (signed APK, `verify-apk.sh`, the mapping), `android-smoke.sh --final
+   --no-build` on the emulator, `play-bundle.sh`; `mac`: `mac-release.sh` (notarized, Sparkle-signed, `verify-app.sh
+   --notarized`, writes `website/public/appcast.xml`), `Bundle/smoke.sh`, `mac-appstore.sh` (build + `altool
+   --validate-app`: the pkg `testflight` uploads); a Garmin app: `garmin-release.sh <app> <version>` (its store
+   package and a zip of sideload builds, signed with the store key after checking it is the pinned one, debug code
+   compiled out, every `.iq` verified); `face-sdk`: `garmin-release.sh sdk` (the barrel). `./gradlew check` and `swift
+   test` aren't run again: the release commit's green Checks run ran them (the Mac job ran on the newest green commit
+   with the same Mac sources: `apps/macos/VERSION` reaches only the bundle, which this gate builds, notarizes and
+   smokes).
+4. `github`: the release commit's Checks run green, `main` fast-forwarded once, then per app a tag `<tag><version>` and
+   a normal GitHub release named after the app (*Sukrara for Mac 0.17.2*) with only its files (their sha256 checked
+   against the release's), notes from its CHANGELOG entry with the disclaimer and the files. Android's is GitHub's **Latest** (`--latest`: Obtainium
+   and IzzyOnDroid take its APK); every other one `--latest=false`. `main`'s own run isn't awaited: it finds the
+   commit's green run and runs nothing again.
+5. `sparkle` (`mac`): the dmg on the release is the one `website/public/appcast.xml` signs → the appcast committed and
+   pushed to `main` and `next` (if `next` moved meanwhile, the commit is merged into it; HEAD stays on the appcast
+   commit, so a re-run never brings `next`'s other work to `main`), Pages deployed, and
+   https://sukrara.mauri.app/appcast.xml serves the item.
+6. `homebrew` (`mac`): the tap's cask (bumped by `homebrew-tap.yml` from a `mac-v…` release) at the version, with the
+   dmg's sha256 and `auto_updates true`.
+7. `play` (`android`): the play bundle on the **internal and production** tracks with the en-US / es-ES notes,
+   through the Android Publisher API (edits.insert → bundles.upload → tracks.update → edits.commit) with the service
+   account `~/.android/sukrara-play.json`; a track that already has the version code is left alone. Managed publishing
+   is off: production goes live once Google approves it.
+8. `testflight` (`mac`): unless App Store Connect has a build of the version already, the gate's pkg
    (`build/Sukrara-<version>-appstore.pkg`; missing, e.g. `--from testflight` in a fresh checkout, `mac-appstore.sh`
    builds and validates it once), its version and build number checked, uploaded with `mac-appstore.sh --upload`
    (which never builds); then waits until App Store Connect has processed it. A new build shows *Missing Compliance*
    until its export question is answered (since 0.14.6 the App Store build's Info.plist answers it).
-9. `appstore`: the App Store version of the release (a new one, or the editable one reused: never submitted, rejected
-   or removed from review), its VALID build attached, *What's New* from the App Store notes (once a version is live),
-   released automatically after approval, submitted for App Review. Apple reviews one version at a time: while
+9. `appstore` (`mac`): the App Store version of the release (a new one, or the editable one reused: never submitted,
+   rejected or removed from review), its VALID build attached, *What's New* from the App Store notes (once a version is
+   live), released automatically after approval, submitted for App Review. Apple reviews one version at a time: while
    another is in review, this release stays on TestFlight (the summary says so) and a later release submits the
    newest. Needs the App Store Connect key with **App Manager** access (`~/.apple-dev/release-AuthKey_<id>.p8`; the
    *Developer* notary key is `notary-AuthKey_<id>.p8`, notarization reads it from the keychain profile).
-10. `garmin`: the Garmin apps (Sukrara Aura, the watch app *Sukrara*, *Sukrara data field*: every app of
-    `contracts/watchface/payload/apps.json`), released since 0.17.0 (`tools/release/garmin-key.sha256` committed: the
-    switch). The preconditions checked each app's Connect IQ listing (`apps/garmin/<app>/store`); the gate built, per
-    app, its store package and a zip of sideload builds with `garmin-release.sh <app>` (signed with the store key
-    after checking it is the pinned one; `apps/garmin/build.sh <app>`'s release and export builds, debug code compiled
-    out, every `.iq` verified), and the SukraraFace barrel with `garmin-release.sh sdk` (a barrel that doesn't build
-    stops the release); `github` put them on the release (the barrel also as `SukraraFace.barrel`, so
-    `…/releases/latest/download/SukraraFace.barrel` is always the newest). The Connect IQ store has no upload API, so
-    this step prints, per app, what to do at https://apps-developer.garmin.com/developer/dashboard: **Upload an App**
-    with the listing while the app has no store id in `apps.json`, then **Upload a new version** with the What's new;
-    Garmin reviews each before the store shows it ([docs/20 › the owner's steps](20-publishing.md#connect-iq-store-the-owners-steps)).
-    The `version` step sets every manifest's version to the release's either way.
-11. `summary`: every channel's state (`--from summary` alone shows it any time).
+10. `garmin` (a Garmin app): the Connect IQ store has no upload API, so this step prints, per app, what to do at
+    https://apps-developer.garmin.com/developer/dashboard: **Upload a new version** with its `.iq` and its CHANGELOG
+    entry as the What's new; Garmin reviews each before the store shows it
+    ([docs/20 › the owner's steps](20-publishing.md#connect-iq-store-the-owners-steps)).
+11. `summary`: each release's state and its channels' (`--from summary` alone shows it any time).
 
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes
 nothing, and exits 1 with the list when a check would stop the release. Read-only store checks: `python3
 tools/release/stores.py play-tracks` (opens an edit, lists the tracks, deletes the edit) and `asc-builds`.
-Every release goes to both stores' review: Play production and the App Store. Tests: `python3 tools/release/test_release.py` (CI).
+Every Android and Mac release goes to both stores' review: Play production and the App Store. Tests: `python3
+tools/release/test_release.py` (CI).
 
 ## Garmin face on CI
 

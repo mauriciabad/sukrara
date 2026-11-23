@@ -22,13 +22,13 @@ import sys
 # A group runs when a changed path starts with one of its prefixes (a prefix without "/" is one file) and isn't under
 # one of its exclusions.
 # - android: its tests read tools/check/allow.json and tools/release/android-cert.sha256, its jobs run
-#   tools/release scripts, and VERSION is the versionCode (an :app input). The Play notes (fastlane metadata) are text
-#   the release command checks and uploads; no build reads them. The same for the Mac's App Store notes
-#   (apps/macos/AppStore/whats-new/).
+#   tools/release scripts, and apps/android/VERSION is the versionCode (an :app input). The Play notes (fastlane
+#   metadata) are text the release command checks and uploads; no build reads them. The same for the Mac's App Store
+#   notes (apps/macos/AppStore/whats-new/) and every app's CHANGELOG.md (release.py writes them from changes/).
 # - mac: no Mac build, test or bundle step reads tools/ (the settings generator's output is checked by the rules job,
-#   the release scripts run on the release Mac). VERSION reaches only Bundle/bundle.sh's Info.plist, and the release
-#   command's gate bundles, notarizes and launch-smokes the app with the new VERSION before anything is published, so
-#   the version commit doesn't run the Mac job again over an unchanged app.
+#   the release scripts run on the release Mac). apps/macos/VERSION reaches only Bundle/bundle.sh's Info.plist, and
+#   the release command's gate bundles, notarizes and launch-smokes the app with the new version before anything is
+#   published, so the version commit doesn't run the Mac job again over an unchanged app.
 # - website: it publishes docs/ (the reports and developer docs), shows the Android snapshot goldens and the brand,
 #   reads the alert contracts (the sound test page), draws the watch face with tools/watchface (the playground), and
 #   checks every site URL the apps' code opens and the release key App Links name (tools/release/android-cert.sha256).
@@ -37,12 +37,20 @@ import sys
 #   (docs/img/aura/ref), the reference renderer (tools/watchface) and the CI setup it runs (tools/ci/garmin*,
 #   .github/actions/garmin).
 GROUPS = {
-    "android": (["apps/android/", "contracts/", "tools/", "VERSION", "assets/"], ["apps/android/fastlane/"]),
-    "mac": (["apps/macos/", "contracts/", "assets/"], ["apps/macos/AppStore/whats-new/"]),
+    "android": (["apps/android/", "contracts/", "tools/", "assets/"], ["apps/android/fastlane/", "apps/android/CHANGELOG.md",
+                                                                     "contracts/apps/apps.json"]),
+    "mac": (["apps/macos/", "contracts/", "assets/"], ["apps/macos/AppStore/whats-new/", "apps/macos/VERSION",
+                                                        "apps/macos/CHANGELOG.md", "contracts/apps/apps.json"]),
     "website": (["website/", "docs/", "assets/", "contracts/", "apps/", "tools/release/android-cert.sha256",
-                 "tools/watchface/", ".github/workflows/website.yml"], ["apps/android/fastlane/", "apps/macos/AppStore/whats-new/"]),
+                 "tools/watchface/", ".github/workflows/website.yml"],
+                ["apps/android/fastlane/", "apps/macos/AppStore/whats-new/", "apps/android/VERSION", "apps/macos/VERSION",
+                 "apps/android/CHANGELOG.md",
+                 "apps/macos/CHANGELOG.md", "apps/garmin/aura/CHANGELOG.md", "apps/garmin/app/CHANGELOG.md",
+                 "apps/garmin/field/CHANGELOG.md", "apps/garmin/sdk/CHANGELOG.md"]),
     "garmin": (["apps/garmin/", "contracts/", "assets/", "docs/img/aura/ref/", "tools/watchface/", "tools/garmin/",
-                "tools/ci/garmin-sdk.sh", "tools/ci/garmin.lock", ".github/actions/garmin/"], []),
+                "tools/ci/garmin-sdk.sh", "tools/ci/garmin.lock", ".github/actions/garmin/"],
+               ["apps/garmin/aura/CHANGELOG.md", "apps/garmin/app/CHANGELOG.md", "apps/garmin/field/CHANGELOG.md",
+                "apps/garmin/sdk/CHANGELOG.md", "contracts/apps/apps.json"]),
 }
 DEPTH = 300
 
