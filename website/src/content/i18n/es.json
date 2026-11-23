@@ -16,7 +16,7 @@
   "site.obtainium.get": "Conseguir Obtainium",
   "site.copy": "Copiar",
   "site.copied": "Copiado",
-  "site.hero.version": "Versión {{version}} · {{date}}",
+  "site.hero.version": "Android {{android}} · Mac {{mac}} · {{date}}",
   "site.hero.free": "Gratis y de código abierto · sin cuenta",
   "site.footer.notMedical": "Sukrara no es un producto sanitario: los valores pueden ser erróneos, llegar tarde o faltar, y las alertas pueden no sonar. Mira la app de tu sensor o un glucómetro, y consulta a tu médico, antes de decidir un tratamiento.",
   "site.footer.free": "Software libre (GPL-3.0-or-later) de Maurici Abad. Sin cuenta, sin anuncios, sin rastreo.",

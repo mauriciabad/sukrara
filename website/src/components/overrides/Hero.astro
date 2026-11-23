@@ -15,10 +15,12 @@ const { data } = Astro.locals.starlightRoute.entry;
 const { lang } = Astro.locals.starlightRoute;
 const t = Astro.locals.t;
 const { title = data.title, tagline, actions = [] } = data.hero ?? {};
-const release = await latestRelease();
+/** Each app has its own version (docs/48): both, with the newer release's date. */
+const [android, mac] = await Promise.all([latestRelease('android'), latestRelease('mac')]);
 /** An action to an app's page wears that platform's mark. */
 const mark = (link: string) => (/\/android\//.test(link) ? 'android' : /\/mac\//.test(link) ? 'apple' : undefined);
-const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(release.date);
+const newest = android.date && mac.date ? new Date(Math.max(+android.date, +mac.date)) : undefined;
+const date = newest && new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(newest);
 ---
 
 <section class="sk-hero not-content">
@@ -36,7 +38,9 @@ const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium'
 				))
 			}
 		</div>
-		{release.version && date && <p class="sk-hero__version">{t('site.hero.version', { version: release.version, date })}</p>}
+		{android.version && mac.version && date && (
+			<p class="sk-hero__version">{t('site.hero.version', { android: android.version, mac: mac.version, date })}</p>
+		)}
 	</div>
 	<div class="sk-hero__art">
 		<div class="sk-hero__phone"><Screenshot name="card" width={460} theme="dark" eager /></div>

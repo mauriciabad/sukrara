@@ -33,8 +33,9 @@ interface Props {
 const { app, heading = false } = Astro.props;
 const t = Astro.locals.t;
 const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
-const release = await latestRelease();
-const file = app === 'android' ? release.apk : release.dmg;
+/** Each app has its own releases (Android's are GitHub's Latest); the Garmin column links no release file. */
+const release = await latestRelease(app === 'mac' ? 'mac' : 'android');
+const file = release.file;
 const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(release.date);
 const meta =
 	release.version && file && date

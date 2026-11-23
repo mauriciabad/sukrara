@@ -49,10 +49,13 @@ data class UpdateEndpoint(
             cert: String,
         ) = UpdateEndpoint("${base}releases", "${base}releases", "${base}download/", cert.uppercase(), httpsOnly = false)
 
-        /** The GitHub releases (all of them: the check picks the newest itself, not GitHub's *Latest* mark). */
+        /**
+         * The GitHub releases (the newest 100, every app's: each app has its own, docs/48; the check keeps Android's
+         * `v<version>` ones and picks the newest itself, not GitHub's *Latest* mark).
+         */
         val GitHub =
             UpdateEndpoint(
-                api = "https://api.github.com/repos/mauriciabad/sukrara/releases",
+                api = "https://api.github.com/repos/mauriciabad/sukrara/releases?per_page=100",
                 releasesPage = RELEASES_URL,
                 downloadPrefix = "$RELEASES_URL/download/",
                 cert = RELEASE_CERT,

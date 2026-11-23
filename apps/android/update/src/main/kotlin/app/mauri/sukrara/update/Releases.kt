@@ -85,11 +85,14 @@ object Releases {
         }
     }
 
+    /** Android's own release tags, `v<version>`: every other app has its own prefix (`mac-v…`, `aura-v…`; docs/48). */
+    private val ANDROID_TAG = Regex("""v\d.*""")
+
     /**
-     * Parses the List-releases JSON (unknown fields ignored; a release without a tag is skipped). A page link that
-     * isn't one of [endpoint]'s release pages falls back to its releases page, so the app never opens it; an APK is
-     * kept only when it is `Sukrara-<version>.apk`, its link is one of [endpoint]'s downloads and GitHub lists its
-     * SHA-256.
+     * Parses the List-releases JSON (unknown fields ignored; a release without a tag, or another app's, is skipped). A
+     * page link that isn't one of [endpoint]'s release pages falls back to its releases page, so the app never opens
+     * it; an APK is kept only when it is `Sukrara-<version>.apk`, its link is one of [endpoint]'s downloads and GitHub
+     * lists its SHA-256.
      */
     fun parse(
         json: String,
@@ -97,7 +100,7 @@ object Releases {
     ): List<Release> =
         Json.parseToJsonElement(json).jsonArray.mapNotNull { element ->
             val o = element as? JsonObject ?: return@mapNotNull null
-            val tag = o.string("tag_name") ?: return@mapNotNull null
+            val tag = o.string("tag_name")?.takeIf(ANDROID_TAG::matches) ?: return@mapNotNull null
             Release(
                 tag = tag,
                 url = o.string("html_url")?.takeIf(endpoint::isReleasePage) ?: endpoint.releasesPage,

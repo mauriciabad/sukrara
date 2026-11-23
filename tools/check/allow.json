@@ -165,7 +165,7 @@
     },
     {
       "path": "apps/android/update/src/main/kotlin/app/mauri/sukrara/update/Downloader.kt",
-      "reason": "The GitHub version's updater (#188, full flavor only): GET the fixed https URL api.github.com/repos/mauriciabad/sukrara/releases (About's check, the daily check) and the release APK under github.com/mauriciabad/sukrara/releases/download/ (Releases.parse keeps no other link); every hop https (a network interceptor refuses anything else, redirects never go https to http); nothing sent. Only a debug build's UPDATES command points it at a local test server (http to 10.0.2.2 / loopback, the debug network security config)"
+      "reason": "The GitHub version's updater (#188, full flavor only): GET the fixed https URL api.github.com/repos/mauriciabad/sukrara/releases?per_page=100 (About's check, the daily check; Android's v<version> releases among every app's) and the release APK under github.com/mauriciabad/sukrara/releases/download/ (Releases.parse keeps no other link); every hop https (a network interceptor refuses anything else, redirects never go https to http); nothing sent. Only a debug build's UPDATES command points it at a local test server (http to 10.0.2.2 / loopback, the debug network security config)"
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/nightscout/NsClient.kt",

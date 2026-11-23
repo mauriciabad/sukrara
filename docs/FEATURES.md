@@ -438,8 +438,8 @@ windows are standard AppKit; the row's *Install…* has the hint *Shows what's n
   compatibility): its banner asks.
 - **The daily check** (`:update` `UpdateCheckWorker`, WorkManager, any network, first an hour after the app starts,
   then once a day) while **Check for updates automatically** is on (off until turned on): the GitHub releases
-  (`api.github.com/repos/mauriciabad/sukrara/releases`, all of them: the newest that is neither a draft nor a
-  prerelease, a release candidate; every release is a normal one), plus About's check each time the page opens. A newer release is announced **once per
+  (`api.github.com/repos/mauriciabad/sukrara/releases?per_page=100`, Android's own, tagged `v<version>`, among every
+  app's: the newest that is neither a draft nor a prerelease, a release candidate; every release is a normal one), plus About's check each time the page opens. A newer release is announced **once per
   version** in a notification: *Sukrara 0.14.0 is available* · *Update to install it. Monitoring comes back by itself
   right after.* with **Update** and **Release notes**; tapping it opens Settings › About. Its own channel *App
   updates* (low importance: no sound, no vibration, never on top of anything), in the *Other* group: never with the

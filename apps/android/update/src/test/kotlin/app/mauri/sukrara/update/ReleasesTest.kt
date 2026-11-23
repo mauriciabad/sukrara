@@ -21,6 +21,19 @@ class ReleasesTest {
     }
 
     @Test
+    fun `only Android's releases count, never another app's`() {
+        val tags =
+            Releases
+                .parse(
+                    """
+                    [{"tag_name": "mac-v9.0.0"}, {"tag_name": "aura-v9.0.0"}, {"tag_name": "face-sdk-v9.0.0"},
+                     {"tag_name": "v0.18.0"}]
+                    """.trimIndent(),
+                ).map { it.tag }
+        assertEquals(listOf("v0.18.0"), tags)
+    }
+
+    @Test
     fun `the newest release is offered, never a draft or a release candidate`() {
         assertEquals("v0.12.1", Releases.newer(releases, "0.12.0")?.tag)
         assertEquals("v0.12.1", Releases.newer(releases, "0.11.52")?.tag)

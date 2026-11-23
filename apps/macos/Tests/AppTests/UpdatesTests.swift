@@ -176,9 +176,10 @@ import Testing
             builds.append(build)
             #expect(item["sparkle:minimumSystemVersion"] == minimumOS, "\(version)")
             #expect(item["sparkle:channel"] == nil, "\(version): every release is a normal one, in no channel")
-            #expect(
-                item["enclosure.url"]
-                    == "https://github.com/mauriciabad/sukrara/releases/download/v\(version)/Sukrara-\(version).dmg")
+            // The Mac's own releases are mac-v<version> (docs/48); up to 0.17.1 every app shared one v<version>.
+            let tag = parts.lexicographicallyPrecedes([0, 17, 2]) ? "v" : "mac-v"
+            let releases = "https://github.com/mauriciabad/sukrara/releases"
+            #expect(item["enclosure.url"] == "\(releases)/download/\(tag)\(version)/Sukrara-\(version).dmg")
             #expect(Int(item["enclosure.length"] ?? "") ?? 0 > 0, "\(version)")
             let signature = item["enclosure.sparkle:edSignature"].flatMap { Data(base64Encoded: $0) }
             #expect(signature?.count == 64, "\(version): no EdDSA signature")

@@ -239,7 +239,8 @@ the wearer's Share rows; a follower's *No data* alarm names it. TalkBack / Voice
 `changes/` with its README, a CHANGELOG per app (the root one keeps the history up to 0.17.1), `release.py <app> …`
 (above), `version.sh <app>`, `build-info.sh <app>`, check `changes` (a NOTE for an app's change without a change file,
 `Changes-skip: <reason>`; a FAIL for a change file that doesn't parse), the Homebrew workflow, `appcast.py`
-(`mac-v…` URLs, the Mac's CHANGELOG), `tools/ci/changes.py` (a VERSION or CHANGELOG alone runs no app job). What
+(`mac-v…` URLs, the Mac's CHANGELOG), `tools/ci/changes.py` (a VERSION or CHANGELOG alone runs no app job), the
+readers in the table above (the Android updater, `release.ts` and the hero, the Garmin page). What
 differs from the design above, and why:
 
 - Android's tag stays `v<version>` (above: the installed updaters).

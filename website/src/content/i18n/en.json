@@ -16,7 +16,7 @@
   "site.obtainium.get": "Get Obtainium",
   "site.copy": "Copy",
   "site.copied": "Copied",
-  "site.hero.version": "Version {{version}} · {{date}}",
+  "site.hero.version": "Android {{android}} · Mac {{mac}} · {{date}}",
   "site.hero.free": "Free and open source · no account",
   "site.footer.notMedical": "Sukrara isn’t a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor’s app or a meter, and ask your doctor, before you decide on a treatment.",
   "site.footer.free": "Free software (GPL-3.0-or-later) by Maurici Abad. No account, no ads, no tracking.",
