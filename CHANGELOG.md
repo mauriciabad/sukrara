@@ -2,8 +2,16 @@
 
 Sukrara's releases. 0.x versions are previews.
 
-## Unreleased
+## Unreleased — Extremely high stays quiet after insulin
 
+- **Extremely high stays quiet after insulin**: rapid insulin you log now quiets the extremely high alert too, for the
+  same time as high and very high (Settings › Alerts › *Quiet highs after insulin*, 60 min by default). Before, it rang
+  again minutes after a dose whenever glucose touched the threshold, and the card said *Take insulin*. If glucose is
+  still that high when the time is up, it alerts at once, as before.
+- **The Mac menu bar's glucose in the card's colours** (#257): out of range, the value is in its range's colour on the
+  card (very low, low, high, very high, extremely high), like the phone's status bar, instead of one red below the
+  range and one orange above; where the card's colour is too faint for small text on the bar, a deeper (light bar) or
+  paler (dark bar) shade of it.
 - **Each Garmin app's own store page** (#247): the phone's *Get* (setup's *Your Garmin watch*) and the Garmin page's
   *Connect IQ store* rows open that app's Connect IQ listing (Garmin's Spanish store on a phone in Spanish) instead of
   the store's search for Sukrara, and the website links the three listings.

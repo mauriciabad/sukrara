@@ -1,0 +1,2 @@
+• La insulina rápida que registras ahora también silencia la alerta de glucosa extremadamente alta mientras empieza a actuar, como la alta y la muy alta. Si sigue igual de alta al acabar ese tiempo, avisa al momento.
+• La configuración y la página de Garmin abren la página de la tienda de cada app de Sukrara para el reloj.

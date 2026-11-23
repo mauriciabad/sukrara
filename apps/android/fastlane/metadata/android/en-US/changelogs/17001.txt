@@ -1,0 +1,2 @@
+• Rapid insulin you log now also quiets the extremely high alert while it starts working, like high and very high. If you're still that high when the quiet time ends, it alerts at once.
+• Setup and the Garmin page open each Sukrara watch app's own store page.

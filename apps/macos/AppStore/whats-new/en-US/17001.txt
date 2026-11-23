@@ -1,0 +1,2 @@
+• Rapid insulin you log now also quiets the extremely high alert while it starts working, like high and very high. Before, it could ring again minutes after a dose. If glucose is still that high when the quiet time ends, it alerts at once.
+• The menu bar's glucose is in the card's colours: very high, extremely high and the rest each in their own, as on the card.

@@ -1,0 +1,2 @@
+• La insulina rápida que registras ahora también silencia la alerta de glucosa extremadamente alta mientras empieza a actuar, como la alta y la muy alta. Antes podía volver a sonar minutos después de una dosis. Si la glucosa sigue igual de alta al acabar ese tiempo, avisa al momento.
+• La glucosa de la barra de menús va en los colores de la tarjeta: muy alta, extremadamente alta y las demás, cada una en el suyo, como en la tarjeta.
