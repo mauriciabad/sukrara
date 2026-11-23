@@ -17,32 +17,32 @@ module GlanceFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a20s", "a22m", "a24m", "a24s", "a26b", "a30b", "a30s", "a48s", "n52", "n56", "n60", "n64", "n72"].indexOf(key);
+        var i = ["a30b", "a48s", "n52", "n56", "n60", "n64", "n72"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Drawables.a20s, Rez.Drawables.a22m, Rez.Drawables.a24m, Rez.Drawables.a24s, Rez.Drawables.a26b, Rez.Drawables.a30b, Rez.Drawables.a30s, Rez.Drawables.a48s, Rez.Drawables.n52, Rez.Drawables.n56, Rez.Drawables.n60, Rez.Drawables.n64, Rez.Drawables.n72][i], [Rez.JsonData.a20s_m, Rez.JsonData.a22m_m, Rez.JsonData.a24m_m, Rez.JsonData.a24s_m, Rez.JsonData.a26b_m, Rez.JsonData.a30b_m, Rez.JsonData.a30s_m, Rez.JsonData.a48s_m, Rez.JsonData.n52_m, Rez.JsonData.n56_m, Rez.JsonData.n60_m, Rez.JsonData.n64_m, Rez.JsonData.n72_m][i]];
+        return [[Rez.Drawables.a30b, Rez.Drawables.a48s, Rez.Drawables.n52, Rez.Drawables.n56, Rez.Drawables.n60, Rez.Drawables.n64, Rez.Drawables.n72][i], [Rez.JsonData.a30b_m, Rez.JsonData.a48s_m, Rez.JsonData.n52_m, Rez.JsonData.n56_m, Rez.JsonData.n60_m, Rez.JsonData.n64_m, Rez.JsonData.n72_m][i]];
     }
 
     // the icon sheet [i]: one per size
     function sheet(i as Number) as ResourceId {
-        return [Rez.Drawables.gicons15][i] as ResourceId;
+        return [Rez.Drawables.gicons26][i] as ResourceId;
     }
 
     // the icons: [x, y, box, sheet] of the nearest size (2 px margin)
     function icon(name as String, size as Number) as Array? {
         if (name.equals("rapid")) {
-            if (true) { return [0, 0, 19, 0]; }
+            if (true) { return [0, 0, 30, 0]; }
         } else if (name.equals("long")) {
-            if (true) { return [20, 0, 19, 0]; }
+            if (true) { return [31, 0, 30, 0]; }
         } else if (name.equals("carbs")) {
-            if (true) { return [40, 0, 19, 0]; }
+            if (true) { return [62, 0, 30, 0]; }
         } else if (name.equals("bellPause")) {
-            if (true) { return [60, 0, 19, 0]; }
+            if (true) { return [93, 0, 30, 0]; }
         } else if (name.equals("bellOff")) {
-            if (true) { return [80, 0, 19, 0]; }
+            if (true) { return [124, 0, 30, 0]; }
         } else if (name.equals("note")) {
-            if (true) { return [100, 0, 19, 0]; }
+            if (true) { return [155, 0, 30, 0]; }
         }
         return null;
     }

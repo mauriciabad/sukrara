@@ -72,6 +72,8 @@ module AppScreens {
     // the screen's edge (app.js rim()): a ring on round screens, on rectangles a rounded rectangle 6 units in; [p] < 1
     // draws that share of it clockwise from START (hold to log fills from the button that is held)
     function rim(g as AppG, col as Number, sw as Numeric, p as Float) as Void {
+        var rp = (6 + sw / 2.0) * AppFontTable.S;
+        AppDraw.rimPx = AppDraw.rimPx > rp ? AppDraw.rimPx : rp;
         var a0 = AppFontTable.KEYS[0] as Number;
         if (!AppFontTable.RECT) {
             if (p >= 1) {
@@ -130,10 +132,10 @@ module AppScreens {
         }
         var dr = drops();
         if (!dr[3]) {
-            g.t(0, -150, d.clock, 22, 600, AppMath.SOFT, MIDDLE);
+            g.w(0, -148, d.clock, AppDraw.TI, AppMath.SOFT, MIDDLE);
         }
         if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
-            g.t(0, -60, AppWords.s(Rez.Strings.NoReadings), 22, 600, AppMath.SOFT, MIDDLE);
+            fitW(g, -60, AppWords.s(Rez.Strings.NoReadings), AppDraw.SM, AppMath.SOFT);
             pageDots(g, 2, 0);
             return;
         }
@@ -143,19 +145,22 @@ module AppScreens {
             AppParts.value(g, d, 0, -58, 88, MIDDLE, true, null);
         }
         if (d.slots.size() > 1) {
-            AppParts.drawSlot(g, d, d.slots[1] as Array, -142, -82, 25, 6, 22);
+            AppParts.drawSlot(g, d, d.slots[1] as Array, -142, -82, 25, 6, 22, AppDraw.XT);
         }
         if (d.slots.size() > 0) {
-            AppParts.drawSlot(g, d, d.slots[0] as Array, 142, -82, 25, 6, 22);
+            AppParts.drawSlot(g, d, d.slots[0] as Array, 142, -82, 25, 6, 22, AppDraw.XT);
         }
-        // without the % column and the 70 / 180 labels the plot takes their room
-        var bx = [dr[1] ? -150 : -134, dr[2] ? 158 : 146, -22, 88];
-        chart(g, d, bx, d.hours, 14, 10, !dr[2]);
+        // without the % column and the 70 / 180 labels the plot takes their room; with them, their widths in the
+        // watch's font
+        var xl = -edgeX(84) + AppDraw.ww("100%", AppDraw.XT) + 6;
+        var xr = edgeX(44) - AppDraw.ww("180", AppDraw.XT) - 6;
+        var bx = [dr[1] ? -150 : xl > -134 ? xl : -134, dr[2] ? 158 : xr < 146 ? xr : 146, -22, 88];
+        chart(g, d, bx, d.hours, 10, !dr[2]);
         if (d.side && !dr[1]) {
-            pctColumn(g, d, bx, d.hours, 14);
+            pctColumn(g, d, bx, d.hours);
         }
-        if (!chipRow(g, d, 146, 19) && !dr[0]) {
-            sensorTag(g, d, 0, 152, 17);
+        if (!chipRow(g, d, 146) && !dr[0]) {
+            sensorTag(g, d, 0, 146 + AppDraw.capOf(AppDraw.XT) / 2);
         }
         pageDots(g, 2, 0);
     }
@@ -165,19 +170,19 @@ module AppScreens {
     function rectA(g as AppG, d as AppData) as Void {
         var w = hw();
         var h = hh();
-        g.t(0, -h + 34, d.clock, 22, 600, AppMath.SOFT, MIDDLE);
+        g.w(0, -h + 12 + AppDraw.capOf(AppDraw.TI), d.clock, AppDraw.TI, AppMath.SOFT, MIDDLE);
         if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
-            g.t(0, -h + 116, AppWords.s(Rez.Strings.NoReadings), 22, 600, AppMath.SOFT, MIDDLE);
+            fitW(g, -h + 116, AppWords.s(Rez.Strings.NoReadings), AppDraw.SM, AppMath.SOFT);
             pageDots(g, 2, 0);
             return;
         }
         var rr = 24;
         var sw = 6;
         if (d.slots.size() > 1) {
-            AppParts.drawSlot(g, d, d.slots[1] as Array, -w + 14 + rr + sw / 2, -h + 34, rr, sw, 22);
+            AppParts.drawSlot(g, d, d.slots[1] as Array, -w + 14 + rr + sw / 2, -h + 34, rr, sw, 22, AppDraw.XT);
         }
         if (d.slots.size() > 0) {
-            AppParts.drawSlot(g, d, d.slots[0] as Array, w - 14 - rr - sw / 2, -h + 34, rr, sw, 22);
+            AppParts.drawSlot(g, d, d.slots[0] as Array, w - 14 - rr - sw / 2, -h + 34, rr, sw, 22, AppDraw.XT);
         }
         var vy = -h + 150;
         if (d.noValue()) {
@@ -185,13 +190,15 @@ module AppScreens {
         } else {
             AppParts.value(g, d, 0, vy, 96, MIDDLE, true, null);
         }
-        var bx = [-w + 44, w - 34, vy + 26, h - 64];
-        chart(g, d, bx, d.hours, 14, 10, true);
+        var cx = AppDraw.capOf(AppDraw.XT);
+        var pr = cx * 1.9;
+        var bx = [-w + 12 + AppDraw.ww("100%", AppDraw.XT), w - 12 - AppDraw.ww("180", AppDraw.XT), vy + 26, h - 14 - pr - 10 - cx - 8];
+        chart(g, d, bx, d.hours, 10, true);
         if (d.side) {
-            pctColumn(g, d, bx, d.hours, 14);
+            pctColumn(g, d, bx, d.hours);
         }
-        if (!chipRow(g, d, h - 22, 19)) {
-            sensorTag(g, d, 0, h - 16, 17);
+        if (!chipRow(g, d, h - 14 - pr / 2)) {
+            sensorTag(g, d, 0, h - 14 - pr / 2 + cx / 2);
         }
         pageDots(g, 2, 0);
     }
@@ -199,15 +206,18 @@ module AppScreens {
     // the app's message where the value would be (Aura's words)
     function noValue(g as AppG, d as AppData, y as Numeric) as Void {
         if (d.sensorState.equals("warmup")) {
-            var w0 = AppMath.tw(AppWords.s(Rez.Strings.WWarming), 26);
+            var ws = AppWords.s(Rez.Strings.WWarming);
+            var wf = AppDraw.fitRole(ws, AppDraw.ME, 170);
+            var w0 = AppDraw.ww(ws, wf);
             var mx = -(34 + 12 + w0) / 2;
             AppParts.pie(g, mx + 17, y - 12, 17, 2.5, d.warm);
-            g.t(mx + 46, y - 3, AppWords.s(Rez.Strings.WWarming), 26, 600, AppMath.INK, START);
-            g.t(0, y + 30, Lang.format(AppWords.s(Rez.Strings.WReadyAt), [d.readyAt]), 20, 500, AppMath.SOFT, MIDDLE);
+            g.w(mx + 46, y - 12 + AppDraw.capOf(wf) / 2, ws, wf, AppMath.INK, START);
+            fitW(g, y + 14 + AppDraw.capOf(AppDraw.TI) + 6, Lang.format(AppWords.s(Rez.Strings.WReadyAt), [d.readyAt]), AppDraw.TI, AppMath.SOFT);
             return;
         }
-        g.t(0, y - 26, AppWords.s(Rez.Strings.WNoSince), 22, 600, AppMath.SOFT, MIDDLE);
-        g.t(0, y + 20, d.readAt, 48, 600, AppMath.INK, MIDDLE);
+        var ns = AppWords.s(Rez.Strings.WNoSince);
+        g.w(0, y - 22, ns, AppDraw.fitRole(ns, AppDraw.SM, 210), AppMath.SOFT, MIDDLE);
+        g.t(0, y + 32, d.readAt, 48, 600, AppMath.INK, MIDDLE);
     }
 
     // Kovatchev's scale at its ends, K(LO) and K(HI) − K(LO): once (every point of the chart takes them)
@@ -288,7 +298,8 @@ module AppScreens {
     }
 
     // the chart: bands, limits, the line in its bands' colours, the bead, the treatment marks, the hours (app.js chart())
-    function chart(g as AppG, d as AppData, bx as Array, hours as Number, lfs as Number, ms as Number, ylab as Boolean) as Void {
+    function chart(g as AppG, d as AppData, bx as Array, hours as Number, ms as Number, ylab as Boolean) as Void {
+        var XT = AppDraw.XT;
         var b = d.bands;
         var w = bx[1] - bx[0];
         g.r(bx[0], Y(bx, b[2]), w, Y(bx, b[1]) - Y(bx, b[2]), 0, AppMath.pal("tight"), 0.13, 0);
@@ -299,7 +310,7 @@ module AppScreens {
             g.l([bx[0], y, bx[1], y], AppMath.FAINT, 1.0, 1, [3, 4]);
             if (ylab) {
                 var lab = d.unit.equals("mmol") ? ((lims[i] as Number) / 18.0182).format("%.1f") : lims[i].toString();
-                g.t(bx[1] + 5, y + 5, lab, lfs, 500, AppMath.DIM, START);
+                g.w(bx[1] + 5, y + AppDraw.capOf(XT) / 2, lab, XT, AppMath.DIM, START);
             }
         }
         // the line: one polyline per run of one colour; a gap breaks it. Up to 288 readings in the callback that lays
@@ -378,7 +389,7 @@ module AppScreens {
             }
         }
         // the treatments, their labels in the hours' row (an overlapping one is dropped)
-        var ly = bx[3] + lfs + 5;
+        var ly = bx[3] + AppDraw.capOf(XT) + 5;
         var labels = [] as Array;
         var shown = {} as Dictionary; // per kind: [point, amount]
         for (var i = d.trm.size() - 1; i >= 0; i--) {
@@ -414,10 +425,11 @@ module AppScreens {
             }
             if (mk[1] as Boolean) {
                 var s = AppMath.amt(k, d.tra[i] as Numeric);
-                var tw = AppMath.tw(s, lfs);
+                var tw = AppDraw.ww(s, XT);
                 var x0 = x - tw / 2;
                 var x1 = x + tw / 2;
-                var hit = false;
+                // an overlapping label, or one the screen would cut, is left out
+                var hit = (x0 < -x1 ? -x0 : x1) > edgeX(ly + 2);
                 for (var j = 0; j < labels.size(); j += 2) {
                     if (x1 + 4 > labels[j] && x0 - 4 < labels[j + 1]) {
                         hit = true;
@@ -426,7 +438,7 @@ module AppScreens {
                 if (!hit) {
                     labels.add(x0);
                     labels.add(x1);
-                    g.t(x, ly, s, lfs, 600, c, MIDDLE);
+                    g.w(x, ly, s, XT, c, MIDDLE);
                 }
             }
         }
@@ -442,15 +454,15 @@ module AppScreens {
                 continue;
             }
             var s = h24.toString();
-            var tw = AppMath.tw(s, lfs);
-            var hit = false;
+            var tw = AppDraw.ww(s, XT);
+            var hit = AppMath.abs(x) + tw / 2 > edgeX(ly + 2);
             for (var j = 0; j < labels.size(); j += 2) {
                 if (x + tw / 2 + 4 > labels[j] && x - tw / 2 - 4 < labels[j + 1]) {
                     hit = true;
                 }
             }
             if (!hit) {
-                g.t(x, ly, s, lfs, 500, AppMath.DIM, MIDDLE);
+                g.w(x, ly, s, XT, AppMath.DIM, MIDDLE);
             }
         }
     }
@@ -657,7 +669,7 @@ module AppScreens {
     }
 
     // the % column from its prepared rows (prepare); asks for them when they are not this payload's yet
-    function pctColumn(g as AppG, d as AppData, bx as Array, hours as Number, lfs as Number) as Void {
+    function pctColumn(g as AppG, d as AppData, bx as Array, hours as Number) as Void {
         var key = colKey(d, bx, hours);
         var c = _col;
         var h0 = hist();
@@ -705,90 +717,78 @@ module AppScreens {
         var pb = three[0] as Number;
         var pin = three[1] as Number;
         var pa = three[2] as Number;
-        var ya = Y(bx, 230) < Y(bx, d.bands[3]) - 2 ? Y(bx, 230) : Y(bx, d.bands[3]) - 2;
+        // the shares in xtiny, each on its band and never into the one in range (app.js pctColumn)
+        var XT = AppDraw.XT;
+        var cp = AppDraw.capOf(XT);
+        var ym = (Y(bx, d.bands[1]) + Y(bx, d.bands[3])) / 2;
+        g.w(lx, ym + cp / 2, pin + "%", XT, AppMath.INK, END);
+        var ya = Y(bx, 230) + cp / 2;
         if (pa > 0) {
-            g.t(lx, ya + lfs * 0.35, pa + "%", lfs, 600, AppMath.SOFT, END);
+            g.w(lx, ya < ym - cp * 0.5 - 4 ? ya : ym - cp * 0.5 - 4, pa + "%", XT, AppMath.SOFT, END);
         }
-        g.t(lx, (Y(bx, d.bands[1]) + Y(bx, d.bands[3])) / 2 + lfs * 0.35, pin + "%", lfs + 1, 700, AppMath.INK, END);
-        var yb = Y(bx, 55) > Y(bx, d.bands[1]) + lfs * 0.6 ? Y(bx, 55) : Y(bx, d.bands[1]) + lfs * 0.6;
+        var yb = Y(bx, 55) + cp / 2;
         if (pb > 0) {
-            g.t(lx, yb + lfs * 0.35, pb + "%", lfs, 600, AppMath.SOFT, END);
+            g.w(lx, yb > ym + cp * 1.5 + 4 ? yb : ym + cp * 1.5 + 4, pb + "%", XT, AppMath.SOFT, END);
         }
     }
 
     // the bottom row: the reading's time when late, then Sukrara's pill (app.js chipRow())
-    function chipRow(g as AppG, d as AppData, y as Numeric, fs as Numeric) as Boolean {
+    function chipRow(g as AppG, d as AppData, y as Numeric) as Boolean {
+        var XT = AppDraw.XT;
         var late = d.g != null && d.age >= 1.5 && d.age < 20;
-        var aw = late ? AppMath.tw(d.readAt, fs) : 0.0;
-        var pw = 0.0;
+        var aw = late ? AppDraw.ww(d.readAt, XT) : 0.0;
         var p = d.pill;
-        if (p != null) {
-            pw = fs * 0.5 + fs * 0.78 + fs * 0.3 + AppMath.tw(p[1] as String, fs) + fs * 0.6;
-        }
+        var pw = p != null ? AppParts.pillWidth(p[1] as String, XT) : 0.0;
         var gap = late && p != null ? 12 : 0;
         var tot = aw + gap + pw;
         var x0 = -tot / 2;
         if (late) {
-            g.t(x0, y + fs * 0.35, d.readAt, fs, 500, AppMath.SOFT, START);
+            g.w(x0, y + AppDraw.capOf(XT) / 2, d.readAt, XT, AppMath.SOFT, START);
         }
         if (p != null) {
-            AppParts.pill(g, x0 + aw + gap, y, p, fs, START);
+            AppParts.pill(g, x0 + aw + gap, y, p, XT, 1.9, START);
         }
         return tot > 0;
     }
 
-    function sensorTag(g as AppG, d as AppData, x as Numeric, y as Numeric, fs as Numeric) as Void {
+    function sensorTag(g as AppG, d as AppData, x as Numeric, y as Numeric) as Void {
         if (d.sensorDays == null) {
             return;
         }
+        var XT = AppDraw.XT;
+        var fs = AppDraw.capOf(XT) * 1.1;
         var s = d.sensorDays + "d";
-        var w = fs + 4 + AppMath.tw(s, fs);
+        var w = fs + 4 + AppDraw.ww(s, XT);
         var x0 = x - w / 2;
-        g.icon("sensor", x0 + fs / 2.0, y - fs * 0.34, fs, AppMath.SOFT);
-        g.t(x0 + fs + 4, y, s, fs, 600, AppMath.SOFT, START);
+        g.icon("sensor", x0 + fs / 2.0, y - AppDraw.capOf(XT) / 2, fs, AppMath.SOFT);
+        g.w(x0 + fs + 4, y, s, XT, AppMath.SOFT, START);
     }
 
-    // a centred text kept inside the screen (SPEC §14.1) on the font-resource watches (no tinted bitmaps: their glyphs
-    // draw about 12 % wider than the atlases' widths, AppMath.tw): the first of [sizes] (units, largest first; sizes the
-    // class's fonts carry) at which it fits inside [rim] at its line, else two lines at the last. The atlas
-    // watches draw it at the first, as designed
-    function fitT(g as AppG, y as Numeric, s as String, sizes as Array<Number>, fw as Number, col as Number, rim as Number) as Void {
-        var fs = sizes[0];
-        if (AppFontTable.PLAIN) {
-            for (var i = 0; i < sizes.size(); i++) {
-                fs = sizes[i];
-                if (AppMath.tw(s, fs) * 1.12 <= 2 * room(y, fs, rim)) {
-                    g.t(0, y, s, fs, fw, col, MIDDLE);
-                    return;
-                }
-            }
-            // two lines, broken at the space nearest the middle
-            var cut = -1;
-            var mid = s.length() / 2;
-            for (var k = 0; k < s.length(); k++) {
-                if (s.substring(k, k + 1).equals(" ") && (cut < 0 || (k - mid).abs() < (cut - mid).abs())) {
-                    cut = k;
-                }
-            }
-            if (cut > 0) {
-                g.t(0, y - fs * 0.6, s.substring(0, cut) as String, fs, fw, col, MIDDLE);
-                g.t(0, y + fs * 0.6, s.substring(cut + 1, s.length()) as String, fs, fw, col, MIDDLE);
-                return;
-            }
-        }
-        g.t(0, y, s, fs, fw, col, MIDDLE);
-    }
-
-    // the half width a line of [fs] at baseline [y] has inside the circle of radius [rim] (units: 176 clears the rim's
-    // button hints) or the rectangle
-    function room(y as Numeric, fs as Numeric, rim as Number) as Float {
+    // half the screen's width at height [y] (units), inside the rim and 2 px in: what a centred line may take there
+    // (app.js edgeX)
+    function edgeX(y as Numeric) as Float {
+        var m = (AppDraw.rimPx + 2) / AppFontTable.S;
         if (AppFontTable.RECT) {
-            return hw() - 8;
+            return hw() - m;
         }
-        var top = y - fs * 0.75;
-        var e = AppMath.abs(top) > AppMath.abs(y) ? top : y;
-        var q = rim * rim - e * e;
-        return q > 0 ? Math.sqrt(q).toFloat() : 0.0;
+        var r = 195 - m;
+        return AppMath.abs(y) >= r ? 0.0 : Math.sqrt(r * r - y * y).toFloat();
+    }
+
+    // a centred word at baseline [y] in [role], or the largest smaller role that fits the screen's width there (never
+    // under xtiny; app.js { edge: true })
+    function fitW(g as AppG, y as Numeric, s as String, role as Number, col as Number) as Void {
+        var c = AppDraw.capOf(role);
+        var a = edgeX(y - c);
+        var b = edgeX(y + c * 0.3);
+        g.w(0, y, s, AppDraw.fitRole(s, role, 2 * (a < b ? a : b) - 4), col, MIDDLE);
+    }
+
+    // lines of [role] centred from baseline [y], [pitch] apart, each fitted to the screen (fitW)
+    function lines(g as AppG, y as Numeric, ls as Array<String>, role as Number, pitch as Numeric, col as Number) as Void {
+        for (var i = 0; i < ls.size(); i++) {
+            fitW(g, y + i * pitch, ls[i], role, col);
+        }
     }
 
     function pageDots(g as AppG, n as Number, i as Number) as Void {
@@ -809,26 +809,21 @@ module AppScreens {
         return (pm > 0 && pm < 10 ? (pm / 10.0).format("%.1f") : ((pm + 5) / 10).toString()) + " %";
     }
 
-    // the numbers' geometry (units): round (app.js S.appNums) or the rectangles' own (R.appNums: chips across the
-    // top, the bar down the left edge, the three shares, then average / GMI / CV across the bottom):
-    // [chip w, chips' top, chip h, bar x, bar top, bar bottom, label x, value x, the rows' y (3), the goal's dy,
-    //  the rule's y, its half width, the metrics' y, their spacing]
+    // the period chips' geometry (units; AppView's taps too): [chip w, chips' top, chip h]
     function numsAt() as Array {
+        var ch = AppDraw.capOf(AppDraw.XT) + 14;
         if (!AppFontTable.RECT) {
-            return [50, -152, 30, -142, -112, 64, -116, 152, [-96, -30, 38], 22, 80, 140, 114, 92];
+            return [50, -152, ch];
         }
-        var w = hw();
-        var h = hh();
-        var cw = (2 * w - 50) / 4;
-        cw = cw < 64 ? cw : 64;
-        var top = -h + 16 + 52;
-        var bot = h - 86;
-        var st = (bot - top) / 3;
-        return [cw, -h + 16, 32, -w + 14, top, bot, -w + 40, w - 12, [top + 22, top + 22 + st, top + 22 + 2 * st], 24,
-            bot + 14, w - 12, bot + 48, (2 * w - 40) / 3];
+        var cw = (2 * hw() - 50) / 4;
+        return [cw < 64 ? cw : 64, -hh() + 12, ch];
     }
 
+    // page 2 (app.js S.appNums, R.appNums): the chips, the stacked bar, the three shares with their goals, average / GMI
+    // / CV; every word by role (SPEC §4.2), the rectangles' rows sharing the height the fonts leave
     function appNums(g as AppG, d as AppData, days as Number) as Void {
+        var XT = AppDraw.XT;
+        var SM = AppDraw.SM;
         var L = numsAt();
         var pers = [1, 7, 14, 30];
         var cw = L[0] as Numeric;
@@ -843,43 +838,76 @@ module AppScreens {
                 g.r(x, cy, cw, ch, ch / 2, AppMath.CARD2, 1.0, 0);
             }
             g.r(x, cy, cw, ch, ch / 2, on ? AppMath.SOFT : AppMath.FAINT, 1.0, 1.5);
-            g.t(x + cw / 2, cy + ch * 0.7, pers[i] + "d", 17, on ? 700 : 500, on ? AppMath.INK : AppMath.SOFT, MIDDLE);
+            g.w(x + cw / 2, cy + ch / 2 + AppDraw.capOf(XT) / 2, pers[i] + "d", XT, on ? AppMath.INK : AppMath.SOFT, MIDDLE);
         }
         var rep = report(days);
         if (rep == null) {
-            g.t(0, 0, AppWords.s(Rez.Strings.RepNone), 19, 600, AppMath.SOFT, MIDDLE);
+            fitW(g, 0, AppWords.s(Rez.Strings.RepNone), AppDraw.TI, AppMath.SOFT);
             pageDots(g, 2, 1);
             return;
         }
+        var rect = AppFontTable.RECT;
+        var w = hw();
+        var h = hh();
+        var cS = AppDraw.capOf(SM);
+        var cX = AppDraw.capOf(XT);
+        var dX = AppDraw.lh(XT) - AppDraw.capOf(XT) / 0.75;
+        // the bar from [top] to [bot], the numbers' row under [bot]
+        var top = rect ? cy + ch + 10 : -112;
+        var bot = rect ? h - (cS + 10 + cX + dX + 2) : 64;
         var b = rep.get("b") as Array;
-        // the stacked bar, very low at the bottom
         var tot = 0;
         for (var i = 0; i < 6; i++) {
             tot += b[i] as Number;
         }
-        var y = (L[5] as Numeric).toFloat();
-        var span = (L[5] as Numeric) - (L[4] as Numeric);
+        var y = bot.toFloat();
         for (var i = 0; tot > 0 && i < 6; i++) {
             var v = b[i] as Number;
             if (v == 0) {
                 continue;
             }
-            var h = v * span.toFloat() / tot;
-            var hh0 = h - (h > 3 ? 2 : 0);
-            g.r(L[3], y - h + (h > 3 ? 1 : 0), 12, hh0 > 1.5 ? hh0 : 1.5, 2, AppMath.pal(AppParts.BANDS[i]), 1.0, 0);
-            y -= h;
+            var bh = v * (bot - top).toFloat() / tot;
+            var hh0 = bh - (bh > 3 ? 2 : 0);
+            g.r(rect ? -w + 14 : -142, y - bh + (bh > 3 ? 1 : 0), 12, hh0 > 1.5 ? hh0 : 1.5, 2, AppMath.pal(AppParts.BANDS[i]), 1.0, 0);
+            y -= bh;
         }
         var above = (b[4] as Number) + (b[5] as Number);
         var inR = (b[2] as Number) + (b[3] as Number);
         var below = (b[0] as Number) + (b[1] as Number);
         // the goals met, as the phone's report card decides them (rep ok: one bit per Goal)
         var ok = rep.get("ok") instanceof Number ? rep.get("ok") as Number : 0;
-        var ys = L[8] as Array;
-        row(g, L, ys[0], AppWords.s(Rez.Strings.RepAbove), pctText(above), "< 25%", (ok & 2) != 0, false, null);
-        row(g, L, ys[1], AppWords.s(Rez.Strings.RepIn), pctText(inR), "> 70%", (ok & 4) != 0, true,
-            Lang.format(AppWords.s(Rez.Strings.RepVeryGood), [pctText(b[2] as Number)]));
-        row(g, L, ys[2], AppWords.s(Rez.Strings.RepBelow), pctText(below), "< 4%", (ok & 8) != 0, false, null);
-        g.line(-(L[11] as Numeric), L[10], L[11], L[10], AppMath.GRID, 1.5);
+        var rows = [
+            [AppWords.s(Rez.Strings.RepAbove), pctText(above), "< 25%", (ok & 2) != 0, null],
+            [AppWords.s(Rez.Strings.RepIn), pctText(inR), "> 70%", (ok & 4) != 0, Lang.format(AppWords.s(Rez.Strings.RepVeryGood), [pctText(b[2] as Number)])],
+            [AppWords.s(Rez.Strings.RepBelow), pctText(below), "< 4%", (ok & 8) != 0, null]
+        ];
+        var lx = rect ? -w + 40 : -116;
+        var rx = rect ? w - 12 : 152;
+        var step = (bot - 4 - top) / 3.0;
+        var gh = cX + 8;
+        for (var i = 0; i < 3; i++) {
+            var r = rows[i] as Array;
+            var big = i == 1 && !rect;
+            var pf = big ? AppDraw.ME : SM;
+            var yy = rect ? top + i * step + cS : [-90, -26, 36][i];
+            var px = rect ? rx : edgeX(yy - AppDraw.capOf(pf)) - 2;
+            px = px < rx ? px : rx;
+            var pw = AppDraw.ww(r[1] as String, pf);
+            var lf = rect ? AppDraw.TI : big ? SM : AppDraw.TI;
+            g.w(lx, yy, r[0] as String, AppDraw.fitRole(r[0] as String, lf, rect ? rx - lx - pw - 8 : 150), AppMath.INK, START);
+            g.w(px, yy, r[1] as String, pf, AppMath.INK, END);
+            var gy = rect ? yy + 5 + gh / 2 : yy + 18;
+            var gw = goal(g, lx, gy, r[2] as String, r[3] as Boolean);
+            // very good: left out where even xtiny doesn't fit beside the chip (the phone's report has it)
+            var sub = r[4];
+            var sx = lx + gw + (rect ? 8 : 10);
+            var room = rect ? rx - sx : edgeX(gy) - sx;
+            if (sub != null && AppDraw.ww(sub as String, XT) <= room) {
+                g.w(sx, gy + cX / 2, sub as String, XT, AppMath.SOFT, START);
+            }
+        }
+        var ry = rect ? bot + 2 : 78;
+        g.line(rect ? -w + 12 : -140, ry, rect ? w - 12 : 140, ry, AppMath.GRID, 1.5);
         var avg = rep.get("avg");
         var gmi = rep.get("gmi");
         var cv = rep.get("cv");
@@ -888,13 +916,26 @@ module AppScreens {
             [gmi != null ? (gmi as Numeric).toFloat().format("%.1f") + " %" : "--", AppWords.s(Rez.Strings.RepGmi), (ok & 64) != 0],
             [cv != null ? (cv as Numeric).toFloat().format("%.0f") + " %" : "--", AppWords.s(Rez.Strings.RepCv), (ok & 128) != 0]
         ];
-        var my = L[12] as Numeric;
+        var my = rect ? bot + 4 + cS : 108;
+        var ly = my + 6 + cX;
+        var ic = cX * 0.75;
+        // three columns, drawn in as far as their names need on a smaller circle
+        var dx = rect ? (2 * w - 40) / 3 : 92.0;
+        if (!rect) {
+            var half = 0.0;
+            for (var i = 0; i < 3; i++) {
+                var hw0 = (AppDraw.ww(ms[i][1] as String, XT) + ic + 4) / 2;
+                half = hw0 > half ? hw0 : half;
+            }
+            var e = edgeX(ly + 3) - half - 2;
+            dx = e < dx ? e : dx;
+        }
         for (var i = 0; i < 3; i++) {
-            var x = (i - 1) * (L[13] as Numeric);
-            g.t(x, my, ms[i][0] as String, 24, 700, AppMath.INK, MIDDLE);
-            var lw = AppMath.tw(ms[i][1] as String, 15) + 18;
-            mark(g, x - lw / 2, my + 17, ms[i][2] as Boolean, 0.85);
-            g.t(x - lw / 2 + 14, my + 23, ms[i][1] as String, 15, 600, AppMath.SOFT, START);
+            var x = (i - 1) * dx;
+            g.w(x, my, ms[i][0] as String, SM, AppMath.INK, MIDDLE);
+            var lw = AppDraw.ww(ms[i][1] as String, XT) + ic + 4;
+            mark(g, x - lw / 2, ly - cX / 2, ms[i][2] as Boolean, ic);
+            g.w(x - lw / 2 + ic + 4, ly, ms[i][1] as String, XT, AppMath.SOFT, START);
         }
         pageDots(g, 2, 1);
     }
@@ -915,56 +956,89 @@ module AppScreens {
         return null;
     }
 
-    // a goal's check (met, green) or cross (orange), [x, y] the check's left end, [sc] its size
-    function mark(g as AppG, x as Numeric, y as Numeric, met as Boolean, sc as Float) as Void {
+    // a goal's check (met, green) or cross (orange): [x, y] its left end and middle, [ic] its size (app.js goal)
+    function mark(g as AppG, x as Numeric, y as Numeric, met as Boolean, ic as Numeric) as Void {
         if (met) {
-            g.l([x, y, x + 3.5 * sc, y + 3.5 * sc, x + 9.5 * sc, y - 3.5 * sc], AppMath.pal("tight"), 1.0, 2, null);
+            g.l([x, y, x + ic * 0.35, y + ic * 0.35, x + ic, y - ic * 0.35], AppMath.pal("tight"), 1.0, 2, null);
         } else {
-            g.line(x + 1, y - 4 * sc, x + 1 + 7 * sc, y + 3 * sc, AppMath.pal("high"), 2);
-            g.line(x + 1 + 7 * sc, y - 4 * sc, x + 1, y + 3 * sc, AppMath.pal("high"), 2);
+            g.line(x + ic * 0.1, y - ic * 0.4, x + ic * 0.9, y + ic * 0.4, AppMath.pal("high"), 2);
+            g.line(x + ic * 0.9, y - ic * 0.4, x + ic * 0.1, y + ic * 0.4, AppMath.pal("high"), 2);
         }
     }
 
-    function goal(g as AppG, x as Numeric, yy as Numeric, text as String, met as Boolean) as Void {
-        var w = 26 + AppMath.tw(text, 14);
-        g.r(x, yy - 15, w, 22, 11, met ? 0x173A27 : 0x3D2A10, 1.0, 0);
-        mark(g, x + 8, yy - 4.5, met, 1.0);
-        g.t(x + 21, yy + 1, text, 14, 600, AppMath.pal(met ? "tight" : "high"), START);
-    }
-
-    function row(g as AppG, L as Array, yy as Numeric, label as String, pct as String, gtext as String, met as Boolean, big as Boolean, sub as String?) as Void {
-        var lx = L[6] as Numeric;
-        var gy = yy + (L[9] as Numeric);
-        g.t(lx, yy, label, big ? 22 : 19, big ? 700 : 600, AppMath.INK, START);
-        g.t(L[7], yy + (big ? 4 : 0), pct, big ? 32 : 22, 700, AppMath.INK, END);
-        goal(g, lx, gy, gtext, met);
-        if (sub != null) {
-            g.t(lx + 26 + AppMath.tw(gtext, 14) + 10, gy + 1, sub, 15, 500, AppMath.SOFT, START);
-        }
+    // a goal chip centred on [cy]: its mark and words in xtiny; returns its width
+    function goal(g as AppG, x as Numeric, cy as Numeric, text as String, met as Boolean) as Float {
+        var cap = AppDraw.capOf(AppDraw.XT);
+        var h = cap + 10;
+        var ic = cap * 0.8;
+        var padL = cap * 0.45;
+        var w = padL + ic + cap * 0.35 + AppDraw.ww(text, AppDraw.XT) + cap * 0.55;
+        g.r(x, cy - h / 2, w, h, h / 2, met ? 0x173A27 : 0x3D2A10, 1.0, 0);
+        mark(g, x + padL, cy, met, ic);
+        g.w(x + padL + ic + cap * 0.35, cy + cap / 2, text, AppDraw.XT, AppMath.pal(met ? "tight" : "high"), START);
+        return w.toFloat();
     }
 
     // ---- waiting for the phone (S.setup, SPEC §4.3): Sukrara's mark, what it waits for, Open on phone; after the
-    // press ([opened]) Look at your phone. Never a phone screen or setting: those change, the watch app doesn't
+    // press ([opened]) Look at your phone. Never a phone screen or setting: those change, the watch app doesn't. Laid
+    // out from the button up: the body in tiny on up to two lines (else xtiny), the title in medium on up to two, the
+    // phone's icon where room is left
+    // the button's [top, height] (units; AppView's taps too)
+    function setupButton() as Array<Float> {
+        return [(AppFontTable.RECT ? hh() - 70 : 96).toFloat(), AppDraw.capOf(AppDraw.SM) + 22];
+    }
+
     function setup(g as AppG, opened as Boolean) as Void {
+        var ME = AppDraw.ME;
+        var bb = setupButton();
+        var by = bb[0];
+        var bh = bb[1];
+        var top = AppFontTable.RECT ? -hh() + 20 : -150;
+        var ir = 24;
+        var tl = AppDraw.wrap(AppWords.s(Rez.Strings.SetupTitle), ME, 290);
+        if (tl.size() > 2) {
+            tl = tl.slice(0, 2);
+        }
+        var mh = AppDraw.lh(ME) * 0.9;
+        var given = [AppWords.s(Rez.Strings.SetupLine1), AppWords.s(Rez.Strings.SetupLine2)];
+        var bw1 = 2 * edgeX(by - 10) - 20;
+        var bf = AppDraw.TI;
+        var ls = given;
+        for (var k = 0; k < 2; k++) {
+            bf = k == 0 ? AppDraw.TI : AppDraw.XT;
+            ls = AppDraw.ww(given[0], bf) <= bw1 && AppDraw.ww(given[1], bf) <= bw1 ? given : AppDraw.wrap(given[0] + " " + given[1], bf, bw1);
+            if (ls.size() <= 2) {
+                break;
+            }
+        }
+        var th = AppDraw.lh(bf) * 0.85;
+        var titleH = AppDraw.capOf(ME) + (tl.size() - 1) * mh;
+        var y = by - 12 - (AppDraw.capOf(bf) + (ls.size() - 1) * th) - 12 - titleH;
         // Sukrara for Android's own icon (the disc, the cube, the dot: the phone app that needs to be open), not the
         // watch's launcher icon (the owner, 2026-11-22); its bitmap made at the class's size (tools/fonts.py)
-        g.bmp(Rez.Drawables.PhoneIcon, 0, -92, 60);
-        g.t(0, -26, AppWords.s(Rez.Strings.SetupTitle), 26, 700, AppMath.INK, MIDDLE);
-        g.t(0, 8, AppWords.s(Rez.Strings.SetupLine1), 18, 500, AppMath.SOFT, MIDDLE);
-        g.t(0, 33, AppWords.s(Rez.Strings.SetupLine2), 18, 500, AppMath.SOFT, MIDDLE);
+        if (y - 2 * ir - 10 >= top) {
+            g.bmp(Rez.Drawables.PhoneIcon, 0, y - 10 - ir, 2 * ir);
+        }
+        lines(g, y + AppDraw.capOf(ME), tl, ME, mh, AppMath.INK);
+        y += titleH + 12;
+        lines(g, y + AppDraw.capOf(bf), ls, bf, th, AppMath.SOFT);
         if (opened) {
             var look = AppWords.s(Rez.Strings.LookPhone);
-            var lw = AppMath.tw(look, 22) + 30;
-            g.icon("phone", -lw / 2 + 11, 90, 22, AppMath.INK);
-            g.t(-lw / 2 + 30, 98, look, 22, 700, AppMath.INK, START);
+            var e = edgeX(by + bh / 2 + AppDraw.capOf(AppDraw.SM) / 2 + 4);
+            var lf = AppDraw.fitRole(look, AppDraw.SM, (250 < 2 * e - 34 ? 250 : 2 * e - 34));
+            var lw = AppDraw.ww(look, lf) + 30;
+            g.icon("phone", -lw / 2 + 11, by + bh / 2, 22, AppMath.INK);
+            g.w(-lw / 2 + 30, by + bh / 2 + AppDraw.capOf(lf) / 2, look, lf, AppMath.INK, START);
             return;
         }
         var bt = AppWords.s(Rez.Strings.OpenOnPhone);
-        var bw0 = AppMath.tw(bt, 22) + 26;
-        var w = bw0 + 56;
-        g.r(-w / 2, 70, w, 52, 26, AppMath.INK, 1.0, 0);
-        g.icon("phone", -bw0 / 2 + 10, 96, 20, AppMath.ON);
-        g.t(-bw0 / 2 + 26, 104, bt, 22, 700, AppMath.ON, START);
+        var e2 = 2 * edgeX(by + bh) - 70;
+        var bfn = AppDraw.fitRole(bt, AppDraw.SM, 220 < e2 ? 220 : e2);
+        var bw0 = AppDraw.ww(bt, bfn) + 26;
+        var w = bw0 + 40;
+        g.r(-w / 2, by, w, bh, bh / 2, AppMath.INK, 1.0, 0);
+        g.icon("phone", -bw0 / 2 + 10, by + bh / 2, 20, AppMath.ON);
+        g.w(-bw0 / 2 + 26, by + bh / 2 + AppDraw.capOf(bfn) / 2, bt, bfn, AppMath.ON, START);
         btnHint(g, 60, AppMath.INK);
     }
 

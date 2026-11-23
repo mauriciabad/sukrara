@@ -92,49 +92,63 @@ module AppParts {
         return (v as Numeric).toNumber().toString();
     }
 
-    // the last treatment as a stack the size of a ring (app.js lastStack): the kind's mark, the time since
-    function lastStack(g as AppG, cx as Numeric, cy as Numeric, size as Numeric, k as String, m as Number) as Void {
+    // the last treatment in a ring's room (app.js lastStack): the kind's mark over the time since ("35m"); from 1 h on
+    // two lines ("1h" / "5m") with the mark left of the first; words in [role]
+    function lastStack(g as AppG, cx as Numeric, cy as Numeric, size as Numeric, k as String, m as Number, role as Number) as Void {
         var parts = AppMath.timeSince(m);
         var col = AppMath.pal(k);
-        var ms = size * 0.3;
+        var cap = AppDraw.capOf(role);
+        var ms = size * 0.3 < cap * 0.8 ? size * 0.3 : cap * 0.8;
+        var gap = cap * 0.3;
         var two = parts.size() == 2;
-        var f1 = size * (two ? 0.4 : 0.46);
-        var f2 = size * 0.32;
-        var h = ms + 4 + f1 * 0.72 + (two ? 4 + f2 * 0.72 : 0);
-        var y0 = cy - h / 2;
+        var y0 = cy - (two ? 2 * cap + gap : ms + gap + cap) / 2;
+        var mx = cx;
+        var my = y0 + ms / 2;
+        var x0 = cx;
+        if (two) {
+            x0 = cx - (ms + 3 + AppDraw.ww(parts[0], role)) / 2;
+            mx = x0 + ms / 2;
+            my = y0 + cap / 2;
+        }
         if (k.equals("carbs")) {
-            g.c(cx, y0 + ms / 2, ms * 0.4, col, 1.0, 0);
+            g.c(mx, my, ms * 0.4, col, 1.0, 0);
         } else {
-            var tri = [cx - ms / 2, y0 + ms * 0.08, cx + ms / 2, y0 + ms * 0.08, cx, y0 + ms * 0.92];
+            var tri = [mx - ms / 2, my - ms * 0.42, mx + ms / 2, my - ms * 0.42, mx, my + ms * 0.42];
             if (k.equals("long")) {
                 g.l(tri.addAll([tri[0], tri[1]]), col, 1.0, 2, null);
             } else {
                 g.p(tri, col, 1.0);
             }
         }
-        var yb = y0 + ms + 4 + f1 * 0.72;
-        g.t(cx, yb, parts[0], f1, 700, AppMath.INK, MIDDLE);
-        if (two) {
-            g.t(cx, yb + 4 + f2 * 0.72, parts[1], f2, 600, AppMath.SOFT, MIDDLE);
+        if (!two) {
+            g.w(cx, y0 + ms + gap + cap, parts[0], role, AppMath.INK, MIDDLE);
+            return;
         }
+        g.w(x0 + ms + 3, y0 + cap, parts[0], role, AppMath.INK, START);
+        g.w(cx, y0 + 2 * cap + gap, parts[1], role, AppMath.SOFT, MIDDLE);
     }
 
-    function drawSlot(g as AppG, d as AppData, s as Array, cx as Numeric, cy as Numeric, r as Numeric, sw as Numeric, nfs as Numeric) as Void {
+    function drawSlot(g as AppG, d as AppData, s as Array, cx as Numeric, cy as Numeric, r as Numeric, sw as Numeric, nfs as Numeric, role as Number) as Void {
         if ("last".equals(s[0])) {
-            lastStack(g, cx, cy, 2 * r + sw, s[1] as String, s[2] as Number);
+            lastStack(g, cx, cy, 2 * r + sw, s[1] as String, s[2] as Number, role);
         } else {
             ring(g, d, cx, cy, r, sw, s[1] as Dictionary, nfs);
         }
     }
 
-    // Sukrara's pill (app.js pill()): [p] = [kind, text, filled, icon]; returns its width
-    function pill(g as AppG, x as Numeric, y as Numeric, p as Array, fs as Numeric, anchor as Number) as Float {
-        var h = fs * 1.36;
-        var iw = fs * 0.78;
-        var padL = fs * 0.5;
-        var padR = fs * 0.6;
+    // Sukrara's pill (app.js pill()): [p] = [kind, text, filled, icon], its words in [role], [tall] caps high; returns
+    // its width
+    function pillWidth(text as String, role as Number) as Float {
+        return AppDraw.capOf(role) * 2.75 + AppDraw.ww(text, role);
+    }
+
+    function pill(g as AppG, x as Numeric, y as Numeric, p as Array, role as Number, tall as Float, anchor as Number) as Float {
+        var fs = AppDraw.capOf(role);
+        var h = fs * tall;
+        var iw = fs * 1.05;
+        var padL = fs * 0.6;
         var text = p[1] as String;
-        var w = padL + iw + fs * 0.3 + AppMath.tw(text, fs) + padR;
+        var w = pillWidth(text, role);
         var x0 = anchor == START ? x : anchor == END ? x - w : x - w / 2;
         var col = AppMath.pal(p[0] as String);
         var filled = p[2] as Boolean;
@@ -145,7 +159,7 @@ module AppParts {
         }
         var fg = filled ? AppMath.ON : col;
         g.icon(p[3] as String, x0 + padL + iw / 2, y, iw, fg);
-        g.t(x0 + padL + iw + fs * 0.3, y + fs * 0.35, text, fs, 600, fg, START);
+        g.w(x0 + padL + iw + fs * 0.4, y + fs / 2, text, role, fg, START);
         return w.toFloat();
     }
 
@@ -173,25 +187,37 @@ module AppParts {
     function glance(g as AppG, d as AppData) as Void {
         var x0 = -83;
         var x1 = x0 + AppDraw.gw;
-        // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page
+        var GL = AppDraw.GL;
+        var gc = AppDraw.capOf(GL);
+        // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page. Every
+        // word in the glance's font, wrapped to the content's width, the lines centred on its middle
         if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
-            g.t(x0, 8, AppWords.s(d.sent ? Rez.Strings.NoReadings : Rez.Strings.SetupTitle), 18, 600, AppMath.SOFT, START);
+            var ls = AppDraw.wrap(AppWords.s(d.sent ? Rez.Strings.NoReadings : Rez.Strings.SetupTitle), GL, x1 - x0);
+            var lh = AppDraw.lh(GL);
+            for (var i = 0; i < ls.size(); i++) {
+                g.w(x0, -(ls.size() - 1) * lh / 2 + gc / 2 + i * lh, ls[i], GL, AppMath.SOFT, START);
+            }
             return;
         }
         if (d.noValue()) {
             if (d.sensorState.equals("warmup")) {
                 pie(g, x0 + 14, -14, 14, 2.2, d.warm);
-                g.t(x0 + 36, -6, AppWords.s(Rez.Strings.WWarming), 24, 600, AppMath.INK, START);
-                g.t(x0, 28, Lang.format(AppWords.s(Rez.Strings.WReadyAt), [d.readyAt]), 18, 500, AppMath.SOFT, START);
+                g.w(x0 + 36, -14 + gc / 2, AppWords.s(Rez.Strings.WWarming), GL, AppMath.INK, START);
+                g.w(x0, 14 + gc + 4, Lang.format(AppWords.s(Rez.Strings.WReadyAt), [d.readyAt]), GL, AppMath.SOFT, START);
             } else {
-                g.t(x0, -14, AppWords.s(Rez.Strings.WNoSince), 18, 600, AppMath.SOFT, START);
-                g.t(x0, 26, d.readAt, 38, 600, AppMath.INK, START);
+                g.w(x0, -18, AppWords.s(Rez.Strings.WNoSince), GL, AppMath.SOFT, START);
+                g.t(x0, 30, d.readAt, 38, 600, AppMath.INK, START);
             }
             return;
         }
         var snd = Sending.state(d.now);
         var under = d.pill != null || d.age >= 1.5 || snd != null;
-        var vy = under ? 4 : 20;
+        // the row under the value: the glance's font, the pill 1.5 caps tall, at the content's bottom; the value over
+        // it, the places at the content's top
+        var rowH = gc * 1.5;
+        var bh = AppDraw.gh;
+        var cy = bh / 2 - rowH / 2 - 1;
+        var vy = under ? cy - rowH / 2 - 6 : 20;
         var fs = under ? 54 : 58;
         // the same two places as page 1 (main, then the last treatment or the second metric), from the right edge;
         // decided with the widest value (288 and its arrow) at the smallest size, so they never change with the
@@ -213,26 +239,26 @@ module AppParts {
         var v = value(g, d, x0, vy, fs, START, true, null);
         var room = x1 - (v[1] + 10);
         var x = x1;
+        var sy = under ? -bh / 2 + rr + sw / 2.0 + 2 : 0;
         for (var i = 0; i < n && room >= w; i++) {
-            drawSlot(g, d, d.slots[i] as Array, x - w / 2.0, 0, rr, sw, 23);
+            drawSlot(g, d, d.slots[i] as Array, x - w / 2.0, sy < 0 ? sy : 0, rr, sw, 23, GL);
             x -= w + 6;
             room -= w + 6;
         }
         if (under) {
-            var cy = 34;
             var ax = x0.toFloat();
             if (d.age >= 1.5) {
-                g.t(ax, cy + 6, d.readAt, 17, 500, AppMath.SOFT, START);
-                ax += AppMath.tw(d.readAt, 17) + 10;
+                g.w(ax, cy + gc / 2, d.readAt, GL, AppMath.SOFT, START);
+                ax += AppDraw.ww(d.readAt, GL) + 10;
             }
             if (d.pill != null) {
-                ax += pill(g, ax, cy, d.pill as Array, 15, START) + 10;
+                ax += pill(g, ax, cy, d.pill as Array, GL, 1.5, START) + 10;
             }
             // the outbox: Waiting for the phone, Sent, The phone has a question; where it fits after the rest
             if (snd != null) {
                 var s = sendingText(snd);
-                if (ax + AppMath.tw(s, 15) <= x1) {
-                    g.t(ax, cy + 5, s, 15, 600, snd.equals("ask") ? AppMath.pal("high") : AppMath.SOFT, START);
+                if (ax + AppDraw.ww(s, GL) <= x1) {
+                    g.w(ax, cy + gc / 2, s, GL, snd.equals("ask") ? AppMath.pal("high") : AppMath.SOFT, START);
                 }
             }
         }

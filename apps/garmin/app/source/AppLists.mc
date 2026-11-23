@@ -58,49 +58,58 @@ module AppLists {
         return out;
     }
 
-    // the rows' y (4), and the list's geometry: [title x, title y, title anchor, selected row x, its width, its
-    // corner, icon x, label x, the last entry's x, the others' icon size]; round (app.js S.actions) or the rectangles'
-    // full-width rows (R.actions)
+    // the rows' y (4) (the taps too), and the list's geometry: [title x, title y, title anchor, rows' x0, x1, the
+    // selected row's height]; round (app.js S.actions) or the rectangles' full-width rows (R.actions), from the fonts
     function ys() as Array {
         if (!AppFontTable.RECT) {
             return [-74, -12, 44, 100];
         }
         var h = AppScreens.hh();
-        var st = (2 * h - 86 - 40) / 4 + 2;
-        return [-h + 86, -h + 86 + st, -h + 86 + 2 * st, -h + 86 + 3 * st];
+        var y0 = -h + 30 + AppDraw.lh(AppDraw.TI) + 32;
+        var st = (h - 40 - y0) / 3;
+        return [y0, y0 + st, y0 + 2 * st, y0 + 3 * st];
     }
 
     function at() as Array {
         if (!AppFontTable.RECT) {
-            return [0, -138, 0, -166, 332, 32, -128, -104, 150, 22];
+            return [0, -136, 0, -166, 166, 64];
         }
         var w = AppScreens.hw();
         var h = AppScreens.hh();
-        return [-w + 18, -h + 34, -1, -w + 8, 2 * w - 16, 20, -w + 38, -w + 62, w - 20, 21];
+        var y = ys();
+        var rh = (y[1] as Numeric) - (y[0] as Numeric) - 4;
+        return [-w + 18, -h + 14 + AppDraw.capOf(AppDraw.TI), -1, -w + 8, w - 8, rh < 64 ? rh : 64];
     }
 
+    // the one list (app.js S.actions / listRow): the title in tiny; each row the kind's mark, its name in small (fitted
+    // down where its last entry needs the room) and its last entry in xtiny at the right; the selected one on a card
     function actions(g as AppG, d as AppData, sel as Number) as Void {
         var items = rows(d);
         var L = at();
-        g.t(L[0], L[1], AppWords.s(Rez.Strings.AppName), 20, 600, AppMath.SOFT, L[2]);
+        g.w(L[0], L[1], AppWords.s(Rez.Strings.AppName), AppDraw.TI, AppMath.SOFT, L[2]);
         var ys = ys();
         if (items.size() == 1) {
-            AppScreens.fitT(g, (ys[1] as Numeric) - 84, AppWords.s(Rez.Strings.LogOff), [17, 15, 14], 500, AppMath.DIM, 176);
+            AppScreens.fitW(g, (ys[1] as Numeric) - 84, AppWords.s(Rez.Strings.LogOff), AppDraw.XT, AppMath.SOFT);
         }
         var y0 = items.size() == 1 ? 3 : 0;
+        var x0 = L[3] as Numeric;
+        var x1 = L[4] as Numeric;
+        var rh = L[5] as Numeric;
+        var XT = AppDraw.XT;
         for (var i = 0; i < items.size() && i < 4; i++) {
             var it = items[i];
             var y = ys[i + y0] as Numeric;
             var on = i == sel;
-            var fs = on ? 30 : 23;
             if (on) {
-                g.r(L[3], y - 32, L[4], 64, L[5], AppMath.CARD2, 1.0, 0);
+                g.r(x0, y - rh / 2, x1 - x0, rh, rh / 2 < 32 ? rh / 2 : 32, AppMath.CARD2, 1.0, 0);
             }
-            g.icon(it[2] as String, L[6], y, on ? 26 : L[9], it[3] as Number);
-            g.t(L[7], y + fs * 0.35, it[1] as String, fs, on ? 700 : 600, on ? AppMath.INK : AppMath.SOFT, -1);
-            if (it[4] != null) {
-                var sc = it[5] != null ? it[5] as Number : on ? AppMath.SOFT : AppMath.DIM;
-                g.t(L[8], y + 7, it[4] as String, on ? 18 : 16, 600, sc, 1);
+            g.icon(it[2] as String, x0 + 38, y, on ? 26 : 22, it[3] as Number);
+            var sub = it[4];
+            var sw = sub != null ? AppDraw.ww(sub as String, XT) + 12 : 0;
+            var lf = AppDraw.fitRole(it[1] as String, AppDraw.SM, x1 - 16 - sw - (x0 + 62));
+            g.w(x0 + 62, y + AppDraw.capOf(lf) / 2, it[1] as String, lf, on ? AppMath.INK : AppMath.SOFT, -1);
+            if (sub != null) {
+                g.w(x1 - 16, y + AppDraw.capOf(XT) / 2, sub as String, XT, it[5] != null ? it[5] as Number : AppMath.SOFT, 1);
             }
         }
         AppScreens.btnHint(g, 60, AppMath.INK);

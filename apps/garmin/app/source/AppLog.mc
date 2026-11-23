@@ -63,13 +63,13 @@ module AppLog {
         return Lang.format(AppWords.s("low".equals(q.get("side")) ? Rez.Strings.QuietLows : Rez.Strings.QuietHighs), [len]);
     }
 
-    // a hint at a button: a short arc on the rim at its angle, and a label beside it (app.js btnHint)
+    // a hint at a button: a short arc on the rim at its angle, and a label beside it in small (app.js btnHint)
     function hint(g as AppG, ang as Numeric, label as String?, col as Number) as Void {
         var at = AppScreens.btnHint(g, ang, col);
         if (label != null && at != null) {
             var i = [60, 120, 270, 240].indexOf(ang);
             var p = AppMath.P(ang == 270 ? 170 : 166, AppFontTable.KEYS[i] as Number);
-            g.t(p[0] - 4, p[1] + 26 * 0.35, label, 26, 600, col, START);
+            g.w(p[0] - 4, p[1] + AppDraw.capOf(AppDraw.SM) / 2, label, AppDraw.SM, col, START);
         }
     }
 
@@ -78,57 +78,28 @@ module AppLog {
     // chevrons full-width buttons above and below the number): [the label's y, number's baseline, its size, the
     // unit's size, the up chevron's y, the down one's, the chips' top, chip w, gap, chip h, the time's y]
     function amountAt() as Array {
+        var cS = AppDraw.capOf(AppDraw.SM);
         if (!AppFontTable.RECT) {
-            return [-122, 22, 128, 50, -83, 49, 76, 64, 10, 36, 146];
+            var ch = cS + 16;
+            return [-122, 22, 128, 50, -83, 49, 74, 64, 10, ch, 74 + ch + 10 + AppDraw.capOf(AppDraw.TI)];
         }
         var h = AppScreens.hh();
-        return [-h + 40, -h + 194, 120, 48, -h + 82, -h + 228, h - 92, 72, 12, 38, h - 22];
+        var chh = cS + 14;
+        return [-h + 14 + cS, -h + 194, 120, 48, -h + 82, -h + 228, h - 16 - AppDraw.lh(AppDraw.TI) - chh, 72, 12, chh, h - 14];
     }
 
     function amount(g as AppG, k as String, a as Float, usual as Array, ago as Number) as Void {
-        if (AppFontTable.RECT) {
-            rectAmount(g, k, a, usual, ago);
-            return;
-        }
-        var col = AppMath.pal(k);
-        var label = kindName(k);
-        var lw = AppMath.tw(label, 22) + 30;
-        g.icon(k, -lw / 2 + 10, -129, 18, col);
-        g.t(-lw / 2 + 26, -122, label, 22, 600, col, START);
-        var s = num(k, a);
-        var unit = k.equals("carbs") ? "g" : "u";
-        var w = AppMath.bw(s, 128);
-        var uw = AppMath.tw(unit, 50);
-        var x0 = -(w + 8 + uw) / 2;
-        g.n(x0, 22, s, 128, AppMath.INK, START);
-        g.t(x0 + w + 8, 22, unit, 50, 600, AppMath.SOFT, START);
-        g.l([-16, -76, 0, -90, 16, -76], AppMath.DIM, 1.0, 4, null);
-        g.l([-16, 42, 0, 56, 16, 42], AppMath.DIM, 1.0, 4, null);
-        var cw = 64;
-        var gap = 10;
-        var cx0 = -(usual.size() * cw + (usual.size() - 1) * gap) / 2;
-        for (var i = 0; i < usual.size(); i++) {
-            var ch = num(k, (usual[i] as Numeric).toFloat());
-            var on = ch.equals(s);
-            var x = cx0 + i * (cw + gap);
-            g.r(x, 76, cw, 36, 18, on ? col : AppMath.CARD2, 1.0, 0);
-            g.t(x + cw / 2, 101, ch, 20, 700, on ? AppMath.ON : AppMath.SOFT, MIDDLE);
-        }
-        g.t(0, 146, when(ago, false), 20, 600, AppMath.SOFT, MIDDLE);
-        hint(g, 60, null, AppMath.INK);
-        hint(g, 270, "+", AppMath.INK);
-        hint(g, 240, "−", AppMath.INK);
-    }
-
-    // the rectangles' amount (app.js R.logAmount)
-    function rectAmount(g as AppG, k as String, a as Float, usual as Array, ago as Number) as Void {
         var L = amountAt();
+        var rect = AppFontTable.RECT;
         var w0 = AppScreens.hw();
         var col = AppMath.pal(k);
         var label = kindName(k);
-        var lw = AppMath.tw(label, 22) + 30;
-        g.icon(k, -lw / 2 + 10, (L[0] as Numeric) - 7, 18, col);
-        g.t(-lw / 2 + 26, L[0], label, 22, 600, col, START);
+        var SM = AppDraw.SM;
+        var lf = AppDraw.fitRole(label, SM, rect ? 2 * w0 - 60 : 220);
+        var lw = AppDraw.ww(label, lf) + 30;
+        var ly = L[0] as Numeric;
+        g.icon(k, -lw / 2 + 10, ly - AppDraw.capOf(lf) / 2, 18, col);
+        g.w(-lw / 2 + 26, ly, label, lf, col, START);
         var s = num(k, a);
         var unit = k.equals("carbs") ? "g" : "u";
         var w = AppMath.bw(s, L[2] as Numeric);
@@ -136,34 +107,52 @@ module AppLog {
         var x0 = -(w + 8 + uw) / 2;
         g.n(x0, L[1], s, L[2] as Numeric, AppMath.INK, START);
         g.t(x0 + w + 8, L[1], unit, L[3] as Numeric, 600, AppMath.SOFT, START);
-        for (var i = 0; i < 2; i++) {
-            var cy = (L[4 + i] as Numeric);
-            var dir = i == 0 ? -1 : 1;
-            g.r(-w0 + 40, cy - 20, 2 * w0 - 80, 40, 20, AppMath.CARD2, 1.0, 0);
-            g.l([-16, cy - 6 * dir, 0, cy + 6 * dir, 16, cy - 6 * dir], AppMath.SOFT, 1.0, 4, null);
+        if (rect) {
+            for (var i = 0; i < 2; i++) {
+                var cy = (L[4 + i] as Numeric);
+                var dir = i == 0 ? -1 : 1;
+                g.r(-w0 + 40, cy - 20, 2 * w0 - 80, 40, 20, AppMath.CARD2, 1.0, 0);
+                g.l([-16, cy - 6 * dir, 0, cy + 6 * dir, 16, cy - 6 * dir], AppMath.SOFT, 1.0, 4, null);
+            }
+        } else {
+            g.l([-16, -76, 0, -90, 16, -76], AppMath.DIM, 1.0, 4, null);
+            g.l([-16, 42, 0, 56, 16, 42], AppMath.DIM, 1.0, 4, null);
         }
         var cw = L[7] as Numeric;
         var gap = L[8] as Numeric;
+        var ct = L[6] as Numeric;
+        var chh = L[9] as Numeric;
         var cx0 = -(usual.size() * cw + (usual.size() - 1) * gap) / 2;
         for (var i = 0; i < usual.size(); i++) {
             var ch = num(k, (usual[i] as Numeric).toFloat());
             var on = ch.equals(s);
             var x = cx0 + i * (cw + gap);
-            g.r(x, L[6], cw, L[9], (L[9] as Numeric) / 2, on ? col : AppMath.CARD2, 1.0, 0);
-            g.t(x + cw / 2, (L[6] as Numeric) + 26, ch, 20, 700, on ? AppMath.ON : AppMath.SOFT, MIDDLE);
+            g.r(x, ct, cw, chh, chh / 2, on ? col : AppMath.CARD2, 1.0, 0);
+            g.w(x + cw / 2, ct + chh / 2 + AppDraw.capOf(SM) / 2, ch, SM, on ? AppMath.ON : AppMath.SOFT, MIDDLE);
         }
-        g.t(0, L[10], when(ago, false), 20, 600, AppMath.SOFT, MIDDLE);
+        g.w(0, L[10], when(ago, false), AppDraw.TI, AppMath.SOFT, MIDDLE);
         hint(g, 60, null, AppMath.INK);
+        if (!rect) {
+            hint(g, 270, "+", AppMath.INK);
+            hint(g, 240, "-", AppMath.INK);
+        }
     }
 
     // ---- hold to log (S.logConfirm): [dup] the same kind's entry of the last 15 min ("4.5u 3 min ago"), or null --
     function confirm(g as AppG, k as String, a as Float, ago as Number, dup as String?, p as Float, q as String?) as Void {
         var col = AppMath.pal(k);
+        var TI = AppDraw.TI;
+        var SM = AppDraw.SM;
+        // the rim fills from START while it's held; drawn first, so the words keep inside it
+        AppScreens.rim(g, AppMath.GRID, 8, 1.0);
+        AppScreens.rim(g, col, 8, p);
         if (dup != null) {
-            g.icon("warn", -96, -132, 22, AppMath.pal("high"));
-            g.t(-80, -125, dup, 20, 600, AppMath.pal("high"), START);
+            var df = AppDraw.fitRole(dup, TI, 200);
+            var dw = AppDraw.ww(dup, df) + 28;
+            g.icon("warn", -dw / 2 + 11, -122 - AppDraw.capOf(df) / 2, 22, AppMath.pal("high"));
+            g.w(-dw / 2 + 28, -122, dup, df, AppMath.pal("high"), START);
         } else {
-            g.t(0, -124, AppWords.s(Rez.Strings.Log), 22, 600, AppMath.SOFT, MIDDLE);
+            g.w(0, -122, AppWords.s(Rez.Strings.Log), SM, AppMath.SOFT, MIDDLE);
         }
         var s = num(k, a);
         var unit = k.equals("carbs") ? "g" : "u";
@@ -173,15 +162,16 @@ module AppLog {
         g.icon(k, x0 + 15, -40, 30, col);
         g.n(x0 + 42, -8, s, 96, col, START);
         g.t(x0 + 42 + wN, -8, unit, 96, 700, col, START);
-        g.t(0, 30, Lang.format(AppWords.s(Rez.Strings.AmountWhen), [kindWord(k), when(ago, true)]), 22, 600, AppMath.INK, MIDDLE);
+        AppScreens.fitW(g, 30, Lang.format(AppWords.s(Rez.Strings.AmountWhen), [kindWord(k), when(ago, true)]), SM, AppMath.INK);
         if (q != null) {
-            g.t(0, 62, q, 18, 500, AppMath.SOFT, MIDDLE);
+            AppScreens.fitW(g, 36 + AppDraw.capOf(TI) + 10, q, TI, AppMath.SOFT);
         }
-        // the rim fills from START while it's held
-        AppScreens.rim(g, AppMath.GRID, 8, 1.0);
-        AppScreens.rim(g, col, 8, p);
-        g.r(-92, 102, 184, 44, 22, AppMath.CARD2, 1.0, 0);
-        g.t(0, 131, AppWords.s(Rez.Strings.HoldTouch), 20, 700, AppMath.INK, MIDDLE);
+        var ht = AppWords.s(Rez.Strings.HoldTouch);
+        var hf = AppDraw.fitRole(ht, SM, 200);
+        var hw0 = AppDraw.ww(ht, hf) + 44;
+        var hh0 = AppDraw.capOf(SM) + 20;
+        g.r(-hw0 / 2, 102, hw0, hh0, hh0 / 2, AppMath.CARD2, 1.0, 0);
+        g.w(0, 102 + hh0 / 2 + AppDraw.capOf(hf) / 2, ht, hf, AppMath.INK, MIDDLE);
         hint(g, 60, null, col);
     }
 
@@ -196,17 +186,22 @@ module AppLog {
         g.c(0, -36, 46, AppMath.GRID, 1.0, 6);
         g.a(0, -36, 46, 20 + spin, 130 + spin, col, 1.0, 6, false);
         g.icon("phone", 0, -36, 30, AppMath.SOFT);
-        g.t(0, 46, title, 30, 700, AppMath.INK, MIDDLE);
-        g.t(0, 80, AppWords.s(Rez.Strings.SendingPhone), 20, 500, AppMath.SOFT, MIDDLE);
+        AppScreens.fitW(g, 46, title, AppDraw.ME, AppMath.INK);
+        AppScreens.fitW(g, 56 + AppDraw.capOf(AppDraw.TI) + 6, AppWords.s(Rez.Strings.SendingPhone), AppDraw.TI, AppMath.SOFT);
     }
 
-    // a done screen's Undo with its countdown ring ([left] the share of the 10 s left)
+    // a done screen's Undo (small) with its countdown ring ([left] the share of the 10 s left; app.js undo)
     function undo(g as AppG, y as Numeric, left as Float) as Void {
-        g.r(-64, y, 128, 42, 21, AppMath.CARD2, 1.0, 0);
-        g.t(-8, y + 28, AppWords.s(Rez.Strings.Undo), 20, 700, AppMath.INK, MIDDLE);
-        g.c(40, y + 21, 10, AppMath.GRID, 1.0, 3);
+        var SM = AppDraw.SM;
+        var u = AppWords.s(Rez.Strings.Undo);
+        var h = AppDraw.capOf(SM) + 18;
+        var w = AppDraw.ww(u, SM) + 30 + 26;
+        g.r(-w / 2, y, w, h, h / 2, AppMath.CARD2, 1.0, 0);
+        g.w(-w / 2 + 18, y + h / 2 + AppDraw.capOf(SM) / 2, u, SM, AppMath.INK, START);
+        var rx = w / 2 - 22;
+        g.c(rx, y + h / 2, 9, AppMath.GRID, 1.0, 3);
         if (left > 0) {
-            g.a(40, y + 21, 10, 0, 360 * left, AppMath.SOFT, 1.0, 3, false);
+            g.a(rx, y + h / 2, 9, 0, 360 * left, AppMath.SOFT, 1.0, 3, false);
         }
     }
 
@@ -215,12 +210,12 @@ module AppLog {
         var col = AppMath.pal(k);
         g.c(0, -46, 50, col, 1.0, 0);
         g.l([-22, -46, -8, -32, 22, -62], AppMath.ON, 1.0, 8, null);
-        g.t(0, 40, Lang.format(AppWords.s(Rez.Strings.Logged), [what(k, a)]), 28, 700, AppMath.INK, MIDDLE);
+        AppScreens.fitW(g, 40, Lang.format(AppWords.s(Rez.Strings.Logged), [what(k, a)]), AppDraw.ME, AppMath.INK);
         if (q != null) {
-            g.t(0, 72, q, 20, 500, AppMath.SOFT, MIDDLE);
+            AppScreens.fitW(g, 50 + AppDraw.capOf(AppDraw.TI) + 6, q, AppDraw.TI, AppMath.SOFT);
         }
         if (left > 0) {
-            undo(g, 98, left);
+            undo(g, 96, left);
             hint(g, 60, null, AppMath.INK);
         }
     }
@@ -230,31 +225,34 @@ module AppLog {
         var hi = AppMath.pal("high");
         g.icon("phone", 0, -60, 46, hi);
         g.line(-24, -84, 24, -36, hi, 4);
-        g.t(0, 10, AppWords.s(Rez.Strings.SavedWatch), 26, 700, AppMath.INK, MIDDLE);
-        g.t(0, 42, what(k, a) + " · " + at, 20, 600, AppMath.pal(k), MIDDLE);
-        g.t(0, 76, AppWords.s(Rez.Strings.GoesPhone), 18, 500, AppMath.SOFT, MIDDLE);
-        g.t(0, 100, AppWords.s(Rez.Strings.WhenNear), 18, 500, AppMath.SOFT, MIDDLE);
+        var TI = AppDraw.TI;
+        var cT = AppDraw.capOf(TI);
+        AppScreens.fitW(g, 10, AppWords.s(Rez.Strings.SavedWatch), AppDraw.ME, AppMath.INK);
+        AppScreens.fitW(g, 18 + cT + 8, what(k, a) + " · " + at, TI, AppMath.pal(k));
+        var y2 = 18 + cT + 8 + 14 + cT;
+        AppScreens.fitW(g, y2, AppWords.s(Rez.Strings.GoesPhone), TI, AppMath.SOFT);
+        AppScreens.fitW(g, y2 + AppDraw.lh(TI), AppWords.s(Rez.Strings.WhenNear), TI, AppMath.SOFT);
     }
 
     // ---- the pen question (the phone's "Already logged by your pen?"): [pen] "4.5u at 20:31"; [sel] 0 Cancel, 1 Log anyway
     function pen(g as AppG, k as String, pen as String, sel as Number) as Void {
         var col = AppMath.pal(k);
         g.icon("pen", 0, -118, 30, col);
-        AppScreens.fitT(g, -70, AppWords.s(Rez.Strings.PenAsk), [24, 22, 20], 700, AppMath.INK, 186);
-        g.t(0, -40, pen, 20, 500, AppMath.SOFT, MIDDLE);
+        AppScreens.fitW(g, -70, AppWords.s(Rez.Strings.PenAsk), AppDraw.ME, AppMath.INK);
+        AppScreens.fitW(g, -62 + AppDraw.capOf(AppDraw.TI) + 6, pen, AppDraw.TI, AppMath.SOFT);
         var items = [AppWords.s(Rez.Strings.Cancel), AppWords.s(Rez.Strings.LogAnyway)];
         var ys = [10, 70];
         for (var i = 0; i < 2; i++) {
             var on = i == sel;
             g.r(-130, ys[i] - 26, 260, 52, 26, on ? AppMath.INK : AppMath.CARD2, 1.0, 0);
-            g.t(0, ys[i] + 8, items[i], 22, 700, on ? AppMath.ON : AppMath.INK, MIDDLE);
+            g.w(0, ys[i] + AppDraw.capOf(AppDraw.SM) / 2, items[i], AppDraw.fitRole(items[i], AppDraw.SM, 230), on ? AppMath.ON : AppMath.INK, MIDDLE);
         }
         hint(g, 60, null, AppMath.INK);
     }
 
     // ---- a short word that closes by itself (Not logged: too old, Undone …) ------------------------------------
     function said(g as AppG, text as String) as Void {
-        g.t(0, 8, text, 24, 700, AppMath.INK, MIDDLE);
+        AppScreens.fitW(g, 8, text, AppDraw.ME, AppMath.INK);
     }
 }
 

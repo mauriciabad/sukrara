@@ -16,11 +16,11 @@ module AppFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a12b", "a12m", "a12s", "a14b", "a14m", "a14s", "a16b", "a16s", "a18b", "a18s", "a20b", "a22b", "a24s", "a32s", "a64b", "n28", "n32", "n36", "n40", "n56", "n64", "n80", "n88"].indexOf(key);
+        var i = ["a14b", "a24s", "a32s", "a64b", "n28", "n32", "n36", "n40", "n56", "n64", "n80", "n88"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Fonts.a12b, Rez.Fonts.a12m, Rez.Fonts.a12s, Rez.Fonts.a14b, Rez.Fonts.a14m, Rez.Fonts.a14s, Rez.Fonts.a16b, Rez.Fonts.a16s, Rez.Fonts.a18b, Rez.Fonts.a18s, Rez.Fonts.a20b, Rez.Fonts.a22b, Rez.Fonts.a24s, Rez.Fonts.a32s, Rez.Fonts.a64b, Rez.Fonts.n28, Rez.Fonts.n32, Rez.Fonts.n36, Rez.Fonts.n40, Rez.Fonts.n56, Rez.Fonts.n64, Rez.Fonts.n80, Rez.Fonts.n88][i], [12, 12, 12, 14, 14, 14, 16, 16, 18, 18, 20, 22, 24, 31, 63, 28, 31, 35, 39, 55, 63, 79, 87][i]];
+        return [[Rez.Fonts.a14b, Rez.Fonts.a24s, Rez.Fonts.a32s, Rez.Fonts.a64b, Rez.Fonts.n28, Rez.Fonts.n32, Rez.Fonts.n36, Rez.Fonts.n40, Rez.Fonts.n56, Rez.Fonts.n64, Rez.Fonts.n80, Rez.Fonts.n88][i], [14, 24, 31, 63, 28, 31, 35, 39, 55, 63, 79, 87][i]];
     }
 
     // the icon font [i]: one per size

@@ -15,15 +15,18 @@ import Toybox.WatchUi;
 //   L [2, [x, y, x, y, …], col, op, sw, dash]   a polyline, round caps and joins; dash [on, off] or null
 //   P [3, [x, y, x, y, …], col, op]             a filled polygon
 //   A [4, cx, cy, r, a0, a1, col, op, sw, round] an arc, degrees clockwise from 12
-//   T [5, x, baseline, s, font, col, anchor, ls?] a text (anchor -1 start, 0 middle, 1 end; font AppDraw.font; ls
-//                                               the letter spacing)
+//   T [5, x, baseline, s, font, col, anchor]    a text (anchor -1 start, 0 middle, 1 end): font a Number = a word in
+//                                               the watch's system font (AppDraw roles), a String = a big number's
+//                                               atlas (AppDraw.font)
 //   I [6, name, cx, cy, size, col]              an icon of the icon sheet, tinted
 //   B [7, resource, cx, cy, size]               a bitmap resource (Sukrara's mark), [size] wide
 (:glance)
 class AppG {
     var els as Array = [];
 
-    function initialize() {}
+    function initialize() {
+        AppDraw.rimPx = 0.0;
+    }
 
     function r(x as Numeric, y as Numeric, w as Numeric, h as Numeric, rx as Numeric, col as Number, op as Float, sw as Numeric) as Void {
         els.add([0, x, y, w < 0 ? 0 : w, h < 0 ? 0 : h, rx, col, op, sw]);
@@ -51,14 +54,15 @@ class AppG {
         els.add([4, cx, cy, rad, a0, a1, col, op, sw, round]);
     }
 
-    // a text at [fs] px, weight [fw] (500 / 600 / 700); [big] = the big numbers' atlas
+    // a big number in Atkinson at [fs] px, weight [fw] (500 / 600 / 700): the ring numbers, the amount's unit, the
+    // no-reading time (app.js g.t with fs)
     function t(x as Numeric, y as Numeric, s as String, fs as Numeric, fw as Number, col as Number, anchor as Number) as Void {
         els.add([5, x, y, s, AppDraw.font(fs, fw, false), col, anchor]);
     }
 
-    // a text with letter spacing [ls] (app.js's ls: px after every glyph)
-    function ts(x as Numeric, y as Numeric, s as String, fs as Numeric, fw as Number, col as Number, anchor as Number, ls as Numeric) as Void {
-        els.add([5, x, y, s, AppDraw.font(fs, fw, false), col, anchor, ls]);
+    // a word in the watch's system font of [role] (AppDraw.XT … GL; app.js g.t with f), its baseline at y
+    function w(x as Numeric, y as Numeric, s as String, role as Number, col as Number, anchor as Number) as Void {
+        els.add([5, x, y, s, role, col, anchor]);
     }
 
     function n(x as Numeric, y as Numeric, s as String, fs as Numeric, col as Number, anchor as Number) as Void {
@@ -111,6 +115,8 @@ module AppDraw {
     (:snap)
     var snapOn as Boolean = false; // sizes snap to the atlas set (all but the 390 at 1:1)
     var gw as Float = 248.0; // the glance's width, units
+    var gh as Float = 103.0; // the glance's height, units
+    var rimPx as Float = 0.0; // the rim drawn so far, px (texts keep inside it: AppScreens.edgeX)
     var fonts as Dictionary = {};
     var sheets as Dictionary = {}; // the icon sheets loaded, by index
     var glance as Boolean = false;
@@ -157,6 +163,83 @@ module AppDraw {
             }
         }
         return best / s;
+    }
+
+    // ---- the words: the watch's own fonts, by role (SPEC §14.1, app.js TYPE / fitRole / wrap) ------------------
+    // the roles are Garmin's font ids: xtiny, tiny, small, medium (FONT_XTINY … FONT_MEDIUM: 0 … 3, a smaller role one
+    // less) and the glance's
+    const XT = Graphics.FONT_XTINY;
+    const TI = Graphics.FONT_TINY;
+    const SM = Graphics.FONT_SMALL;
+    const ME = Graphics.FONT_MEDIUM;
+    const GL = Graphics.FONT_GLANCE;
+    // a Dc the words are measured on: the glance's own while it lays out, else a 1 × 1 bitmap's (the app lays out
+    // before it draws)
+    var mdc as Dc? = null;
+    var mbmp = null;
+
+    function measurer() as Dc {
+        if (mdc == null) {
+            mbmp = Graphics.createBufferedBitmap({:width => 1, :height => 1});
+            mdc = ((mbmp as Graphics.BufferedBitmapReference).get() as Graphics.BufferedBitmap).getDc();
+        }
+        return mdc as Dc;
+    }
+
+    // a word's width in layout units, as the watch draws it
+    function ww(str as String, role as Number) as Float {
+        return measurer().getTextWidthInPixels(str, role as Graphics.FontDefinition) / s;
+    }
+
+    // the cap the layout centres on: 0.75 × the font's ascent (app.js capOf), and the line's height, in units
+    function capOf(role as Number) as Float {
+        return Graphics.getFontAscent(role as Graphics.FontDefinition) * 0.75 / s;
+    }
+
+    function lh(role as Number) as Float {
+        return Graphics.getFontHeight(role as Graphics.FontDefinition) / s;
+    }
+
+    // the largest role from [role] down to xtiny whose width fits [maxW] (never smaller than xtiny)
+    function fitRole(str as String, role as Number, maxW as Numeric) as Number {
+        for (var r = role; r > XT; r--) {
+            if (ww(str, r) <= maxW) {
+                return r;
+            }
+        }
+        return XT;
+    }
+
+    // the words of [str] in lines no wider than [maxW]: the fewest lines, as even as they come (app.js wrap)
+    function wrap(str as String, role as Number, maxW as Numeric) as Array<String> {
+        var n = greedy(str, role, maxW).size();
+        var w = maxW;
+        while (w > 20 && greedy(str, role, w - 4).size() == n) {
+            w -= 4;
+        }
+        return greedy(str, role, w);
+    }
+
+    function greedy(str as String, role as Number, maxW as Numeric) as Array<String> {
+        var out = [] as Array<String>;
+        var cur = "";
+        var rest = str;
+        while (rest.length() > 0) {
+            var i = rest.find(" ");
+            var word = i == null ? rest : rest.substring(0, i) as String;
+            rest = i == null ? "" : rest.substring(i + 1, rest.length()) as String;
+            var t = cur.length() > 0 ? cur + " " + word : word;
+            if (cur.length() > 0 && ww(t, role) > maxW) {
+                out.add(cur);
+                cur = word;
+            } else {
+                cur = t;
+            }
+        }
+        if (cur.length() > 0) {
+            out.add(cur);
+        }
+        return out;
     }
 
     // a font key: a text "a<px><m|s|b>", a big number "n<px>"
@@ -613,17 +696,26 @@ module AppDraw {
         }
     }
 
-    // a text with its baseline at y, anchored by its drawn width: atlas glyphs, or a font resource on the watches
-    // without tinted bitmaps (:plain; each watch builds one of the two, monkey.jungle's screen classes)
+    // a text with its baseline at y, anchored by its drawn width: a word in the watch's system font; a big number's
+    // atlas glyphs, or a font resource on the watches without tinted bitmaps (:plain; each watch builds one of the two,
+    // monkey.jungle's screen classes)
     function text(dc as Dc, e as Array) as Void {
-        var a = loadFont(e[4] as String);
+        var f = e[4];
+        if (f instanceof Number) {
+            var an = e[6] as Number;
+            dc.setColor((col(e[5] as Number, 1.0, 2)[0] as Number) & 0xFFFFFF, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(Math.round(X(e[1]) + 0.5), Math.round(Y(e[2]) + 0.5) - Graphics.getFontAscent(f as Graphics.FontDefinition),
+                f as Graphics.FontDefinition, e[3] as String,
+                an < 0 ? Graphics.TEXT_JUSTIFY_LEFT : an == 0 ? Graphics.TEXT_JUSTIFY_CENTER : Graphics.TEXT_JUSTIFY_RIGHT);
+            return;
+        }
+        var a = loadFont(f as String);
         if (a.size() == 0) {
             missing(e[4] as String);
             return;
         }
         var tc = (col(e[5] as Number, 1.0, 2)[0] as Number) & 0xFFFFFF;
-        var ls = e.size() > 7 ? (e[7] as Numeric) * s : 0;
-        glyphs(dc, e[3] as String, a, tc, X(e[1]) + 0.5, Y(e[2]) + 0.5, e[6] as Number, ls);
+        glyphs(dc, e[3] as String, a, tc, X(e[1]) + 0.5, Y(e[2]) + 0.5, e[6] as Number, 0);
     }
 
     // a font resource; the system draws bitmap fonts 1 px under the line

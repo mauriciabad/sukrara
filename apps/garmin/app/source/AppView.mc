@@ -257,7 +257,8 @@ class AppDelegate extends TapDelegate {
         var y = (c[1] - AppDraw.oy) / s;
         var x = (c[0] - AppDraw.ox) / s;
         if (view.notSetUp) {
-            if (view.opened == null && y > 64 && y < 128) {
+            var sb = AppScreens.setupButton();
+            if (view.opened == null && y > sb[0] - 8 && y < sb[0] + sb[1] + 8) {
                 view.openSetup();
             }
             return true;

@@ -17,32 +17,32 @@ module GlanceFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a12b", "a12m", "a12s", "a14b", "a14s", "a22s", "n24", "n28", "n32"].indexOf(key);
+        var i = ["a12b", "a22s", "n24", "n28", "n32"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Fonts.a12b, Rez.Fonts.a12m, Rez.Fonts.a12s, Rez.Fonts.a14b, Rez.Fonts.a14s, Rez.Fonts.a22s, Rez.Fonts.n24, Rez.Fonts.n28, Rez.Fonts.n32][i], [12, 12, 12, 14, 14, 22, 24, 28, 31][i]];
+        return [[Rez.Fonts.a12b, Rez.Fonts.a22s, Rez.Fonts.n24, Rez.Fonts.n28, Rez.Fonts.n32][i], [12, 22, 24, 28, 31][i]];
     }
 
     // the icon font [i]: one per size
     function sheet(i as Number) as ResourceId {
-        return [Rez.Fonts.gicons8][i] as ResourceId;
+        return [Rez.Fonts.gicons11][i] as ResourceId;
     }
 
     // the icons: [glyph index, 0, box, font] of the nearest size (2 px margin)
     function icon(name as String, size as Number) as Array? {
         if (name.equals("rapid")) {
-            if (true) { return [0, 0, 12, 0]; }
+            if (true) { return [0, 0, 15, 0]; }
         } else if (name.equals("long")) {
-            if (true) { return [1, 0, 12, 0]; }
+            if (true) { return [1, 0, 15, 0]; }
         } else if (name.equals("carbs")) {
-            if (true) { return [2, 0, 12, 0]; }
+            if (true) { return [2, 0, 15, 0]; }
         } else if (name.equals("bellPause")) {
-            if (true) { return [3, 0, 12, 0]; }
+            if (true) { return [3, 0, 15, 0]; }
         } else if (name.equals("bellOff")) {
-            if (true) { return [4, 0, 12, 0]; }
+            if (true) { return [4, 0, 15, 0]; }
         } else if (name.equals("note")) {
-            if (true) { return [5, 0, 12, 0]; }
+            if (true) { return [5, 0, 15, 0]; }
         }
         return null;
     }

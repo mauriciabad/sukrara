@@ -14,8 +14,8 @@ import Toybox.WatchUi;
 module AppMute {
     const START = -1;
     const MIDDLE = 0;
-    const YS = [-62, -8, 46, 100, 150];
-    const BTN = [10, 70];
+
+    const BTN = [4, 60];
 
     // the lengths offered: a side's mute always ends (contracts/alerts SPEC), Mute all may last until turned off (0)
     function mins(side as String) as Array<Number> {
@@ -70,19 +70,36 @@ module AppMute {
         return AppWords.s(low ? Rez.Strings.LowsUsual : Rez.Strings.HighsUsual);
     }
 
+    // the lengths' rows ([n] of them, the taps too): [their y, the pitch]; they share the room under the title and its
+    // line (app.js S.muteLengths)
+    function rowsAt(n as Number) as Array {
+        var y0 = -128 + 10 + AppDraw.capOf(AppDraw.XT) + 12;
+        var room = (AppFontTable.RECT ? AppScreens.hh() - 8 : 168) - y0;
+        var pitch = AppDraw.lh(AppDraw.SM) + 6;
+        var q = room / (n < 5 ? n : 5);
+        pitch = q < pitch ? q : pitch;
+        var ys = [];
+        for (var i = 0; i < n; i++) {
+            ys.add(y0 + pitch / 2 + i * pitch);
+        }
+        return [ys, pitch];
+    }
+
     // ---- the lengths (S.muteLengths): [sel] the selected one ----------------------------------------------------
     function lengths(g as AppG, side as String, sel as Number) as Void {
-        g.t(0, -140, pick(side, Rez.Strings.MuteAllT, Rez.Strings.MuteLowsT, Rez.Strings.MuteHighsT), 22, 700, AppMath.INK, MIDDLE);
-        g.t(0, -114, AppWords.s(side.equals("all") ? Rez.Strings.MuteAllSub : Rez.Strings.MuteSideSub), 16, 500, AppMath.SOFT, MIDDLE);
+        AppScreens.fitW(g, -128, pick(side, Rez.Strings.MuteAllT, Rez.Strings.MuteLowsT, Rez.Strings.MuteHighsT), AppDraw.SM, AppMath.INK);
+        AppScreens.fitW(g, -128 + 10 + AppDraw.capOf(AppDraw.XT), AppWords.s(side.equals("all") ? Rez.Strings.MuteAllSub : Rez.Strings.MuteSideSub), AppDraw.XT, AppMath.SOFT);
         var ms = mins(side);
+        var R = rowsAt(ms.size());
+        var ys = R[0] as Array;
+        var pitch = R[1] as Float;
         for (var i = 0; i < ms.size(); i++) {
-            var y = YS[i] as Number;
+            var y = ys[i] as Float;
             var on = i == sel;
-            var fs = on ? 30 : 24;
             if (on) {
-                g.r(-150, y - 28, 300, 56, 28, AppMath.CARD2, 1.0, 0);
+                g.r(-150, y - pitch / 2 + 1, 300, pitch - 2, (pitch - 2) / 2, AppMath.CARD2, 1.0, 0);
             }
-            g.t(0, y + fs * 0.35, length(ms[i]), fs, on ? 700 : 600, on ? AppMath.INK : AppMath.SOFT, MIDDLE);
+            AppScreens.fitW(g, y + AppDraw.capOf(AppDraw.SM) / 2, length(ms[i]), AppDraw.SM, on ? AppMath.INK : AppMath.SOFT);
         }
         AppScreens.btnHint(g, 60, AppMath.INK);
     }
@@ -91,12 +108,12 @@ module AppMute {
     function done(g as AppG, icon as String, col as Number, title as String, line as String?, left as Float) as Void {
         g.c(0, -56, 46, col, 0.24, 0);
         g.icon(icon, 0, -56, 44, col);
-        g.t(0, 28, title, icon.equals("bellOff") ? 30 : 28, 700, AppMath.INK, MIDDLE);
+        AppScreens.fitW(g, 28, title, AppDraw.ME, AppMath.INK);
         if (line != null) {
-            g.t(0, 60, line, 20, 500, AppMath.SOFT, MIDDLE);
+            AppScreens.fitW(g, 38 + AppDraw.capOf(AppDraw.TI) + 6, line, AppDraw.TI, AppMath.SOFT);
         }
         if (left > 0) {
-            AppLog.undo(g, 92, left);
+            AppLog.undo(g, 96, left);
             AppScreens.btnHint(g, 60, AppMath.INK);
         }
     }
@@ -105,17 +122,21 @@ module AppMute {
     function muted(g as AppG, side as String, line as String, sel as Number) as Void {
         var note = AppMath.pal("note");
         g.icon("bellOff", 0, -118, 30, note);
-        g.t(0, -70, title(side), 28, 700, AppMath.INK, MIDDLE);
-        g.t(0, -40, line, 19, 500, AppMath.SOFT, MIDDLE);
+        AppScreens.fitW(g, -70, title(side), AppDraw.ME, AppMath.INK);
+        AppScreens.fitW(g, -62 + AppDraw.capOf(AppDraw.TI) + 6, line, AppDraw.TI, AppMath.SOFT);
         var items = [AppWords.s(Rez.Strings.Unmute), AppWords.s(Rez.Strings.ChangeTime)];
         for (var i = 0; i < 2; i++) {
             var y = BTN[i] as Number;
             var on = i == sel;
             g.r(-130, y - 26, 260, 52, 26, on ? note : AppMath.CARD2, 1.0, 0);
-            g.t(0, y + 8, items[i], 22, 700, on ? AppMath.ON : AppMath.INK, MIDDLE);
+            g.w(0, y + AppDraw.capOf(AppDraw.SM) / 2, items[i], AppDraw.fitRole(items[i], AppDraw.SM, 230), on ? AppMath.ON : AppMath.INK, MIDDLE);
         }
+        // the foot: xtiny, on two lines where one is wider than the screen there
         if (side.equals("all")) {
-            g.t(0, 134, AppWords.s(Rez.Strings.MutedAllSub), 16, 500, AppMath.DIM, MIDDLE);
+            var XT = AppDraw.XT;
+            var fy = 98 + AppDraw.capOf(XT);
+            AppScreens.lines(g, fy, AppDraw.wrap(AppWords.s(Rez.Strings.MutedAllSub), XT, 2 * AppScreens.edgeX(fy + AppDraw.lh(XT)) - 8), XT,
+                AppDraw.lh(XT) * 0.85, AppMath.SOFT);
         }
         AppScreens.btnHint(g, 60, AppMath.INK);
     }
@@ -123,7 +144,7 @@ module AppMute {
     // which row a tap at [y] hits, on the lengths ([n] rows) or the muted screen's buttons; -1 none
     function hit(ys as Array, n as Number, y as Float, half as Number) as Number {
         for (var i = 0; i < n && i < ys.size(); i++) {
-            if (y > (ys[i] as Number) - half && y < (ys[i] as Number) + half) {
+            if (y > (ys[i] as Numeric) - half && y < (ys[i] as Numeric) + half) {
                 return i;
             }
         }
@@ -381,7 +402,7 @@ class MuteDelegate extends TapDelegate {
     function onTap(e as WatchUi.ClickEvent) as Boolean {
         var y = (e.getCoordinates()[1] - AppDraw.oy) / AppDraw.s;
         var st = view.state;
-        var i = st.equals("lengths") ? AppMute.hit(AppMute.YS, view.rows(), y, 27)
+        var i = st.equals("lengths") ? AppMute.hit(AppMute.rowsAt(view.rows())[0] as Array, view.rows(), y, 27)
             : st.equals("muted") ? AppMute.hit(AppMute.BTN, 2, y, 26)
             : st.equals("done") && y > 86 && y < 140 ? 0 : st.equals("said") ? 0 : -1;
         if (i >= 0) {

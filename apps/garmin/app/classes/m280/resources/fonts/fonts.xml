@@ -5,10 +5,6 @@
 <resources>
     <bitmap id="a16b" filename="a16b.png" dithering="none" packingFormat="png"/>
     <jsonData id="a16b_m" filename="a16b.json"/>
-    <bitmap id="a18s" filename="a18s.png" dithering="none" packingFormat="png"/>
-    <jsonData id="a18s_m" filename="a18s.json"/>
-    <bitmap id="a22b" filename="a22b.png" dithering="none" packingFormat="png"/>
-    <jsonData id="a22b_m" filename="a22b.json"/>
     <bitmap id="a28s" filename="a28s.png" dithering="none" packingFormat="png"/>
     <jsonData id="a28s_m" filename="a28s.json"/>
     <bitmap id="a36s" filename="a36s.png" dithering="none" packingFormat="png"/>

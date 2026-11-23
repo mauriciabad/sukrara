@@ -1,7 +1,7 @@
 info face="AtkinsonHyperlegibleNext-600" size=48 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=1,1
 common lineHeight=62 base=47 scaleW=512 scaleH=117 pages=1 packed=0
 page id=0 file="a48s.png"
-chars count=46
+chars count=48
 char id=32 x=0 y=0 width=0 height=0 xoffset=0 yoffset=47 xadvance=15 page=0 chnl=15
 char id=48 x=2 y=0 width=27 height=34 xoffset=2 yoffset=14 xadvance=31 page=0 chnl=15
 char id=49 x=30 y=0 width=15 height=33 xoffset=1 yoffset=14 xadvance=21 page=0 chnl=15
@@ -48,3 +48,5 @@ char id=121 x=25 y=80 width=24 height=32 xoffset=0 yoffset=23 xadvance=24 page=0
 char id=160 x=50 y=80 width=0 height=0 xoffset=0 yoffset=47 xadvance=15 page=0 chnl=15
 char id=225 x=52 y=80 width=23 height=36 xoffset=1 yoffset=12 xadvance=26 page=0 chnl=15
 char id=233 x=76 y=80 width=25 height=36 xoffset=1 yoffset=12 xadvance=27 page=0 chnl=15
+char id=117 x=102 y=80 width=22 height=25 xoffset=2 yoffset=23 xadvance=27 page=0 chnl=15
+char id=103 x=125 y=80 width=25 height=35 xoffset=1 yoffset=22 xadvance=28 page=0 chnl=15

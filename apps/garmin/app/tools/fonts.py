@@ -49,18 +49,17 @@ HEAD = ("Sukrara — https://github.com/mauriciabad/sukrara", "Copyright (C) 202
 
 NUMS = A.DIGITS + ".LOHI-"
 W = {"m": 500, "s": 600, "b": 700}
-# text fonts "a<px><m|s|b>": the sizes (fs) and weights (fw) the app asks for, in layout units (app.js S.* and R.*)
-TEXT = ["14m", "14s", "15m", "15s", "15b", "16m", "16s", "17m", "17s", "17b", "18m", "18s", "19m", "19s", "20m", "20s", "20b",
-        "22s", "22b", "23s", "23b", "24s", "24b", "26s", "26b", "28b", "30b", "32b", "38s", "48s", "50s", "96b"]
-# the set of the texts that only show a time or a unit: the no-reading time's (Aura's), the amount's unit
+# Atkinson's other numbers "a<px><m|s|b>" (every word is in the watch's own fonts, SPEC §14.1): the ring numbers (22),
+# the no-reading time (48; the glance's 38), the amount's unit (50, the rectangles' 48; hold to log's 96), in layout units
+TEXT = ["22b", "38s", "48s", "50s", "96b"]
 LATIN = A.LATIN + "−’"
-CHARS = {"38s": A.GAP, "48s": A.GAP, "50s": "ug", "96b": "ug"}
+# each one's glyphs: a ring's number, a time, a unit
+CHARS = {"22b": A.DIGITS + ".-", "23b": A.DIGITS + ".-", "38s": A.GAP, "48s": A.GAP + "ug", "50s": "ug", "96b": "ug"}
 # the big numbers "n<px>", weight 700 (app.js value(): fw 700); 120: the rectangles' amount
 BIG = [42, 44, 46, 48, 50, 52, 54, 56, 58, 84, 88, 96, 100, 116, 120, 128]
-# the glance's (S.glance at 390): value 58 / 54 (down to 46 / 42 to fit its two places), ring number 23, last-treatment
-# stack 24 / 20 / 16, the reading's time 17, the pill 15, warming up 24 / 18, no reading 18 / 38
-G = ["n42", "n44", "n46", "n48", "n50", "n52", "n54", "n56", "n58", "a23b", "a24b", "a20b", "a16s", "a17m", "a15s", "a24s",
-     "a18m", "a18s", "a38s"]
+# the glance's (S.glance at 390): value 58 / 54 (down to 46 / 42 to fit its two places), ring number 23, the no-reading
+# time 38; its words are in FONT_GLANCE
+G = ["n42", "n44", "n46", "n48", "n50", "n52", "n54", "n56", "n58", "a23b", "a38s"]
 
 # app.js ICON (24-unit paths; stroke width or 0 = filled)
 ICONS = {
@@ -76,13 +75,13 @@ ICONS = {
     "phone": ("M8.5 2h7a2.5 2.5 0 0 1 2.5 2.5v15a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 6 19.5v-15A2.5 2.5 0 0 1 8.5 2zM8 4.6v12.6h8V4.6z", 0),
     "pen": ("M18.43 8.43L9.93 16.93A2 2 0 0 1 7.08 14.08L15.58 5.58A2 2 0 0 1 18.43 8.43ZM14 9.5L11.75 11.75M18 6L20 4M7.25 16.75L4.25 19.75", 2.3),
 }
-# the sizes the app draws them at (layout units): the pill's marks fs·0.78 (19 → 15), the sensor tag 17, the lists and
-# buttons 18 – 30, the done screens 44; the glance's 12
+# the sizes the app draws them at (layout units): the pill's marks and the sensor tag about xtiny's cap (18), the lists
+# and buttons 18 – 30, the done screens 44; the glance's pill mark about FONT_GLANCE's cap (20)
 ICON_SIZES = (15, 18, 22, 26, 30, 44)
 GLANCE_ICONS = ("rapid", "long", "carbs", "bellPause", "bellOff", "note")
-GLANCE_ICON = 12
-# Sukrara for Android's own icon (app.js phoneIcon: the disc, the white cube, the green dot), 60 units on the waiting page
-PHONE_ICON = 60
+GLANCE_ICON = 20
+# Sukrara for Android's own icon (app.js phoneIcon: the disc, the white cube, the green dot), 48 units on the waiting page
+PHONE_ICON = 48
 CUBE = ("M45.09,45.19Q47.00,44.09 48.91,45.19L57.93,50.40Q59.83,51.50 57.93,52.60L48.91,57.81Q47.00,58.91 45.09,57.81L36.07,52.60"
         "Q34.17,51.50 36.07,50.40ZM32.36,56.84Q32.36,54.63 34.26,55.73L43.28,60.95Q45.19,62.05 45.19,64.25L45.19,74.66Q45.19,76.86 "
         "43.28,75.77L34.26,70.55Q32.36,69.45 32.36,67.25ZM48.81,64.25Q48.81,62.05 50.72,60.95L59.74,55.73Q61.64,54.63 61.64,56.84"

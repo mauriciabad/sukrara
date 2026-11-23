@@ -30,6 +30,7 @@ class AppGlance extends WatchUi.GlanceView {
             _timer = null;
         }
         AppDraw.release();
+        AppDraw.mdc = null;
     }
 
     function tick() as Void {
@@ -42,6 +43,7 @@ class AppGlance extends WatchUi.GlanceView {
     static function glanceArea(w as Number, h as Number) as Void {
         AppDraw.scale(GlanceFontTable.GS);
         AppDraw.gw = w / AppDraw.s;
+        AppDraw.gh = h / AppDraw.s;
         AppDraw.ox = 83 * AppDraw.s - 0.5;
     }
 
@@ -55,6 +57,8 @@ class AppGlance extends WatchUi.GlanceView {
         AppDraw.glance = true;
         AppDraw.once = true;
         glanceArea(dc.getWidth(), dc.getHeight());
+        // its words are measured on its own Dc
+        AppDraw.mdc = dc;
         AppDraw.oy = dc.getHeight() / 2.0 - 0.5;
         var g = new AppG();
         AppParts.glance(g, d);
@@ -62,5 +66,6 @@ class AppGlance extends WatchUi.GlanceView {
         AppDraw.paint(dc, g);
         // and its atlases after it: kept, the next draw (every 30 s, a new reading) ran out of memory
         AppDraw.release();
+        AppDraw.mdc = null;
     }
 }

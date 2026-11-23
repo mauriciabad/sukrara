@@ -16,32 +16,32 @@ module GlanceFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a15s", "a16s", "a17m", "a18m", "a18s", "a20b", "a23b", "a24b", "a24s", "a38s", "n42", "n44", "n46", "n48", "n50", "n52", "n54", "n56", "n58"].indexOf(key);
+        var i = ["a23b", "a38s", "n42", "n44", "n46", "n48", "n50", "n52", "n54", "n56", "n58"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Drawables.a15s, Rez.Drawables.a16s, Rez.Drawables.a17m, Rez.Drawables.a18m, Rez.Drawables.a18s, Rez.Drawables.a20b, Rez.Drawables.a23b, Rez.Drawables.a24b, Rez.Drawables.a24s, Rez.Drawables.a38s, Rez.Drawables.n42, Rez.Drawables.n44, Rez.Drawables.n46, Rez.Drawables.n48, Rez.Drawables.n50, Rez.Drawables.n52, Rez.Drawables.n54, Rez.Drawables.n56, Rez.Drawables.n58][i], [Rez.JsonData.a15s_m, Rez.JsonData.a16s_m, Rez.JsonData.a17m_m, Rez.JsonData.a18m_m, Rez.JsonData.a18s_m, Rez.JsonData.a20b_m, Rez.JsonData.a23b_m, Rez.JsonData.a24b_m, Rez.JsonData.a24s_m, Rez.JsonData.a38s_m, Rez.JsonData.n42_m, Rez.JsonData.n44_m, Rez.JsonData.n46_m, Rez.JsonData.n48_m, Rez.JsonData.n50_m, Rez.JsonData.n52_m, Rez.JsonData.n54_m, Rez.JsonData.n56_m, Rez.JsonData.n58_m][i]];
+        return [[Rez.Drawables.a23b, Rez.Drawables.a38s, Rez.Drawables.n42, Rez.Drawables.n44, Rez.Drawables.n46, Rez.Drawables.n48, Rez.Drawables.n50, Rez.Drawables.n52, Rez.Drawables.n54, Rez.Drawables.n56, Rez.Drawables.n58][i], [Rez.JsonData.a23b_m, Rez.JsonData.a38s_m, Rez.JsonData.n42_m, Rez.JsonData.n44_m, Rez.JsonData.n46_m, Rez.JsonData.n48_m, Rez.JsonData.n50_m, Rez.JsonData.n52_m, Rez.JsonData.n54_m, Rez.JsonData.n56_m, Rez.JsonData.n58_m][i]];
     }
 
     // the icon sheet [i]: one per size
     function sheet(i as Number) as ResourceId {
-        return [Rez.Drawables.gicons12][i] as ResourceId;
+        return [Rez.Drawables.gicons20][i] as ResourceId;
     }
 
     // the icons: [x, y, box, sheet] of the nearest size (2 px margin)
     function icon(name as String, size as Number) as Array? {
         if (name.equals("rapid")) {
-            if (true) { return [0, 0, 16, 0]; }
+            if (true) { return [0, 0, 24, 0]; }
         } else if (name.equals("long")) {
-            if (true) { return [17, 0, 16, 0]; }
+            if (true) { return [25, 0, 24, 0]; }
         } else if (name.equals("carbs")) {
-            if (true) { return [34, 0, 16, 0]; }
+            if (true) { return [50, 0, 24, 0]; }
         } else if (name.equals("bellPause")) {
-            if (true) { return [51, 0, 16, 0]; }
+            if (true) { return [75, 0, 24, 0]; }
         } else if (name.equals("bellOff")) {
-            if (true) { return [68, 0, 16, 0]; }
+            if (true) { return [100, 0, 24, 0]; }
         } else if (name.equals("note")) {
-            if (true) { return [85, 0, 16, 0]; }
+            if (true) { return [125, 0, 24, 0]; }
         }
         return null;
     }

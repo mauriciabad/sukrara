@@ -17,32 +17,32 @@ module GlanceFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a12m", "a12s", "a14b", "a16b", "a18b", "a18s", "a28s", "n28", "n32", "n36", "n40"].indexOf(key);
+        var i = ["a16b", "a28s", "n28", "n32", "n36", "n40"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Fonts.a12m, Rez.Fonts.a12s, Rez.Fonts.a14b, Rez.Fonts.a16b, Rez.Fonts.a18b, Rez.Fonts.a18s, Rez.Fonts.a28s, Rez.Fonts.n28, Rez.Fonts.n32, Rez.Fonts.n36, Rez.Fonts.n40][i], [12, 12, 14, 16, 18, 18, 28, 28, 31, 35, 39][i]];
+        return [[Rez.Fonts.a16b, Rez.Fonts.a28s, Rez.Fonts.n28, Rez.Fonts.n32, Rez.Fonts.n36, Rez.Fonts.n40][i], [16, 28, 28, 31, 35, 39][i]];
     }
 
     // the icon font [i]: one per size
     function sheet(i as Number) as ResourceId {
-        return [Rez.Fonts.gicons9][i] as ResourceId;
+        return [Rez.Fonts.gicons14][i] as ResourceId;
     }
 
     // the icons: [glyph index, 0, box, font] of the nearest size (2 px margin)
     function icon(name as String, size as Number) as Array? {
         if (name.equals("rapid")) {
-            if (true) { return [0, 0, 13, 0]; }
+            if (true) { return [0, 0, 18, 0]; }
         } else if (name.equals("long")) {
-            if (true) { return [1, 0, 13, 0]; }
+            if (true) { return [1, 0, 18, 0]; }
         } else if (name.equals("carbs")) {
-            if (true) { return [2, 0, 13, 0]; }
+            if (true) { return [2, 0, 18, 0]; }
         } else if (name.equals("bellPause")) {
-            if (true) { return [3, 0, 13, 0]; }
+            if (true) { return [3, 0, 18, 0]; }
         } else if (name.equals("bellOff")) {
-            if (true) { return [4, 0, 13, 0]; }
+            if (true) { return [4, 0, 18, 0]; }
         } else if (name.equals("note")) {
-            if (true) { return [5, 0, 13, 0]; }
+            if (true) { return [5, 0, 18, 0]; }
         }
         return null;
     }

@@ -122,7 +122,9 @@ var WL = (function () {
   }
   // a role's metrics in the current layout units
   function fu(f) { var m = font(f); return { h: m.h / SE, asc: m.asc / SE, cap: m.cap / SE, desc: (m.h - m.asc) / SE }; }
-  function capOf(f) { return font(f).cap / SE; }
+  // the cap the layout centres on: 0.75 × the font's ascent, as the watch takes it (Graphics.getFontAscent; Garmin has no
+  // cap height); within a px of the measured caps
+  function capOf(f) { return font(f).asc * 0.75 / SE; }
   function lh(f) { return font(f).h / SE; }
   // a word's width (layout units) in a role's font, as the watch measures it
   function ww(s, f) { var m = font(f); return advEm(m.face, String(s)) * m.px * m.k / SE; }
@@ -874,13 +876,17 @@ var WL = (function () {
       var pf = big ? 'medium' : 'small';
       g.t(Math.min(152, edgeX(yy - capOf(pf)) - 2), yy, pct, { f: pf, fill: PAL.ink, anchor: 'end' });
       var w = gtext ? goal(g, -116, yy + 18, gtext, met !== false) : 0;
-      if (sub) g.t(-116 + w + 10, yy + 18 + capOf('xtiny') / 2, sub, { f: 'xtiny', max: edgeX(yy + 18) - (-116 + w + 10), fill: PAL.soft, anchor: 'start' });
+      // very good: left out where even xtiny doesn't fit beside the chip (the phone's report has it)
+      if (sub && ww(sub, 'xtiny') <= edgeX(yy + 18) - (-116 + w + 10)) g.t(-116 + w + 10, yy + 18 + capOf('xtiny') / 2, sub, { f: 'xtiny', fill: PAL.soft, anchor: 'start' });
     }
     row(-90, 'Above range', R.above, '< 25%', false, '', R.met[0]);
     row(-26, 'In range', R.inR, '> 70%', true, 'very good ' + R.good, R.met[1]);
     row(36, 'Below range', R.below, '< 4%', false, '', R.met[2]);
     g.p('M-140 78H140', { stroke: PAL.grid, sw: 1.5 });
-    R.nums.forEach(function (m, i) { numCheck(g, -92 + i * 92, 108, m); });
+    // three columns, drawn in as far as their names need on a smaller circle
+    var nly = 108 + 6 + capOf('xtiny'), nhalf = Math.max.apply(null, R.nums.map(function (m) { return (ww(m[1], 'xtiny') + capOf('xtiny') * 0.75 + 4) / 2; }));
+    var ndx = Math.min(92, edgeX(nly + 3) - nhalf - 2);
+    R.nums.forEach(function (m, i) { numCheck(g, (i - 1) * ndx, 108, m); });
     if (c.dots !== false) pageDots(g, 2, 1);
   };
 
@@ -1570,7 +1576,7 @@ var WL = (function () {
     // the report of the period (d.rep, as S.appNums)
     var Rr = d.rep || { above: '14 %', inR: '85 %', good: '64 %', below: '0.1 %', split: [0, 0.1, 64, 21, 14, 0.8, 0], met: [true, true, true],
       nums: [['136', 'Average', true], ['6.6 %', 'GMI', true], ['27 %', 'CV', true]] };
-    var nb = capOf('small') + 4 + 6 + capOf('xtiny') + 0.3 * font('xtiny').px / SE + 2, top = cyy + ch + 10, bot = hh - nb, bxx = -hw + 14, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
+    var nb = capOf('small') + 4 + 6 + capOf('xtiny') + fu('xtiny').desc + 2, top = cyy + ch + 10, bot = hh - nb, bxx = -hw + 14, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
     Rr.split.forEach(function (v) { tot += v; });
     var y = bot;
     keys.forEach(function (k, i) {

@@ -17,32 +17,32 @@ module GlanceFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a14s", "a16m", "a16s", "a18m", "a18s", "a20b", "a22b", "a24b", "a24s", "a36s", "n40", "n44", "n48", "n52", "n56"].indexOf(key);
+        var i = ["a22b", "a36s", "n40", "n44", "n48", "n52", "n56"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Drawables.a14s, Rez.Drawables.a16m, Rez.Drawables.a16s, Rez.Drawables.a18m, Rez.Drawables.a18s, Rez.Drawables.a20b, Rez.Drawables.a22b, Rez.Drawables.a24b, Rez.Drawables.a24s, Rez.Drawables.a36s, Rez.Drawables.n40, Rez.Drawables.n44, Rez.Drawables.n48, Rez.Drawables.n52, Rez.Drawables.n56][i], [Rez.JsonData.a14s_m, Rez.JsonData.a16m_m, Rez.JsonData.a16s_m, Rez.JsonData.a18m_m, Rez.JsonData.a18s_m, Rez.JsonData.a20b_m, Rez.JsonData.a22b_m, Rez.JsonData.a24b_m, Rez.JsonData.a24s_m, Rez.JsonData.a36s_m, Rez.JsonData.n40_m, Rez.JsonData.n44_m, Rez.JsonData.n48_m, Rez.JsonData.n52_m, Rez.JsonData.n56_m][i]];
+        return [[Rez.Drawables.a22b, Rez.Drawables.a36s, Rez.Drawables.n40, Rez.Drawables.n44, Rez.Drawables.n48, Rez.Drawables.n52, Rez.Drawables.n56][i], [Rez.JsonData.a22b_m, Rez.JsonData.a36s_m, Rez.JsonData.n40_m, Rez.JsonData.n44_m, Rez.JsonData.n48_m, Rez.JsonData.n52_m, Rez.JsonData.n56_m][i]];
     }
 
     // the icon sheet [i]: one per size
     function sheet(i as Number) as ResourceId {
-        return [Rez.Drawables.gicons12][i] as ResourceId;
+        return [Rez.Drawables.gicons19][i] as ResourceId;
     }
 
     // the icons: [x, y, box, sheet] of the nearest size (2 px margin)
     function icon(name as String, size as Number) as Array? {
         if (name.equals("rapid")) {
-            if (true) { return [0, 0, 16, 0]; }
+            if (true) { return [0, 0, 23, 0]; }
         } else if (name.equals("long")) {
-            if (true) { return [17, 0, 16, 0]; }
+            if (true) { return [24, 0, 23, 0]; }
         } else if (name.equals("carbs")) {
-            if (true) { return [34, 0, 16, 0]; }
+            if (true) { return [48, 0, 23, 0]; }
         } else if (name.equals("bellPause")) {
-            if (true) { return [51, 0, 16, 0]; }
+            if (true) { return [72, 0, 23, 0]; }
         } else if (name.equals("bellOff")) {
-            if (true) { return [68, 0, 16, 0]; }
+            if (true) { return [96, 0, 23, 0]; }
         } else if (name.equals("note")) {
-            if (true) { return [85, 0, 16, 0]; }
+            if (true) { return [120, 0, 23, 0]; }
         }
         return null;
     }

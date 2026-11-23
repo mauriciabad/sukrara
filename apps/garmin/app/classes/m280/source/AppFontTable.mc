@@ -16,11 +16,11 @@ module AppFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a12b", "a12m", "a12s", "a14b", "a14m", "a14s", "a16b", "a16s", "a18b", "a18s", "a20b", "a22b", "a28s", "a36s", "a72b", "n32", "n36", "n40", "n64", "n72", "n80", "n88"].indexOf(key);
+        var i = ["a16b", "a28s", "a36s", "a72b", "n32", "n36", "n40", "n64", "n72", "n80", "n88"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Drawables.a12b, Rez.Drawables.a12m, Rez.Drawables.a12s, Rez.Drawables.a14b, Rez.Drawables.a14m, Rez.Drawables.a14s, Rez.Drawables.a16b, Rez.Drawables.a16s, Rez.Drawables.a18b, Rez.Drawables.a18s, Rez.Drawables.a20b, Rez.Drawables.a22b, Rez.Drawables.a28s, Rez.Drawables.a36s, Rez.Drawables.a72b, Rez.Drawables.n32, Rez.Drawables.n36, Rez.Drawables.n40, Rez.Drawables.n64, Rez.Drawables.n72, Rez.Drawables.n80, Rez.Drawables.n88][i], [Rez.JsonData.a12b_m, Rez.JsonData.a12m_m, Rez.JsonData.a12s_m, Rez.JsonData.a14b_m, Rez.JsonData.a14m_m, Rez.JsonData.a14s_m, Rez.JsonData.a16b_m, Rez.JsonData.a16s_m, Rez.JsonData.a18b_m, Rez.JsonData.a18s_m, Rez.JsonData.a20b_m, Rez.JsonData.a22b_m, Rez.JsonData.a28s_m, Rez.JsonData.a36s_m, Rez.JsonData.a72b_m, Rez.JsonData.n32_m, Rez.JsonData.n36_m, Rez.JsonData.n40_m, Rez.JsonData.n64_m, Rez.JsonData.n72_m, Rez.JsonData.n80_m, Rez.JsonData.n88_m][i]];
+        return [[Rez.Drawables.a16b, Rez.Drawables.a28s, Rez.Drawables.a36s, Rez.Drawables.a72b, Rez.Drawables.n32, Rez.Drawables.n36, Rez.Drawables.n40, Rez.Drawables.n64, Rez.Drawables.n72, Rez.Drawables.n80, Rez.Drawables.n88][i], [Rez.JsonData.a16b_m, Rez.JsonData.a28s_m, Rez.JsonData.a36s_m, Rez.JsonData.a72b_m, Rez.JsonData.n32_m, Rez.JsonData.n36_m, Rez.JsonData.n40_m, Rez.JsonData.n64_m, Rez.JsonData.n72_m, Rez.JsonData.n80_m, Rez.JsonData.n88_m][i]];
     }
 
     // the icon sheet [i]: one per size

@@ -77,8 +77,12 @@ module AppAlert {
         var w0 = AppScreens.inkOn(col);
         var ink = v ? w0 : col;
         var w = word(k);
-        g.icon("bell", -AppMath.tw(w, 20) / 2 - 16, -140, 20, ink);
-        g.ts(12, -133, w, 20, 700, ink, MIDDLE, 1.5);
+        // the alert's word: medium, or the largest role that fits the width at its height beside the bell
+        var wy = -124;
+        var wf = AppDraw.fitRole(w, AppDraw.ME, 2 * AppScreens.edgeX(wy - AppDraw.capOf(AppDraw.ME)) - 34);
+        var wd = AppDraw.ww(w, wf) + 28;
+        g.icon("bell", -wd / 2 + 10, wy - AppDraw.capOf(wf) / 2, 20, ink);
+        g.w(-wd / 2 + 28, wy, w, wf, ink, START);
         var vc = v ? w0 : null;
         if (d.noValue()) {
             AppScreens.noValue(g, d, -66);
@@ -137,12 +141,13 @@ module AppAlert {
             } else {
                 g.r(-bw / 2, y - 23, bw, 46, 23, fill, on || !v ? 1.0 : 0.28, 0);
             }
-            var tw0 = AppMath.tw(label, 20) + (icon != null ? 26 : 0);
+            var bf = AppDraw.fitRole(label, AppDraw.SM, bw - 36 - (icon != null ? 26 : 0));
+            var tw0 = AppDraw.ww(label, bf) + (icon != null ? 26 : 0);
             var tx = -tw0 / 2;
             if (icon != null) {
                 g.icon(icon as String, tx + 9, y, 18, ic);
             }
-            g.t(tx + (icon != null ? 26 : 0), y + 7, label, 20, 700, fg, START);
+            g.w(tx + (icon != null ? 26 : 0), y + AppDraw.capOf(bf) / 2, label, bf, fg, START);
         }
         AppScreens.btnHint(g, 60, v ? w0 : tk != null ? AppMath.pal(tk) : AppMath.INK);
     }

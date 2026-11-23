@@ -17,32 +17,32 @@ module GlanceFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a12b", "a12m", "a12s", "a14b", "a14s", "a24s", "n24", "n28", "n32", "n36"].indexOf(key);
+        var i = ["a14b", "a24s", "n24", "n28", "n32", "n36"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Drawables.a12b, Rez.Drawables.a12m, Rez.Drawables.a12s, Rez.Drawables.a14b, Rez.Drawables.a14s, Rez.Drawables.a24s, Rez.Drawables.n24, Rez.Drawables.n28, Rez.Drawables.n32, Rez.Drawables.n36][i], [Rez.JsonData.a12b_m, Rez.JsonData.a12m_m, Rez.JsonData.a12s_m, Rez.JsonData.a14b_m, Rez.JsonData.a14s_m, Rez.JsonData.a24s_m, Rez.JsonData.n24_m, Rez.JsonData.n28_m, Rez.JsonData.n32_m, Rez.JsonData.n36_m][i]];
+        return [[Rez.Drawables.a14b, Rez.Drawables.a24s, Rez.Drawables.n24, Rez.Drawables.n28, Rez.Drawables.n32, Rez.Drawables.n36][i], [Rez.JsonData.a14b_m, Rez.JsonData.a24s_m, Rez.JsonData.n24_m, Rez.JsonData.n28_m, Rez.JsonData.n32_m, Rez.JsonData.n36_m][i]];
     }
 
     // the icon sheet [i]: one per size
     function sheet(i as Number) as ResourceId {
-        return [Rez.Drawables.gicons8][i] as ResourceId;
+        return [Rez.Drawables.gicons12][i] as ResourceId;
     }
 
     // the icons: [x, y, box, sheet] of the nearest size (2 px margin)
     function icon(name as String, size as Number) as Array? {
         if (name.equals("rapid")) {
-            if (true) { return [0, 0, 12, 0]; }
+            if (true) { return [0, 0, 16, 0]; }
         } else if (name.equals("long")) {
-            if (true) { return [13, 0, 12, 0]; }
+            if (true) { return [17, 0, 16, 0]; }
         } else if (name.equals("carbs")) {
-            if (true) { return [26, 0, 12, 0]; }
+            if (true) { return [34, 0, 16, 0]; }
         } else if (name.equals("bellPause")) {
-            if (true) { return [39, 0, 12, 0]; }
+            if (true) { return [51, 0, 16, 0]; }
         } else if (name.equals("bellOff")) {
-            if (true) { return [52, 0, 12, 0]; }
+            if (true) { return [68, 0, 16, 0]; }
         } else if (name.equals("note")) {
-            if (true) { return [65, 0, 12, 0]; }
+            if (true) { return [85, 0, 16, 0]; }
         }
         return null;
     }

@@ -16,11 +16,11 @@ module AppFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a14m", "a14s", "a15b", "a15m", "a15s", "a16m", "a16s", "a17b", "a17m", "a17s", "a18m", "a18s", "a19m", "a19s", "a20b", "a20m", "a20s", "a22b", "a22s", "a23b", "a23s", "a24b", "a24s", "a26b", "a26s", "a28b", "a30b", "a32b", "a38s", "a48s", "a50s", "a96b", "n42", "n44", "n46", "n48", "n50", "n52", "n54", "n56", "n58", "n84", "n88", "n96", "n100", "n116", "n120", "n128"].indexOf(key);
+        var i = ["a22b", "a38s", "a48s", "a50s", "a96b", "n42", "n44", "n46", "n48", "n50", "n52", "n54", "n56", "n58", "n84", "n88", "n96", "n100", "n116", "n120", "n128"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Fonts.a14m, Rez.Fonts.a14s, Rez.Fonts.a15b, Rez.Fonts.a15m, Rez.Fonts.a15s, Rez.Fonts.a16m, Rez.Fonts.a16s, Rez.Fonts.a17b, Rez.Fonts.a17m, Rez.Fonts.a17s, Rez.Fonts.a18m, Rez.Fonts.a18s, Rez.Fonts.a19m, Rez.Fonts.a19s, Rez.Fonts.a20b, Rez.Fonts.a20m, Rez.Fonts.a20s, Rez.Fonts.a22b, Rez.Fonts.a22s, Rez.Fonts.a23b, Rez.Fonts.a23s, Rez.Fonts.a24b, Rez.Fonts.a24s, Rez.Fonts.a26b, Rez.Fonts.a26s, Rez.Fonts.a28b, Rez.Fonts.a30b, Rez.Fonts.a32b, Rez.Fonts.a38s, Rez.Fonts.a48s, Rez.Fonts.a50s, Rez.Fonts.a96b, Rez.Fonts.n42, Rez.Fonts.n44, Rez.Fonts.n46, Rez.Fonts.n48, Rez.Fonts.n50, Rez.Fonts.n52, Rez.Fonts.n54, Rez.Fonts.n56, Rez.Fonts.n58, Rez.Fonts.n84, Rez.Fonts.n88, Rez.Fonts.n96, Rez.Fonts.n100, Rez.Fonts.n116, Rez.Fonts.n120, Rez.Fonts.n128][i], [14, 14, 15, 15, 15, 16, 16, 17, 17, 17, 18, 18, 19, 19, 20, 20, 20, 22, 22, 23, 23, 24, 24, 26, 26, 28, 30, 31, 37, 47, 49, 94, 41, 43, 45, 47, 49, 51, 53, 55, 57, 83, 87, 94, 98, 114, 118, 126][i]];
+        return [[Rez.Fonts.a22b, Rez.Fonts.a38s, Rez.Fonts.a48s, Rez.Fonts.a50s, Rez.Fonts.a96b, Rez.Fonts.n42, Rez.Fonts.n44, Rez.Fonts.n46, Rez.Fonts.n48, Rez.Fonts.n50, Rez.Fonts.n52, Rez.Fonts.n54, Rez.Fonts.n56, Rez.Fonts.n58, Rez.Fonts.n84, Rez.Fonts.n88, Rez.Fonts.n96, Rez.Fonts.n100, Rez.Fonts.n116, Rez.Fonts.n120, Rez.Fonts.n128][i], [22, 37, 47, 49, 94, 41, 43, 45, 47, 49, 51, 53, 55, 57, 83, 87, 94, 98, 114, 118, 126][i]];
     }
 
     // the icon font [i]: one per size
