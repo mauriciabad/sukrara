@@ -5,11 +5,15 @@
 // A truecolour PNG (as headless Chrome writes it: 8 bits, RGB or RGBA, not interlaced) as a 256-colour palette PNG:
 // median cut over its colours, each colour to the nearest of the palette, no dithering. The Connect IQ store takes
 // screenshots of at most 150 KB (docs/20-publishing.md), and a watch in its case on a full picture weighs more.
-// Opaque pictures only (the alpha channel is dropped). apng() makes the animated store icon (APNG, ≤ 300 KB) the
-// same way, one palette for all its frames.
+// Transparency is kept: the palette has an alpha per colour (tRNS), fully transparent pixels get an entry of their
+// own. apng() makes the animated store icon (APNG, ≤ 300 KB) the same way, one palette for all its frames.
 //   import { png8, apng } from './png8.mjs';   png8(fs.readFileSync(file)) → Buffer;   apng([buf, …], 1600) → Buffer
 
 import zlib from 'node:zlib';
+
+// a colour as one number: red, green, blue, alpha, 8 bits each (unsigned); every fully transparent pixel is 0
+const RGBA = (r, g, b, a) => (a === 0 ? 0 : ((r << 24) | (g << 16) | (b << 8) | a) >>> 0);
+const ch = (c, k) => (c >>> (24 - 8 * k)) & 255;
 
 function decode(buf) {
   if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error('png8: not a PNG');
@@ -38,18 +42,20 @@ function decode(buf) {
       px[row + x] = v & 255;
     }
   }
-  const rgb = new Uint32Array(w * h);
-  for (let i = 0; i < w * h; i++) rgb[i] = (px[i * bpp] << 16) | (px[i * bpp + 1] << 8) | px[i * bpp + 2];
-  return { w, h, rgb };
+  const rgba = new Uint32Array(w * h);
+  for (let i = 0; i < w * h; i++) rgba[i] = RGBA(px[i * bpp], px[i * bpp + 1], px[i * bpp + 2], bpp === 4 ? px[i * bpp + 3] : 255);
+  return { w, h, rgba };
 }
 
-// median cut: split the box with the most weight × spread along its widest channel at the weighted median
+// median cut: split the box with the most weight × spread along its widest channel (red, green, blue, alpha) at the
+// weighted median
 function palette(counts, n) {
-  const cols = [...counts.keys()], ch = (c, k) => (c >> (16 - 8 * k)) & 255;
+  const cols = [...counts.keys()];
+  if (!cols.length || n < 1) return [];
   const box = (items) => {
-    let lo = [255, 255, 255], hi = [0, 0, 0], wt = 0;
-    for (const c of items) { for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], ch(c, k)); hi[k] = Math.max(hi[k], ch(c, k)); } wt += counts.get(c); }
-    const span = [0, 1, 2].map((k) => hi[k] - lo[k]), axis = span.indexOf(Math.max(...span));
+    let lo = [255, 255, 255, 255], hi = [0, 0, 0, 0], wt = 0;
+    for (const c of items) { for (let k = 0; k < 4; k++) { lo[k] = Math.min(lo[k], ch(c, k)); hi[k] = Math.max(hi[k], ch(c, k)); } wt += counts.get(c); }
+    const span = [0, 1, 2, 3].map((k) => hi[k] - lo[k]), axis = span.indexOf(Math.max(...span));
     return { items, wt, axis, score: items.length > 1 ? wt * span[axis] : -1 };
   };
   const boxes = [box(cols)];
@@ -64,8 +70,8 @@ function palette(counts, n) {
     boxes.splice(i, 1, box(items.slice(0, cut)), box(items.slice(cut)));
   }
   return boxes.map((b) => {
-    const s = [0, 0, 0];
-    for (const c of b.items) for (let k = 0; k < 3; k++) s[k] += ch(c, k) * counts.get(c);
+    const s = [0, 0, 0, 0];
+    for (const c of b.items) for (let k = 0; k < 4; k++) s[k] += ch(c, k) * counts.get(c);
     return s.map((v) => Math.round(v / b.wt));
   });
 }
@@ -78,21 +84,29 @@ function chunk(kind, data) {
   return out;
 }
 
-// pictures of one size → one palette for all, each picture as palette indices
+// pictures of one size → one palette for all (entry 0 fully transparent when any pixel is), each picture as indices
 function quantize(pics, n) {
   const counts = new Map();
-  for (const p of pics) for (const c of p.rgb) counts.set(c, (counts.get(c) || 0) + 1);
-  const pal = palette(counts, n), index = new Map();
+  for (const p of pics) for (const c of p.rgba) counts.set(c, (counts.get(c) || 0) + 1);
+  const clear = counts.delete(0);
+  const pal = (clear ? [[0, 0, 0, 0]] : []).concat(palette(counts, clear ? n - 1 : n)), index = new Map([[0, 0]]);
   for (const c of counts.keys()) {
-    const r = c >> 16, g = (c >> 8) & 255, b = c & 255;
+    // compared as they'd show over black: the colour times its alpha, and the alpha
+    const a = ch(c, 3), r = ch(c, 0) * a / 255, g = ch(c, 1) * a / 255, b = ch(c, 2) * a / 255;
     let best = 0, bd = Infinity;
-    pal.forEach(([pr, pg, pb], k) => {
-      const d = 2 * (r - pr) ** 2 + 4 * (g - pg) ** 2 + 3 * (b - pb) ** 2;
+    pal.forEach(([pr, pg, pb, pa], k) => {
+      if (clear && k === 0) return;
+      const d = 2 * (r - pr * pa / 255) ** 2 + 4 * (g - pg * pa / 255) ** 2 + 3 * (b - pb * pa / 255) ** 2 + 6 * (a - pa) ** 2;
       if (d < bd) { bd = d; best = k; }
     });
     index.set(c, best);
   }
-  return { pal, idx: pics.map((p) => Uint8Array.from(p.rgb, (c) => index.get(c))) };
+  return { pal, idx: pics.map((p) => Uint8Array.from(p.rgba, (c) => index.get(c))) };
+}
+// the palette's chunks: PLTE, and tRNS when any colour isn't opaque (up to the last that isn't)
+function plte(pal) {
+  const last = pal.findLastIndex(([, , , a]) => a < 255);
+  return [chunk('PLTE', Buffer.from(pal.flatMap(([r, g, b]) => [r, g, b])))].concat(last < 0 ? [] : [chunk('tRNS', Buffer.from(pal.slice(0, last + 1).map(([, , , a]) => a)))]);
 }
 // rows x0…x0+w of y0…y0+h, each with filter 0, deflated
 const rows = (idx, W, x0, y0, w, h) => {
@@ -105,13 +119,12 @@ const ihdr = (w, h) => { const b = Buffer.alloc(13); b.writeUInt32BE(w, 0); b.wr
 
 export function png8(buf, n = 256) {
   const pic = decode(buf), { pal, idx } = quantize([pic], n);
-  return Buffer.concat([SIG, ihdr(pic.w, pic.h), chunk('PLTE', Buffer.from(pal.flat())),
-    chunk('IDAT', rows(idx[0], pic.w, 0, 0, pic.w, pic.h)), chunk('IEND', Buffer.alloc(0))]);
+  return Buffer.concat([SIG, ihdr(pic.w, pic.h), ...plte(pal), chunk('IDAT', rows(idx[0], pic.w, 0, 0, pic.w, pic.h)), chunk('IEND', Buffer.alloc(0))]);
 }
 
 // Truecolour PNGs of one size → an animated PNG (APNG) in 256 colours, one palette for every frame, each shown `ms`
-// and looping forever; after the first, a frame holds only the rectangle that changed. Its first frame is the
-// picture a viewer without APNG shows.
+// and looping forever; after the first, a frame holds only the rectangle that changed (blended as source, so its
+// transparent pixels stay transparent). Its first frame is the picture a viewer without APNG shows.
 export function apng(bufs, ms, n = 256) {
   const pics = bufs.map(decode), { w, h } = pics[0];
   if (pics.some((p) => p.w !== w || p.h !== h)) throw new Error('apng: frames of different sizes');
@@ -125,7 +138,7 @@ export function apng(bufs, ms, n = 256) {
   };
   const actl = Buffer.alloc(8);
   actl.writeUInt32BE(pics.length, 0);
-  const out = [SIG, ihdr(w, h), chunk('acTL', actl), chunk('PLTE', Buffer.from(pal.flat())), fctl(0, 0, w, h), chunk('IDAT', rows(idx[0], w, 0, 0, w, h))];
+  const out = [SIG, ihdr(w, h), chunk('acTL', actl), ...plte(pal), fctl(0, 0, w, h), chunk('IDAT', rows(idx[0], w, 0, 0, w, h))];
   for (let k = 1; k < idx.length; k++) {
     let x0 = w, y0 = h, x1 = 0, y1 = 0;
     for (let i = 0; i < w * h; i++) if (idx[k][i] !== idx[k - 1][i]) { const x = i % w, y = (i / w) | 0; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }

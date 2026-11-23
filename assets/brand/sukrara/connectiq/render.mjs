@@ -9,9 +9,9 @@
 //   node assets/brand/sukrara/connectiq/render.mjs [aura|app|field …]   (needs Google Chrome, set CHROME to its binary;
 //   and Node 23.6 or newer, which runs the website's TypeScript as it is)
 // Each app's apps/garmin/<app>/store/listing.json says what to write into its `images` folder:
-//   icon-500.png     the store icon: 500 × 500, an animated PNG (ICONS), on a solid background (not black), no text,
-//                    inside the 10 px margin. Aura: the face (Garmin's advice for watch faces); the app and the data
-//                    field: their watch with their screens
+//   icon-500.png     the store icon: 500 × 500, an animated PNG (ICONS), transparent around the face or the watch,
+//                    which fill it edge to edge (the owner's choice), no text. Aura: the face (Garmin's advice for
+//                    watch faces); the app and the data field: their watch with their screens
 //   hero-<lang>.png  1440 × 720 per language: the kind of app as Garmin names it (`kind`), the title (`heroTitle` when
 //                    the store title is too long for it), the tagline and "no internet", beside the app in a watch
 //   screen-<id>.png  each of `screenshots`, in a watch of our own (no Garmin mark: the store's listings show screens in
@@ -65,8 +65,8 @@ const dialName = (v, lang) => aura.looks.options.find((o) => o.value === v).labe
 
 const run = (a) => new Promise((res, rej) => execFile(chrome, a, { timeout: 90000 }, (e) => (e ? rej(e) : res())));
 // headless Chrome sometimes exits with an error after writing the file: a picture on disk counts; else try again
-async function chromeShot(url, w, h, file) {
-  const a = ['--headless=new', '--hide-scrollbars', '--force-device-scale-factor=1', '--default-background-color=000000ff',
+async function chromeShot(url, w, h, file, clear = false) {
+  const a = ['--headless=new', '--hide-scrollbars', '--force-device-scale-factor=1', '--default-background-color=' + (clear ? '00000000' : '000000ff'),
     '--window-size=' + w + ',' + h, '--virtual-time-budget=8000', '--screenshot=' + file, url];
   for (let i = 0; i < 3; i++) {
     fs.rmSync(file, { force: true });
@@ -88,10 +88,11 @@ html,body{margin:0;overflow:hidden}
 .dial-only [data-part]:not([data-part='dial']){display:none}
 </style><div class="pic">${body}</div>`;
 let pageNo = 0;
+// bg 'transparent': a picture with an alpha channel (the icons)
 async function shoot(w, h, bg, body, file) {
   const html = path.join(tmp, `p${++pageNo}.html`);
   fs.writeFileSync(html, page(w, h, bg, body));
-  await chromeShot(pathToFileURL(html).href, w, h, file);
+  await chromeShot(pathToFileURL(html).href, w, h, file, bg === 'transparent');
   return file;
 }
 
@@ -427,14 +428,16 @@ const SHOTS = {
 };
 
 // The store icons (the upload form's Cover Image: 500 × 500, ≤ 300 KB): animated PNGs, as other listings' (the store
-// serves the file as it is and plays it), ICON_MS a frame, looping. On the brand's dark blue: Garmin's brand guidelines
-// ask for a solid background, not black nor transparent. Aura: the face through a day (the dial following the
-// glucose); the app: its watch with its pages, the main one first; the data field: its watch with each size of slot,
-// the whole screen first. Everything inside the 10 px margin, no strap.
+// serves the file as it is and plays it), ICON_MS a frame, looping. Transparent around the face or the watch, which
+// fill the picture edge to edge: the owner's choice (2026-11-23) over Garmin's brand guidelines, which ask for a solid
+// background (docs/20-publishing.md). Aura: the round face through a day (the dial following the glucose); the app: its
+// watch with its pages, the main one first; the data field: its watch with each size of slot, the whole screen first.
+// The watch: its buttons and case touch the sides (the UP button on the left reaches 1.335 R, the case on the right
+// 1.27 R), its strap runs off the top and bottom; no shadow.
 const ICON_MS = 1600;
-const ICON_BG = `<div class="abs" style="inset:0;background:${brand.bottom}"></div>`;
-const iconFace = (cfg) => `${ICON_BG}<div class="abs scr" style="left:10px;top:10px;width:480px;height:480px;border-radius:50%;overflow:hidden">${face(cfg).svg}</div>`;
-const iconWatch = (cfg) => ICON_BG + watch(screen(cfg), 250, 250, 328, { strap: 'none' });
+const iconFace = (cfg) => `<div class="abs scr" style="left:0;top:0;width:500px;height:500px;border-radius:50%;overflow:hidden">${face(cfg).svg}</div>`;
+const ICON_R = 500 / (1.335 + 1.27);
+const iconWatch = (cfg) => watch(screen(cfg), 1.335 * ICON_R, 250, 2 * ICON_R, { strapTo: 500, shadow: false });
 const ICONS = {
   aura: () => ['11:40', '13:20', '20:10', '08:35', '11:20'].map((t) => iconFace(day(t))),
   app: () => [{ screen: 'appA' }, { screen: 'appNums' }, { screen: 'glance' }, { screen: 'actions' }, { screen: 'logDone' }].map(iconWatch),
@@ -451,7 +454,7 @@ async function render(app) {
   for (const f of fs.readdirSync(out)) if (/^(icon-500|hero-[a-z]+|screen-.*)\.png$/.test(f)) fs.rmSync(path.join(out, f));
   const jobs = [];
   // the icon: an animated PNG of ICONS' frames, the first the still a viewer without APNG shows
-  const frames = ICONS[app]().map((body, k) => shoot(500, 500, brand.bottom, body, path.join(tmp, `${app}-icon-${k + 1}.png`)));
+  const frames = ICONS[app]().map((body, k) => shoot(500, 500, 'transparent', body, path.join(tmp, `${app}-icon-${k + 1}.png`)));
   jobs.push(Promise.all(frames).then((files) => {
     if (FRAMES) for (const f of files) fs.copyFileSync(f, path.join(FRAMES, path.basename(f)));
     const file = path.join(out, 'icon-500.png');
