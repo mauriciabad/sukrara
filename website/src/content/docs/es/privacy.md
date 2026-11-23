@@ -4,7 +4,8 @@ description: Qué guarda Sukrara en tu móvil, qué envía y adónde (solo cuand
 ---
 
 *Sukrara para Android (la versión de Google Play y la de GitHub), Sukrara para Mac (la versión de la App Store y la de
-GitHub) y esta web. Última modificación: 2026-11-22; cada cambio está en [el historial del proyecto](https://github.com/mauriciabad/sukrara/commits/main/website/src/content/docs/es/privacy.md).*
+GitHub), Sukrara para Garmin (la esfera Sukrara Aura, la app de reloj Sukrara y Sukrara campo de datos, de la tienda
+Connect IQ o de GitHub) y esta web. Última modificación: 2026-11-23; cada cambio está en [el historial del proyecto](https://github.com/mauriciabad/sukrara/commits/main/website/src/content/docs/es/privacy.md).*
 
 **En resumen:** Sukrara no tiene cuentas, ni servidor propio, ni analíticas, ni anuncios, ni informes de fallos. Tu
 glucosa, tus tratamientos y tus ajustes se quedan en tu móvil. Algo sale del móvil solo cuando activas una función que
@@ -87,6 +88,20 @@ web (`sukrara.mauri.app/appcast.xml`) una vez al día y cuando eliges *Buscar ac
 actualización de GitHub; la versión de la App Store no hace ninguna de las dos cosas (la actualiza la App Store).
 Guarda las lecturas 31 días y tus claves en el Llavero del Mac, solo en ese Mac; nada va a iCloud. La cámara lee un
 código QR de invitación solo mientras el escáner está abierto: no se graba ni se envía nada.
+
+## Sukrara para Garmin
+
+La esfera, la app de reloj y el campo de datos reciben lo que muestran solo de Sukrara para Android en el móvil con el
+que está emparejado el reloj, a través de Garmin Connect (la tabla de arriba, *Sukrara en tu reloj Garmin*), y solo le
+devuelven a él los tratamientos que registras y los silencios que pones en la app de reloj. No hablan con ningún
+servidor, ni nuestro ni de nadie, y no tienen cuenta, analíticas ni anuncios; el desarrollador no recibe nada de ellas.
+En el reloj guardan los últimos datos que envió el móvil (así, tras reiniciar se ven al momento, envejeciendo) y,
+mientras el móvil está fuera de alcance, lo que registraste hasta que el móvil lo tiene; quitar la app del reloj lo
+borra. La esfera lee los datos de tu propio reloj para sus campos y tus horas de dormir y despertar para el modo noche:
+eso se queda en el reloj. Garmin Connect, la tienda Connect IQ y tu cuenta de Garmin son de Garmin, con
+[la política de privacidad de Garmin](https://www.garmin.com/es-ES/privacy/connect/policy/); una actividad con la
+glucosa del campo de datos va a tu cuenta de Garmin como el resto de la actividad (el ajuste *Registrar la glucosa*
+del campo lo desactiva).
 
 ## Cuánto dura cada cosa y cómo borrarla
 

@@ -4,7 +4,8 @@ description: What Sukrara keeps on your phone, what it sends where (only when yo
 ---
 
 *Sukrara for Android (the Google Play build and the GitHub build), Sukrara for Mac (the App Store version and the
-GitHub version) and this website. Last changed 2026-11-22; every change is in [the project's history](https://github.com/mauriciabad/sukrara/commits/main/website/src/content/docs/privacy.md).*
+GitHub version), Sukrara for Garmin (the Sukrara Aura watch face, the Sukrara watch app and Sukrara data field, from
+the Connect IQ store or GitHub) and this website. Last changed 2026-11-23; every change is in [the project's history](https://github.com/mauriciabad/sukrara/commits/main/website/src/content/docs/privacy.md).*
 
 **In short:** Sukrara has no account, no server of its own, no analytics, no ads and no crash reporting. Your glucose,
 treatments and settings stay on your phone. Something leaves the phone only when you turn on a feature that sends it,
@@ -87,6 +88,20 @@ website (`sukrara.mauri.app/appcast.xml`) once a day and when you choose *Check 
 from GitHub; the App Store version does neither (the App Store updates it). It keeps readings 31 days and your keys
 in the Mac's Keychain, on that Mac only; nothing goes to iCloud. The camera reads an invite QR code only while the
 scanner is open: nothing is recorded or sent.
+
+## Sukrara for Garmin
+
+The watch face, the watch app and the data field get what they show only from Sukrara for Android on the phone the
+watch is paired with, through Garmin Connect (the table above, *Sukrara on your Garmin watch*), and send back only to
+it: the treatments you log and the mutes you set in the watch app. They talk to no server, ours or anyone else's, and
+have no account, analytics or ads; the developer receives nothing from them.
+On the watch they keep the newest data the phone sent (so a restart shows it at once, aging) and, while the phone is
+out of reach, what you logged until the phone has it; removing the app from the watch deletes it. The watch face
+reads your watch's own data for its fields and your sleep and wake times for night mode: that stays on the watch.
+Garmin Connect, the Connect IQ store and your Garmin account are Garmin's, under
+[Garmin's privacy policy](https://www.garmin.com/en-US/privacy/connect/policy/); an activity with the data field's
+glucose goes to your Garmin account like the rest of the activity (the field's *Record glucose* setting turns that
+off).
 
 ## How long things last, and how to delete them
 

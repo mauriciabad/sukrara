@@ -3038,11 +3038,22 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   row, *Sukrara for Garmin*, opens the website's Garmin page. While an id is null (all of them today: Garmin gives it
   when the listing is published) the phone opens the store's search instead (`https://apps.garmin.com/en-US/search?keyword=Sukrara`,
   `es-ES` in Spanish; `ConnectIqStore.url`, `GarminAppsTest`); the website says *Coming soon*.
+- **Where the Garmin apps come from** (#199, #246; from 0.17.0): each release uploads the three apps to the Connect IQ
+  store by hand (no upload API; `release.py`'s `garmin` step prints each upload, the listings are
+  `apps/garmin/<app>/store`), and the GitHub release carries, per app, the store package and
+  `<App>-<version>-sideload.zip` (one release `.prg` per watch model, `<App>-<watch>.prg`, for the watch's
+  `GARMIN/APPS` folder; a sideloaded app has the store app's id and key, so the store's copy replaces it and the phone
+  treats both alike). For other faces' developers it also carries the SukraraFace barrel as
+  `SukraraFace-<its version>.barrel` and `SukraraFace.barrel` (`releases/latest/download/SukraraFace.barrel` is always
+  the newest; docs/GARMIN-FACES.md: install, versions, known Connect IQ bugs). Tests: `test_release.py` (`GarminTest`:
+  the files, the notes, the upload kit, the listings' rules).
 - **What the phone calls them** (the owner, 2026-11-23: "just Sukrara is confusing"): wherever the phone names one
   (the Garmin page, setup's Garmin step, home's tip; `GarminApp.nameRes`, `inlineNameRes` inside a sentence), the
   name says what kind of app it is: *Sukrara Aura watch face* (es *Esfera Sukrara Aura*), *Sukrara watch app* (es *App
   de reloj Sukrara*; Garmin calls the type a device app), *Sukrara data field* (es *Campo de datos Sukrara*). The
-  apps' own names on the watch and in the store stay *Sukrara Aura*, *Sukrara*, *Sukrara data field*. Each row that
+  apps' own names on the watch are *Sukrara Aura*, *Sukrara* and *Sukrara Glucose* (es *Sukrara Glucosa*: the data
+  field as the activity's Data Screens › Connect IQ list shows it; the owner, 2026-11-23), and in the store *Sukrara
+  Aura*, *Sukrara* and *Sukrara Glucose Data Field* (es *Sukrara Glucosa: campo de datos*). Each row that
   names one has its kind's icon, Connect IQ's own symbols for its lists redrawn as the designsystem's
   `ds_ic_watch_face` (a dial with ticks and two hands at 10:10), `ds_ic_device_app` (a 2 × 2 grid, three squares filled, one
   outlined) and `ds_ic_data_field` (a dial with a band across it split in two from edge to edge), 24 dp, 2 dp strokes as Material Symbols, in the

@@ -135,8 +135,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   during the activity if you turn it on, and your glucose saved in the activity, charted in Garmin Connect.
 - Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server, and any Connect IQ watch face can
   read Sukrara's own watch-face data with the SukraraFace Monkey Barrel (`apps/garmin/sdk`, 0BSD: the fetch, the
-  version, never an old value as current, the unit and LO / HI, typed fields) and its JSON Schema (the developer
-  page: sukrara.mauri.app/developers/garmin-faces/, with a sample face in `apps/garmin/sample`).
+  version, never an old value as current, the unit and LO / HI, typed fields; built on every release as
+  `SukraraFace-<version>.barrel`, the newest always at `releases/latest/download/SukraraFace.barrel`) and its JSON
+  Schema (the developer page: sukrara.mauri.app/developers/garmin-faces/, with a sample face in `apps/garmin/sample`).
 - Getting the Garmin apps going from the phone: a setup step when Garmin Connect is on the phone (what each app gives,
   sending on or off, each one's Connect IQ store link once it's listed), and a home tip with *Turn on* when a watch has
   one of Sukrara's apps but sending is off.
@@ -218,8 +219,10 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`. Either way Sukrara then
   updates itself (the cask says `auto_updates`, so `brew upgrade` leaves it to the app; `brew upgrade --greedy` still
   works).
-- **Garmin**: on their way to the Connect IQ store, all needing Sukrara for Android and Garmin Connect on the
-  phone:
+- **Garmin**: from the Connect IQ store (each app once Garmin's review approves it), or without the store from the
+  release: `<App>-<version>-sideload.zip` holds one `.prg` per watch model, to copy into the watch's `GARMIN/APPS`
+  folder (it doesn't update itself; the store's copy replaces it). All need Sukrara for Android and Garmin Connect on
+  the phone:
   - Watch faces: Sukrara Aura (round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm,
     vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm).
   - Sukrara, the watch app, and Sukrara data field (every watch with Connect IQ 5 or newer: fēnix 7, 8, 9 and E,

@@ -4,12 +4,23 @@ Sukrara's releases. 0.x versions are previews.
 
 ## Unreleased
 
-- **Sukrara watch app fixes from the first days on a watch** (#250, not released yet): a tap now does what it lands
+- **Sukrara on your Garmin watch, released** (#199, #246): the Sukrara Aura watch face, the watch app *Sukrara* and
+  *Sukrara data field* go to the Connect IQ store with this version; each shows there once Garmin's review approves
+  it (7 to 14 days lately), and the phone's *Get* (the store's search for Sukrara) finds it then. Until then, or without the store, the release has a
+  zip per app with a `.prg` for each watch model to copy into the watch's `GARMIN/APPS` folder. On the watch, the
+  activity's Data Screens list the data field as *Sukrara Glucose* (es *Sukrara Glucosa*). For developers of
+  other watch faces, every release now carries SukraraFace, the library that reads Sukrara's glucose, as
+  `SukraraFace-5.0.0.barrel` (the newest always at
+  [releases/latest/download/SukraraFace.barrel](https://github.com/mauriciabad/sukrara/releases/latest/download/SukraraFace.barrel)),
+  with install steps, versions and known Connect IQ bugs on [its page](docs/GARMIN-FACES.md); its face-only
+  functions are annotated `(:sukraraFace)` instead of `(:face)`, so they can't clash with a face's own annotations.
+  The privacy policy now covers the Garmin apps.
+- **Sukrara watch app fixes from the first days on a watch** (#250): a tap now does what it lands
   on: page 2's period chips switch the period (MENU steps it too), a row of the list opens that row, an answer of the
   alert screen is that answer (before, every tap did what START does). On the amount, a drag up or down runs through
   the values in one go. The main metric's ring is in colour again on page 1 and the glance (it was grey whenever the
   phone's *Dimmed* was on, which is meant for the rings after it).
-- **Getting Sukrara onto your Garmin watch** (#199, not released yet): setup has a new optional step, *Your Garmin
+- **Getting Sukrara onto your Garmin watch** (#199): setup has a new optional step, *Your Garmin
   watch*, when Garmin Connect is on the phone or a watch already has one of Sukrara's apps: sending on or off, and
   what the Sukrara Aura watch face, the Sukrara watch app and the Sukrara data field each give, with *Get* opening each
   on the Connect IQ store. If a watch has one of them while sending is off, home says *Your watch gets no glucose*
@@ -28,7 +39,7 @@ Sukrara's releases. 0.x versions are previews.
   (the chart's hours and %, the list's details, the pill, the data field's *GLUCOSE*) were about half that size on the
   AMOLED watches. Your glucose, the amount and the ring numbers keep Sukrara's own figures (Atkinson Hyperlegible). Where a word no
   longer fits it takes a smaller size, a second line, or is left out where the phone already says it.
-- **Sukrara on Garmin watches, the watch side** (#199, not released yet): the Sukrara app publishes four complications
+- **Sukrara on Garmin watches, the watch side** (#199): the Sukrara app publishes four complications
   for any face (glucose, CGM+ GB's data and graph, and the last treatment as *Log*), turning to "---" on time when the
   reading gets old; a new alert from the phone shows as Garmin's notification with *Treatment*, *Remind less* and
   *Mute 30m*; the data field shows its own alert and records glucose into the activity. Entries and mutes from the
@@ -41,12 +52,12 @@ Sukrara's releases. 0.x versions are previews.
   delete on the phone does (LibreView, Nightscout and Tidepool too). The app is drawn for every Garmin screen it runs on: round AMOLED and MIP
   (in the MIP watches' 64 colours), the Venu Sq 2 and Venu X1 with their own layouts, and watches without UP / DOWN
   change pages and amounts with a swipe or a tap. *Waiting for your phone* shows Sukrara for Android's icon.
-- **The Sukrara data field, designed** (#199, not released yet): during an activity your glucose sits in any slot of a
+- **The Sukrara data field, designed** (#199): during an activity your glucose sits in any slot of a
   data screen, with Sukrara Aura's sparkline of the last hours where the slot is wide enough and the trend arrow where
   it isn't. Lows turn the slot red, an old value is struck through and grey, and before the phone's first message it
   says *Waiting for phone*. Its alert page carries the alert's colour and word; glucose goes into the activity's file
   only while it is fresh. Every round and rectangular Garmin screen, AMOLED and MIP.
-- **Each Garmin watch can show Sukrara its own way** (#199, not released yet): Settings › Share with apps › Garmin ›
+- **Each Garmin watch can show Sukrara its own way** (#199): Settings › Share with apps › Garmin ›
   *Sukrara* opens that watch's settings: its metrics, last treatment, rings, chart time, treatment marks, % column and
   the period its Numbers page opens on. Each says *Same as the app* until you change it, and goes back the same way.
   With two watches, each has its own rows on the Garmin page. Feeling two buzzes for one alert? The page says how to
@@ -72,7 +83,7 @@ Sukrara's releases. 0.x versions are previews.
 - **The phone is ready for Sukrara's own Garmin app and data field** (#199): it sends each Sukrara app on your watch
   only what it shows (the app a whole day, its numbers and what to log; the data field the last 3 hours and what rings),
   takes entries and mutes from the watch through its own Add treatment and alert actions, each signed and never logged
-  twice, and Settings › Share with apps › Garmin lists the app and the data field. The watch apps themselves come next.
+  twice, and Settings › Share with apps › Garmin lists the app and the data field.
   Sukrara Aura needs this version of the phone.
 - **Add treatment puts the field you most likely need first, by one rule everywhere** (#199): Carbs while your glucose
   is under your low alert's threshold or an alert carbs answer is ringing (very low, low, falling fast), Long-acting
