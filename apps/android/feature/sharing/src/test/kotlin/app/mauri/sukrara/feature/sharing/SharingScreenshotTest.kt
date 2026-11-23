@@ -83,6 +83,7 @@ import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.protocol.follow.FollowUpdate
 import app.mauri.sukrara.protocol.owner.IdentityCheck
 import app.mauri.sukrara.share.ble.NearbyServerCore
 import app.mauri.sukrara.share.ble.NearbyStatus
@@ -460,6 +461,16 @@ class SharingScreenshotTest {
             "followers" to { FollowersPage(sharing, FollowersActions()) },
             // docs/48: Anna's Sukrara is newer (this phone updates), the MacBook's older (it updates)
             "followers-update" to { FollowersPage(sharing.copy(otherVersions = mapOf("k1" to true, "k2" to false)), FollowersActions()) },
+            // someone with a newer Sukrara opened an invite (or found Pair nearby) while it is open
+            "followers-update-joining" to { FollowersPage(sharing.copy(newerInvitee = true), FollowersActions()) },
+            "nearby-pair-update" to {
+                NearbyPage(
+                    sharing.copy(newerInvitee = true),
+                    NearbyUi(status = NearbyStatus.Searching, pairingUntil = 1_761_600_000 + 581),
+                    FollowersActions(),
+                    now = { 1_761_600_000 },
+                )
+            },
             // who is paired nearby: Anna's phone connected now, the MacBook paired and out of range
             "followers-nearby" to {
                 FollowersPage(
@@ -510,6 +521,28 @@ class SharingScreenshotTest {
                         2,
                         facts.copy(spec = SourceSpec.TheirSukrara),
                     ).copy(nearby = NearbySearch(NearbyStatus.Searching, listOf(offer))),
+                    a,
+                )
+            },
+            // docs/48: offers of another version: a newer one (this phone updates) and an older one (the wearer does)
+            "setup-join-find-nearby-update" to {
+                fun other(name: String) =
+                    BleMessages.Pairing(PublicKeyHex("ab".repeat(32)), emptyList(), "", 1_761_600_600, Profile(name, me.avatar), "")
+                SetupContent(
+                    ui(
+                        SetupStep.Join,
+                        2,
+                        facts.copy(spec = SourceSpec.TheirSukrara),
+                    ).copy(
+                        nearby =
+                            NearbySearch(
+                                NearbyStatus.Searching,
+                                listOf(
+                                    NearbyOffer("a", other("Marta"), FollowUpdate.ThisApp),
+                                    NearbyOffer("b", other("Dad"), FollowUpdate.Wearer),
+                                ),
+                            ),
+                    ),
                     a,
                 )
             },
