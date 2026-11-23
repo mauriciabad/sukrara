@@ -65,13 +65,13 @@
   "whole-low-late": 1954,
   "band-low-late": 2143,
   "quarter-low-late": 2202,
-  "alert-low": 2758,
-  "alert-very-low": 4110,
-  "alert-high": 3332,
-  "alert-extremely-high": 6154,
-  "alert-falling-fast": 4959,
-  "alert-rising-fast": 5548,
-  "alert-no-data": 4769
+  "alert-low": 2797,
+  "alert-very-low": 4564,
+  "alert-high": 3700,
+  "alert-extremely-high": 6040,
+  "alert-falling-fast": 5028,
+  "alert-rising-fast": 6080,
+  "alert-no-data": 5160
  },
  "fenix7": {
   "whole-steady": 1962,
@@ -139,13 +139,13 @@
   "whole-low-late": 995,
   "band-low-late": 1373,
   "quarter-low-late": 1338,
-  "alert-low": 1447,
-  "alert-very-low": 1568,
-  "alert-high": 2158,
-  "alert-extremely-high": 2762,
-  "alert-falling-fast": 2235,
-  "alert-rising-fast": 3795,
-  "alert-no-data": 3354
+  "alert-low": 1432,
+  "alert-very-low": 1657,
+  "alert-high": 2265,
+  "alert-extremely-high": 2209,
+  "alert-falling-fast": 2338,
+  "alert-rising-fast": 3910,
+  "alert-no-data": 3460
  },
  "fenix843mm": {
   "whole-steady": 3089,
@@ -213,13 +213,13 @@
   "whole-low-late": 2418,
   "band-low-late": 2522,
   "quarter-low-late": 2663,
-  "alert-low": 2665,
-  "alert-very-low": 4408,
-  "alert-high": 3395,
-  "alert-extremely-high": 4017,
-  "alert-falling-fast": 4983,
-  "alert-rising-fast": 4478,
-  "alert-no-data": 4627
+  "alert-low": 2478,
+  "alert-very-low": 4498,
+  "alert-high": 3524,
+  "alert-extremely-high": 4060,
+  "alert-falling-fast": 4367,
+  "alert-rising-fast": 4340,
+  "alert-no-data": 4643
  },
  "fenix847mm": {
   "whole-steady": 3103,
@@ -287,13 +287,13 @@
   "whole-low-late": 2068,
   "band-low-late": 2934,
   "quarter-low-late": 2070,
-  "alert-low": 3424,
-  "alert-very-low": 5013,
-  "alert-high": 4212,
-  "alert-extremely-high": 5989,
-  "alert-falling-fast": 5377,
-  "alert-rising-fast": 6202,
-  "alert-no-data": 4763
+  "alert-low": 3418,
+  "alert-very-low": 5185,
+  "alert-high": 4275,
+  "alert-extremely-high": 5848,
+  "alert-falling-fast": 5330,
+  "alert-rising-fast": 5957,
+  "alert-no-data": 5034
  },
  "fenix9pro51mm": {
   "whole-steady": 3074,
@@ -361,13 +361,13 @@
   "whole-low-late": 2163,
   "band-low-late": 2412,
   "quarter-low-late": 1829,
-  "alert-low": 3222,
-  "alert-very-low": 5055,
-  "alert-high": 4358,
-  "alert-extremely-high": 5957,
-  "alert-falling-fast": 5197,
-  "alert-rising-fast": 6212,
-  "alert-no-data": 4730
+  "alert-low": 3445,
+  "alert-very-low": 5210,
+  "alert-high": 4320,
+  "alert-extremely-high": 6000,
+  "alert-falling-fast": 5268,
+  "alert-rising-fast": 6650,
+  "alert-no-data": 5352
  },
  "fr255s": {
   "whole-steady": 1689,
@@ -435,13 +435,13 @@
   "whole-low-late": 865,
   "band-low-late": 1347,
   "quarter-low-late": 1380,
-  "alert-low": 1175,
-  "alert-very-low": 1160,
-  "alert-high": 1919,
-  "alert-extremely-high": 2229,
-  "alert-falling-fast": 2095,
-  "alert-rising-fast": 2878,
-  "alert-no-data": 3085
+  "alert-low": 1298,
+  "alert-very-low": 1474,
+  "alert-high": 2125,
+  "alert-extremely-high": 2337,
+  "alert-falling-fast": 2160,
+  "alert-rising-fast": 2713,
+  "alert-no-data": 2943
  },
  "fr265s": {
   "whole-steady": 2069,
@@ -509,13 +509,13 @@
   "whole-low-late": 1449,
   "band-low-late": 2115,
   "quarter-low-late": 1655,
-  "alert-low": 2012,
-  "alert-very-low": 3074,
-  "alert-high": 2647,
-  "alert-extremely-high": 2909,
-  "alert-falling-fast": 5588,
-  "alert-rising-fast": 6812,
-  "alert-no-data": 3572
+  "alert-low": 2172,
+  "alert-very-low": 3145,
+  "alert-high": 2700,
+  "alert-extremely-high": 3089,
+  "alert-falling-fast": 3398,
+  "alert-rising-fast": 3503,
+  "alert-no-data": 3925
  },
  "venusq2": {
   "whole-steady": 2220,
@@ -583,13 +583,13 @@
   "whole-low-late": 1874,
   "band-low-late": 1143,
   "quarter-low-late": 1643,
-  "alert-low": 2660,
-  "alert-very-low": 4429,
-  "alert-high": 3342,
-  "alert-extremely-high": 4459,
-  "alert-falling-fast": 4120,
-  "alert-rising-fast": 4747,
-  "alert-no-data": 4959
+  "alert-low": 2742,
+  "alert-very-low": 4620,
+  "alert-high": 3499,
+  "alert-extremely-high": 5065,
+  "alert-falling-fast": 4604,
+  "alert-rising-fast": 5059,
+  "alert-no-data": 5189
  },
  "venux1": {
   "whole-steady": 4785,
@@ -657,12 +657,12 @@
   "whole-low-late": 3664,
   "band-low-late": 3919,
   "quarter-low-late": 3562,
-  "alert-low": 4625,
-  "alert-very-low": 6460,
-  "alert-high": 5873,
-  "alert-extremely-high": 9020,
-  "alert-falling-fast": 6800,
-  "alert-rising-fast": 7935,
-  "alert-no-data": 5605
+  "alert-low": 4815,
+  "alert-very-low": 6612,
+  "alert-high": 6153,
+  "alert-extremely-high": 9157,
+  "alert-falling-fast": 6830,
+  "alert-rising-fast": 7838,
+  "alert-no-data": 5560
  }
 }
