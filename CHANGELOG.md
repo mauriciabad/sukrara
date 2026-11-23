@@ -2,7 +2,9 @@
 
 Sukrara's releases. 0.x versions are previews.
 
-## Unreleased — Sukrara on your Garmin watch: a watch app, a data field and Sukrara Aura in the Connect IQ store
+## Unreleased
+
+## 0.17.0 — Sukrara on your Garmin watch: a watch app, a data field and Sukrara Aura in the Connect IQ store
 
 - **Sukrara on your Garmin watch, released** (#199, #246): the Sukrara Aura watch face, the watch app *Sukrara* and
   *Sukrara data field* go to the Connect IQ store with this version; each shows there once Garmin's review approves

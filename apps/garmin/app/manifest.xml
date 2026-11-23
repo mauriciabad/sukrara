@@ -7,7 +7,7 @@
      products; not yet the Instinct 3 Solar / Instinct E (1-bit screens, 128 KB apps, 32 KB glances: later, docs/47
      "Choice"). -->
 <iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
-    <iq:application id="87023f2f-8e48-4253-b9c3-8e37eb2b5fee" type="watch-app" name="@Strings.AppName" entry="SukraraApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.0.0" version="0.16.0">
+    <iq:application id="87023f2f-8e48-4253-b9c3-8e37eb2b5fee" type="watch-app" name="@Strings.AppName" entry="SukraraApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.0.0" version="0.17.0">
         <iq:products>
             <iq:product id="approachs50"/>
             <iq:product id="approachs7042mm"/>
