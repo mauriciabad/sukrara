@@ -623,6 +623,10 @@ One worktree per agent from the integration branch (`next`), a shared interface 
 protocol notes committed early, scaffolds (`NNa`) merged before the wave that builds on them, phone ownership handed
 over explicitly between sessions.
 
+GitHub rulesets: `main` and `next` can't be force-pushed or deleted, and release tags `v*` can't be moved or deleted
+(nobody bypasses, the owner included). A push `next` refuses as non-fast-forward: fetch, rebase onto `origin/next`,
+push again.
+
 ### Cleanup
 
 `tools/cleanup.sh [--dry-run] [--fetch] [--idle MINUTES]` removes every worktree and local branch whose commits are
