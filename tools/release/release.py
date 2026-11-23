@@ -84,6 +84,9 @@ import stores  # noqa: E402
 import versions  # noqa: E402
 from versions import parse_version, version_code  # noqa: E402,F401
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "formats"))
+import release_check  # noqa: E402
+
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 REPO = "mauriciabad/sukrara"
 REPO_URL = "https://github.com/" + REPO
@@ -119,7 +122,7 @@ GARMIN_MUST_SAY = {"en": ["not a medical device", "Android", "Garmin Connect", "
 # run in preconditions; a problem stops the release. An order between apps (#262: a watch payload change publishes the
 # phone only once Connect IQ approved the watch apps) is two runs, the watch apps' first; a check here can refuse the
 # second until the first is live.
-RELEASE_CHECKS = []
+RELEASE_CHECKS = [release_check.problems]  # tools/formats/release_check.py: every speaker at once, the watch apps first
 
 
 # --- pure parts (tools/release/test_release.py) ----------------------------------------------------------------------
