@@ -842,9 +842,26 @@ var WL = (function () {
     return w;
   }
   // a number of the report (small) with its name under it (xtiny) after its goal's mark
-  function numCheck(g, x, y, m) {
-    g.t(x, y, m[0], { f: 'small', fill: PAL.ink });
-    var cap = capOf('xtiny'), ic = cap * 0.75, lw = ww(m[1], 'xtiny') + ic + 4, ly = y + 6 + cap, x0 = x - lw / 2, my = ly - cap / 2;
+  // a number over its name and goal mark; o.f the number's role (small), o.marks false: the name in the goal's colour
+  // instead of the mark
+  function numsRow(nums, y) {
+    var cap = capOf('xtiny'), ly = y + 6 + cap, tries = [['small', true], ['small', false], ['tiny', true], ['tiny', false], ['xtiny', false]], r;
+    for (var k = 0; k < tries.length; k++) {
+      var f = tries[k][0], marks = tries[k][1];
+      var L = nums.map(function (m) { return ww(m[1], 'xtiny') + (marks ? cap * 0.75 + 4 : 0); }), N = nums.map(function (m) { return ww(m[0], f); });
+      var dx = Math.min(92, edgeX(ly + fu('xtiny').desc) - Math.max(L[0], L[2]) / 2, edgeX(y + 2) - Math.max(N[0], N[2]) / 2);
+      var need = Math.max(L[0] / 2 + L[1] / 2, L[1] / 2 + L[2] / 2, N[0] / 2 + N[1] / 2, N[1] / 2 + N[2] / 2) + 6;
+      r = { f: f, marks: marks, dx: dx };
+      if (dx >= need) break;
+    }
+    return r;
+  }
+  function numCheck(g, x, y, m, o) {
+    o = o || {};
+    g.t(x, y, m[0], { f: o.f || 'small', fill: PAL.ink });
+    var cap = capOf('xtiny'), ly = y + 6 + cap;
+    if (o.marks === false) { g.t(x, ly, m[1], { f: 'xtiny', fill: m[2] ? PAL.tight : PAL.high }); return; }
+    var ic = cap * 0.75, lw = ww(m[1], 'xtiny') + ic + 4, x0 = x - lw / 2, my = ly - cap / 2;
     if (m[2]) g.p('M' + r1(x0) + ' ' + r1(my) + 'l' + r1(ic * 0.35) + ' ' + r1(ic * 0.35) + 'l' + r1(ic * 0.65) + ' ' + r1(-ic * 0.7), { stroke: PAL.tight, sw: 2 });
     else g.p('M' + r1(x0) + ' ' + r1(my - ic * 0.4) + 'l' + r1(ic * 0.8) + ' ' + r1(ic * 0.8) + 'M' + r1(x0 + ic * 0.8) + ' ' + r1(my - ic * 0.4) + 'l' + r1(-ic * 0.8) + ' ' + r1(ic * 0.8), { stroke: PAL.high, sw: 2 });
     g.t(x0 + ic + 4, ly, m[1], { f: 'xtiny', fill: PAL.soft, anchor: 'start' });
@@ -883,10 +900,10 @@ var WL = (function () {
     row(-26, 'In range', R.inR, '> 70%', true, 'very good ' + R.good, R.met[1]);
     row(36, 'Below range', R.below, '< 4%', false, '', R.met[2]);
     g.p('M-140 78H140', { stroke: PAL.grid, sw: 1.5 });
-    // three columns, drawn in as far as their names need on a smaller circle
-    var nly = 108 + 6 + capOf('xtiny'), nhalf = Math.max.apply(null, R.nums.map(function (m) { return (ww(m[1], 'xtiny') + capOf('xtiny') * 0.75 + 4) / 2; }));
-    var ndx = Math.min(92, edgeX(nly + 3) - nhalf - 2);
-    R.nums.forEach(function (m, i) { numCheck(g, (i - 1) * ndx, 108, m); });
+    // three columns, drawn in as far as their names and numbers need on a smaller circle, never overlapping: where they
+    // don't fit, the marks give way first (the name in the goal's colour), then the numbers' size (small → tiny → xtiny)
+    var nx = numsRow(R.nums, 108);
+    R.nums.forEach(function (m, i) { numCheck(g, (i - 1) * nx.dx, 108, m, nx); });
     if (c.dots !== false) pageDots(g, 2, 1);
   };
 

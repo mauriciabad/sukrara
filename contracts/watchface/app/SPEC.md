@@ -343,7 +343,9 @@ button angles); `tools/watchface/app-build.mjs` renders every screen of §1 on e
   left out where it would reach the rim (the button's *Remind as usual* already says it); a centred line fits the
   screen's width where it stands (`edgeX`: a smaller role, never under xtiny), the muted page's footnote wraps; the
   report's *very good* is left out where even xtiny doesn't fit beside its chip (the Venu Sq 2; the phone's report has
-  it); the mute lengths share the room under their title; the glance mock's Garmin rows (Heart Rate, Body Battery) are
+  it); the report's three numbers (average, GMI, CV) never overlap: where their columns don't fit, the goal marks give
+  way first (the name then in the goal's colour, green met, orange not), then the numbers' size (small → tiny →
+  xtiny; `numsRow`); the mute lengths share the room under their title; the glance mock's Garmin rows (Heart Rate, Body Battery) are
   left out where the circle would cut them.
 - **The chart's height** scales with s; the hours row and the % labels are in the watch's xtiny, so its plot keeps
   what's left. The drop rules (§14.3) give it back its width.

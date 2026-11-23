@@ -919,25 +919,53 @@ module AppScreens {
         var my = rect ? bot + 4 + cS : 108;
         var ly = my + 6 + cX;
         var ic = cX * 0.75;
-        // three columns, drawn in as far as their names need on a smaller circle
-        var dx = rect ? (2 * w - 40) / 3 : 92.0;
-        if (!rect) {
-            var half = 0.0;
-            for (var i = 0; i < 3; i++) {
-                var hw0 = (AppDraw.ww(ms[i][1] as String, XT) + ic + 4) / 2;
-                half = hw0 > half ? hw0 : half;
-            }
-            var e = edgeX(ly + 3) - half - 2;
-            dx = e < dx ? e : dx;
-        }
+        // three columns, drawn in as far as their names and numbers need on a smaller circle, never overlapping: where
+        // they don't fit, the marks give way first (the name in the goal's colour), then the numbers' size (app.js
+        // numsRow)
+        var nx = rect ? [SM, true, (2 * w - 40) / 3] : numsRow(ms, my, ly, ic);
         for (var i = 0; i < 3; i++) {
-            var x = (i - 1) * dx;
-            g.w(x, my, ms[i][0] as String, SM, AppMath.INK, MIDDLE);
+            var x = (i - 1) * (nx[2] as Float);
+            g.w(x, my, ms[i][0] as String, nx[0] as Number, AppMath.INK, MIDDLE);
+            var met = ms[i][2] as Boolean;
+            if (!(nx[1] as Boolean)) {
+                g.w(x, ly, ms[i][1] as String, XT, AppMath.pal(met ? "tight" : "high"), MIDDLE);
+                continue;
+            }
             var lw = AppDraw.ww(ms[i][1] as String, XT) + ic + 4;
-            mark(g, x - lw / 2, ly - cX / 2, ms[i][2] as Boolean, ic);
+            mark(g, x - lw / 2, ly - cX / 2, met, ic);
             g.w(x - lw / 2 + ic + 4, ly, ms[i][1] as String, XT, AppMath.SOFT, START);
         }
         pageDots(g, 2, 1);
+    }
+
+    // the numbers row on a round screen: [number role, marks, column spacing] (app.js numsRow)
+    function numsRow(ms as Array, my as Numeric, ly as Numeric, ic as Numeric) as Array {
+        var tries = [[AppDraw.SM, true], [AppDraw.SM, false], [AppDraw.TI, true], [AppDraw.TI, false], [AppDraw.XT, false]];
+        var r = [];
+        for (var k = 0; k < tries.size(); k++) {
+            var f = tries[k][0] as Number;
+            var marks = tries[k][1] as Boolean;
+            var L = [0.0, 0.0, 0.0];
+            var N = [0.0, 0.0, 0.0];
+            for (var i = 0; i < 3; i++) {
+                L[i] = AppDraw.ww(ms[i][1] as String, AppDraw.XT) + (marks ? ic + 4 : 0);
+                N[i] = AppDraw.ww(ms[i][0] as String, f);
+            }
+            var a = edgeX(ly + AppDraw.lh(AppDraw.XT) - AppDraw.capOf(AppDraw.XT) / 0.75) - ((L[0] > L[2] ? L[0] : L[2]) as Float) / 2;
+            var b = edgeX(my + 2) - ((N[0] > N[2] ? N[0] : N[2]) as Float) / 2;
+            var dx = a < b ? a : b;
+            dx = dx < 92 ? dx : 92.0;
+            var need = 0.0;
+            var pairs = [L[0] + L[1], L[1] + L[2], N[0] + N[1], N[1] + N[2]];
+            for (var i = 0; i < 4; i++) {
+                need = (pairs[i] as Float) > need ? pairs[i] as Float : need;
+            }
+            r = [f, marks, dx.toFloat()];
+            if (dx >= need / 2 + 6) {
+                break;
+            }
+        }
+        return r;
     }
 
     // the report of [days] (payload rep), null without a reading in it

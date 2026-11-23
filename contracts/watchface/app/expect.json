@@ -21088,7 +21088,7 @@
  },
  "fenix843mm": {
   "alert-falling-fast": {
-   "budget": 4820,
+   "budget": 6162,
    "input": {
     "age": 0.5,
     "bands": [
@@ -21771,7 +21771,7 @@
    }
   },
   "alert-high": {
-   "budget": 6212,
+   "budget": 7831,
    "input": {
     "age": 0.5,
     "bands": [
@@ -21986,7 +21986,7 @@
    }
   },
   "alert-high-relaxed": {
-   "budget": 6471,
+   "budget": 7794,
    "input": {
     "age": 0.5,
     "bands": [
@@ -22203,7 +22203,7 @@
    }
   },
   "alert-no-data": {
-   "budget": 5396,
+   "budget": 6708,
    "input": {
     "age": 25.0,
     "bands": [
@@ -22889,7 +22889,7 @@
    }
   },
   "alert-no-data-old": {
-   "budget": 5233,
+   "budget": 5687,
    "input": {
     "age": 10.0,
     "bands": [
@@ -23575,7 +23575,7 @@
    }
   },
   "alert-very-low": {
-   "budget": 4447,
+   "budget": 5785,
    "input": {
     "age": 0.5,
     "bands": [
@@ -24257,7 +24257,7 @@
    }
   },
   "alert-very-low-plain": {
-   "budget": 4484,
+   "budget": 5824,
    "input": {
     "age": 0.5,
     "bands": [
@@ -24941,7 +24941,7 @@
    }
   },
   "day-actions": {
-   "budget": 2474,
+   "budget": 5906,
    "input": {
     "age": 0.5,
     "bands": [
@@ -25089,7 +25089,7 @@
    }
   },
   "day-appA": {
-   "budget": 5763,
+   "budget": 7327,
    "input": {
     "age": 0.5,
     "bands": [
@@ -25792,7 +25792,7 @@
    }
   },
   "day-appNums": {
-   "budget": 7308,
+   "budget": 12132,
    "input": {
     "age": 0.5,
     "bands": [
@@ -25934,7 +25934,7 @@
    }
   },
   "day-glance": {
-   "budget": 2093,
+   "budget": 2186,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26015,7 +26015,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2482,
+   "budget": 2070,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26103,7 +26103,7 @@
    }
   },
   "glance-high": {
-   "budget": 2853,
+   "budget": 3544,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26189,7 +26189,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 2841,
+   "budget": 4922,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26277,7 +26277,7 @@
    }
   },
   "log-amount-carbs": {
-   "budget": 2901,
+   "budget": 3628,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26412,7 +26412,7 @@
    }
   },
   "log-amount-rapid": {
-   "budget": 3348,
+   "budget": 4241,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26548,7 +26548,7 @@
    }
   },
   "log-confirm": {
-   "budget": 5456,
+   "budget": 8608,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26681,7 +26681,7 @@
    }
   },
   "log-confirm-same": {
-   "budget": 4523,
+   "budget": 7735,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26815,7 +26815,7 @@
    }
   },
   "log-done": {
-   "budget": 3533,
+   "budget": 10562,
    "input": {
     "age": 0.5,
     "bands": [
@@ -27078,7 +27078,7 @@
    }
   },
   "log-queued": {
-   "budget": 3329,
+   "budget": 6284,
    "input": {
     "age": 0.5,
     "bands": [
@@ -27208,7 +27208,7 @@
    }
   },
   "log-sending": {
-   "budget": 4200,
+   "budget": 5417,
    "input": {
     "age": 0.5,
     "bands": [
@@ -27338,7 +27338,7 @@
    }
   },
   "mute-done": {
-   "budget": 2843,
+   "budget": 5414,
    "input": {
     "age": 0.5,
     "bands": [
@@ -27472,7 +27472,7 @@
    }
   },
   "mute-done-lows": {
-   "budget": 2841,
+   "budget": 4683,
    "input": {
     "age": 0.5,
     "bands": [
@@ -27572,7 +27572,7 @@
    }
   },
   "mute-lengths": {
-   "budget": 3128,
+   "budget": 5575,
    "input": {
     "age": 0.5,
     "bands": [
@@ -27711,7 +27711,7 @@
    }
   },
   "mute-lengths-lows": {
-   "budget": 2721,
+   "budget": 4645,
    "input": {
     "age": 0.5,
     "bands": [
@@ -27815,7 +27815,7 @@
    }
   },
   "muted": {
-   "budget": 4254,
+   "budget": 7907,
    "input": {
     "age": 0.5,
     "bands": [
@@ -27954,7 +27954,7 @@
    }
   },
   "muted-actions": {
-   "budget": 2516,
+   "budget": 6247,
    "input": {
     "age": 0.5,
     "bands": [
@@ -28107,7 +28107,7 @@
    }
   },
   "muted-appA": {
-   "budget": 5816,
+   "budget": 7677,
    "input": {
     "age": 0.5,
     "bands": [
@@ -28815,7 +28815,7 @@
    }
   },
   "muted-change": {
-   "budget": 4122,
+   "budget": 8326,
    "input": {
     "age": 0.5,
     "bands": [
@@ -29059,7 +29059,7 @@
    }
   },
   "no-data-appA": {
-   "budget": 2921,
+   "budget": 5241,
    "input": {
     "age": 25.0,
     "bands": [
@@ -29833,7 +29833,7 @@
    }
   },
   "no-data-glance": {
-   "budget": 1601,
+   "budget": 3133,
    "input": {
     "age": 25.0,
     "bands": [
@@ -29907,7 +29907,7 @@
    }
   },
   "remind-done": {
-   "budget": 2337,
+   "budget": 3963,
    "input": {
     "age": 0.5,
     "bands": [
@@ -30009,7 +30009,7 @@
    }
   },
   "remind-usual-done": {
-   "budget": 2698,
+   "budget": 4804,
    "input": {
     "age": 0.5,
     "bands": [
@@ -30150,7 +30150,7 @@
    }
   },
   "setup": {
-   "budget": 6063,
+   "budget": 10005,
    "input": {
     "age": 0.0,
     "bands": [
@@ -30206,7 +30206,7 @@
    }
   },
   "setup-glance": {
-   "budget": 1989,
+   "budget": 2093,
    "input": {
     "age": 0.0,
     "bands": [
@@ -30264,7 +30264,7 @@
    }
   },
   "setup-opened": {
-   "budget": 6126,
+   "budget": 9520,
    "input": {
     "age": 0.0,
     "bands": [
@@ -30665,7 +30665,7 @@
    }
   },
   "very-low-actions": {
-   "budget": 2239,
+   "budget": 3319,
    "input": {
     "age": 0.5,
     "bands": [
@@ -30779,7 +30779,7 @@
    }
   },
   "very-low-appA": {
-   "budget": 2413,
+   "budget": 3756,
    "input": {
     "age": 0.5,
     "bands": [
@@ -31541,7 +31541,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 2047,
+   "budget": 2470,
    "input": {
     "age": 0.5,
     "bands": [
