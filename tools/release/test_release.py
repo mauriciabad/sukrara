@@ -524,7 +524,7 @@ class GarminTest(unittest.TestCase):
                       "  2. File: /r/Sukrara-0.17.0.iq\n  3. App Version: 0.17.0.", kit)
         self.assertIn("Description: apps/garmin/app/store/description-en.txt, apps/garmin/app/store/description-es.txt",
                       kit)
-        self.assertIn("Screenshots, in order: screen-glance.png, screen-app.png (in docs/img/app/store/ciq)", kit)
+        self.assertIn("Screenshots, in order: screen-glance.jpg, screen-app.jpg (in docs/img/app/store/ciq)", kit)
         self.assertIn("Hero: docs/img/app/store/ciq/hero-en.png, docs/img/app/store/ciq/hero-es.png", kit)
         self.assertIn("contracts/watchface/payload/apps.json `store`", kit)
         self.assertNotIn("What's new", kit)
@@ -563,12 +563,19 @@ class GarminTest(unittest.TestCase):
                 f.write(png + b"\0" * (400 * 1024))
             with open(os.path.join(root, "img/hero-en.png"), "wb") as f:
                 f.write(png)
+            with open(os.path.join(root, "img/screen-t.jpg"), "wb") as f:
+                f.write(png)
+            jpg = b"\xff\xd8\xff\xe0\x00\x04ab\xff\xc0\x00\x11\x08" + (500).to_bytes(2, "big") + (1000).to_bytes(2, "big")
+            self.assertEqual(release.jpeg_size(jpg + b"\0" * 12), (1000, 500))
+            with open(os.path.join(root, "img/screen-u.jpg"), "wb") as f:
+                f.write(jpg + b"\0" * 12)
             problems = "\n".join(release.listing_problems(root, "x"))
+            self.assertNotIn("screen-u.jpg", problems)
             for want in ["the en title is missing or names Garmin", "description-en.txt is 4", "doesn't say 'not a "
                          "medical device'", "has Markdown", "no apps/garmin/x/store/description-es.txt",
                          "img/icon-500.png is 400 KB (at most 300)", "img/hero-en.png isn't a 1440 × 720 PNG",
                          "no hero es", "no screenshot s", "6 screenshots (the store takes at most 5)",
-                         "the es title is over 50 characters"]:
+                         "the es title is over 50 characters", "img/screen-t.jpg isn't a JPEG"]:
                 self.assertIn(want, problems)
         finally:
             shutil.rmtree(root)

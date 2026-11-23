@@ -327,12 +327,26 @@ def png_size(data):
     return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
 
 
+def jpeg_size(data):
+    """(width, height) of a JPEG's bytes (its first SOFn segment), or None."""
+    if data[:2] != b"\xff\xd8":
+        return None
+    p = 2
+    while p + 9 < len(data) and data[p] == 0xFF:
+        kind, n = data[p + 1], int.from_bytes(data[p + 2:p + 4], "big")
+        if kind in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+            return int.from_bytes(data[p + 7:p + 9], "big"), int.from_bytes(data[p + 5:p + 7], "big")
+        p += 2 + n
+    return None
+
+
 def listing_files(app, listing):
-    """The listing's images, apps/garmin/<app>/store/listing.json's: [(what, path, (w, h) or None, max bytes)]."""
+    """The listing's images, apps/garmin/<app>/store/listing.json's: [(what, path, (w, h) or None, max bytes)]. The
+    icon and the heroes are PNG; the screenshots JPEG (render.mjs: the sharpest within 150 KB)."""
     d = listing["images"]
     out = [("icon", d + "/icon-500.png", (500, 500), GARMIN_ICON_MAX)]
     out += [("hero " + lang, "%s/hero-%s.png" % (d, lang), (1440, 720), GARMIN_HERO_MAX) for lang in GARMIN_LANGS]
-    out += [("screenshot " + s, "%s/screen-%s.png" % (d, s), None, GARMIN_SCREEN_MAX) for s in listing["screenshots"]]
+    out += [("screenshot " + s, "%s/screen-%s.jpg" % (d, s), None, GARMIN_SCREEN_MAX) for s in listing["screenshots"]]
     return out
 
 
@@ -382,9 +396,11 @@ def listing_problems(root, app):
         except OSError:
             problems.append("%s: no %s (%s; node assets/brand/sukrara/connectiq/render.mjs)" % (app, what, rel))
             continue
-        got = png_size(data)
+        jpg = rel.endswith(".jpg")
+        got = jpeg_size(data) if jpg else png_size(data)
         if got is None or (size and got != size):
-            problems.append("%s: %s isn't a %s PNG (%s)" % (app, rel, "%d × %d" % size if size else "", got))
+            problems.append("%s: %s isn't a %s%s (%s)" % (app, rel, "%d × %d " % size if size else "", "JPEG" if jpg else "PNG",
+                                                          got))
         if len(data) > limit:
             problems.append("%s: %s is %d KB (at most %d)" % (app, rel, len(data) // 1024, limit // 1024))
     return problems

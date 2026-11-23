@@ -2,12 +2,11 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// A truecolour PNG (as headless Chrome writes it: 8 bits, RGB or RGBA, not interlaced) as a 256-colour palette PNG:
-// median cut over its colours, each colour to the nearest of the palette, no dithering. The Connect IQ store takes
-// screenshots of at most 150 KB (docs/20-publishing.md), and a watch in its case on a full picture weighs more.
-// Transparency is kept: the palette has an alpha per colour (tRNS), fully transparent pixels get an entry of their
-// own. apng() makes the animated store icon (APNG, ≤ 300 KB) the same way, one palette for all its frames.
-//   import { png8, apng } from './png8.mjs';   png8(fs.readFileSync(file)) → Buffer;   apng([buf, …], 1600) → Buffer
+// Truecolour PNGs (as headless Chrome writes them: 8 bits, RGB or RGBA, not interlaced) as one animated PNG (APNG)
+// in 256 colours, the store icon (≤ 300 KB): median cut over the colours of every frame, each colour to the nearest of
+// the palette, no dithering. Transparency is kept: the palette has an alpha per colour (tRNS), fully transparent
+// pixels get an entry of their own.
+//   import { apng } from './png8.mjs';   apng([buf, …], 1600) → Buffer
 
 import zlib from 'node:zlib';
 
@@ -116,11 +115,6 @@ const rows = (idx, W, x0, y0, w, h) => {
 };
 const SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const ihdr = (w, h) => { const b = Buffer.alloc(13); b.writeUInt32BE(w, 0); b.writeUInt32BE(h, 4); b[8] = 8; b[9] = 3; return chunk('IHDR', b); };
-
-export function png8(buf, n = 256) {
-  const pic = decode(buf), { pal, idx } = quantize([pic], n);
-  return Buffer.concat([SIG, ihdr(pic.w, pic.h), ...plte(pal), chunk('IDAT', rows(idx[0], pic.w, 0, 0, pic.w, pic.h)), chunk('IEND', Buffer.alloc(0))]);
-}
 
 // Truecolour PNGs of one size → an animated PNG (APNG) in 256 colours, one palette for every frame, each shown `ms`
 // and looping forever; after the first, a frame holds only the rectangle that changed (blended as source, so its

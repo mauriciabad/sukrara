@@ -14,11 +14,10 @@
 //                    watch faces); the app and the data field: their watch with their screens
 //   hero-<lang>.png  1440 × 720 per language: the kind of app as Garmin names it (`kind`), the title (`heroTitle` when
 //                    the store title is too long for it), the tagline and "no internet", beside the app in a watch
-//   screen-<id>.png  each of `screenshots`, in a watch of our own (no Garmin mark: the store's listings show screens in
-//                    a watch, and Garmin's own bezels print GARMIN): 1000 × 500, a screen with its parts named or
-//                    rows of screens, at most 5 (the store's limit). One set for every language (the store keeps
-//                    one), so their words are English, as are the screens (app.js draws English); in 256 colours
-//                    (png8.mjs) to stay under the store's 150 KB
+//   screen-<id>.jpg  each of `screenshots`, at most 5 (the store's limit), laid out at 1000 × 500: one or two screens
+//                    in a watch of our own (no Garmin mark: Garmin's own bezels print GARMIN), more as the screens
+//                    alone; drawn at 2× and saved as the widest JPEG within 150 KB (SHOT_WIDTHS). One set for every
+//                    language (the store keeps one), so their words are English, as are the screens (app.js)
 // None shows a Carbs / Insulin pill or an amount to take (Connect IQ App Review Guidelines 1c), nor the app's alert
 // screen as if it opened by itself: on the watch an alert arrives as Garmin's notification and the app's screen is
 // what opening it shows (#256); only the data field shows its own alert, during an activity. Re-run after a screen's
@@ -26,13 +25,13 @@
 // tools/release/release.py checks them). A label points at a place on its screen picked by eye (LABELLED below):
 // check the lines after a screen's layout changes.
 
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { apng, png8 } from './png8.mjs';
+import { apng } from './png8.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..', '..', '..');
@@ -65,8 +64,8 @@ const dialName = (v, lang) => aura.looks.options.find((o) => o.value === v).labe
 
 const run = (a) => new Promise((res, rej) => execFile(chrome, a, { timeout: 90000 }, (e) => (e ? rej(e) : res())));
 // headless Chrome sometimes exits with an error after writing the file: a picture on disk counts; else try again
-async function chromeShot(url, w, h, file, clear = false) {
-  const a = ['--headless=new', '--hide-scrollbars', '--force-device-scale-factor=1', '--default-background-color=' + (clear ? '00000000' : '000000ff'),
+async function chromeShot(url, w, h, file, clear = false, scale = 1) {
+  const a = ['--headless=new', '--hide-scrollbars', '--force-device-scale-factor=' + scale, '--default-background-color=' + (clear ? '00000000' : '000000ff'),
     '--window-size=' + w + ',' + h, '--virtual-time-budget=8000', '--screenshot=' + file, url];
   for (let i = 0; i < 3; i++) {
     fs.rmSync(file, { force: true });
@@ -88,11 +87,11 @@ html,body{margin:0;overflow:hidden}
 .dial-only [data-part]:not([data-part='dial']){display:none}
 </style><div class="pic">${body}</div>`;
 let pageNo = 0;
-// bg 'transparent': a picture with an alpha channel (the icons)
-async function shoot(w, h, bg, body, file) {
+// bg 'transparent': a picture with an alpha channel (the icons); scale: device pixels per CSS pixel
+async function shoot(w, h, bg, body, file, scale = 1) {
   const html = path.join(tmp, `p${++pageNo}.html`);
   fs.writeFileSync(html, page(w, h, bg, body));
-  await chromeShot(pathToFileURL(html).href, w, h, file, bg === 'transparent');
+  await chromeShot(pathToFileURL(html).href, w, h, file, bg === 'transparent', scale);
   return file;
 }
 
@@ -121,17 +120,16 @@ const screen = (cfg) => {
 
 // ---- the watch ------------------------------------------------------------------------------------------------------
 
-// A watch of our own around a screen, centred at (cx, cy), the screen D px wide: a graphite case with a plain bezel
-// (no marks, no numbers), five buttons (the round watches' places: START 60°, BACK 120°, DOWN 240°, UP 270°, LIGHT
-// 300°; two on the square's right edge) and a strap: running off the picture (o.strap 'full', the default), only down
-// (a watch in front of another) or a short stub that fades out ('stub', a watch with words under it).
-// Round or the Venu Sq 2's rounded square.
-const caseHeight = (s, D) => (s.rect ? D * s.h / s.w + D * 0.3 : D * 1.27);
+// A watch of our own around a round screen, for a picture with one or two (with more, the screens alone: grid()):
+// centred at (cx, cy), the screen D px wide; a graphite case with a plain bezel (no marks, no numbers), five buttons
+// (the round watches' places: START 60°, BACK 120°, DOWN 240°, UP 270°, LIGHT 300°) and a strap: running o.reach px up
+// and down (o.strap 'full', the default), only down ('down', a watch in front of another) or a short stub that fades
+// out ('stub', a watch with words under it); a shadow unless o.shadow is false
 const STUB = 0.3; // the stub beyond the case, × D
+const caseHeight = (D) => D * 1.27;
 function watch(s, cx, cy, D, o = {}) {
-  const u = ++ids, R = D / 2, rect = s.rect, H = rect ? D * s.h / s.w : D, mode = o.strap || 'full'; // 'none': no strap, the lugs alone
-  const caseW = rect ? D * 1.3 : D * 1.27, caseH = caseHeight(s, D), strapW = rect ? D * 0.7 : R * 1.2;
-  const box = Math.max(caseW, caseH) + D * 0.4, tall = mode === 'none' ? box : mode === 'stub' ? caseH + 2 * STUB * D : Math.max(box, (o.strapTo || 2000) * 2);
+  const u = ++ids, R = D / 2, mode = o.strap || 'full', box = D * 1.67;
+  const tall = mode === 'stub' ? caseHeight(D) + 2 * STUB * D : Math.max(box, 2 * (o.reach || 1000));
   const defs = `<defs>
 <linearGradient id="f${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="${(STUB * D * 0.85 / tall).toFixed(3)}" stop-color="#fff"/><stop offset="${(1 - STUB * D * 0.85 / tall).toFixed(3)}" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <mask id="k${u}" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#f${u})"/></mask>
@@ -140,32 +138,22 @@ function watch(s, cx, cy, D, o = {}) {
 <linearGradient id="s${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#101114"/><stop offset=".35" stop-color="#26282C"/><stop offset=".55" stop-color="#2C2E33"/><stop offset="1" stop-color="#121316"/></linearGradient>
 <linearGradient id="b${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6C6F75"/><stop offset="1" stop-color="#25272B"/></linearGradient>
 </defs>`;
-  let body;
-  if (!rect) {
-    const btn = (deg) => `<rect x="${-R * 0.085}" y="${-R * 1.335}" width="${R * 0.17}" height="${R * 0.13}" rx="${R * 0.035}" fill="url(#b${u})" transform="rotate(${deg})"/>`;
-    const ticks = Array.from({ length: 60 }, (_, k) => {
-      const a = k * 6 * Math.PI / 180, r0 = R * (k % 5 ? 1.1 : 1.075), r1 = R * 1.14;
-      return `M${(r0 * Math.sin(a)).toFixed(1)} ${(-r0 * Math.cos(a)).toFixed(1)}L${(r1 * Math.sin(a)).toFixed(1)} ${(-r1 * Math.cos(a)).toFixed(1)}`;
-    }).join('');
-    body = `${[60, 120, 240, 270, 300].map(btn).join('')}
+  const btn = (deg) => `<rect x="${-R * 0.085}" y="${-R * 1.335}" width="${R * 0.17}" height="${R * 0.13}" rx="${R * 0.035}" fill="url(#b${u})" transform="rotate(${deg})"/>`;
+  const ticks = Array.from({ length: 60 }, (_, k) => {
+    const a = k * 6 * Math.PI / 180, r0 = R * (k % 5 ? 1.1 : 1.075), r1 = R * 1.14;
+    return `M${(r0 * Math.sin(a)).toFixed(1)} ${(-r0 * Math.cos(a)).toFixed(1)}L${(r1 * Math.sin(a)).toFixed(1)} ${(-r1 * Math.cos(a)).toFixed(1)}`;
+  }).join('');
+  const strap = `<rect x="${-R * 0.6}" y="${mode === 'down' ? 0 : -tall / 2}" width="${R * 1.2}" height="${mode === 'down' ? tall / 2 : tall}" fill="url(#s${u})"${mode === 'stub' ? ` mask="url(#k${u})"` : ''}/>`;
+  const body = `${[60, 120, 240, 270, 300].map(btn).join('')}
 <rect x="${-R * 0.72}" y="${-R * 1.46}" width="${R * 1.44}" height="${R * 2.92}" rx="${R * 0.3}" fill="url(#m${u})"/>
 <circle r="${R * 1.27}" fill="url(#m${u})"/><circle r="${R * 1.265}" fill="none" stroke="url(#e${u})" stroke-width="${R * 0.012}" opacity=".7"/>
 <circle r="${R * 1.18}" fill="#0D0E10"/><circle r="${R * 1.18}" fill="none" stroke="#000" stroke-width="${R * 0.01}" opacity=".6"/>
 <path d="${ticks}" stroke="#3A3C42" stroke-width="${R * 0.012}" stroke-linecap="round"/>
 <circle r="${R * 1.045}" fill="#000"/>`;
-  } else {
-    const W2 = D * 0.65, H2 = caseH / 2, btn = (y) => `<rect x="${W2 - D * 0.01}" y="${-H / 2 + y * H / s.h - D * 0.06}" width="${D * 0.05}" height="${D * 0.12}" rx="${D * 0.015}" fill="url(#b${u})"/>`;
-    body = `${[114, 331].map(btn).join('')}
-<rect x="${-W2}" y="${-H2}" width="${2 * W2}" height="${caseH}" rx="${D * 0.24}" fill="url(#m${u})"/>
-<rect x="${-W2 + D * 0.03}" y="${-H2 + D * 0.03}" width="${2 * W2 - D * 0.06}" height="${caseH - D * 0.06}" rx="${D * 0.21}" fill="#0D0E10"/>
-<rect x="${-D / 2 - D * 0.04}" y="${-H / 2 - D * 0.04}" width="${D * 1.08}" height="${H + D * 0.08}" rx="${D * 0.1}" fill="#000"/>`;
-  }
-  const strap = mode === 'none' ? '' : `<rect x="${-strapW / 2}" y="${mode === 'down' ? 0 : -tall / 2}" width="${strapW}" height="${mode === 'down' ? tall / 2 : tall}" fill="url(#s${u})"${mode === 'stub' ? ` mask="url(#k${u})"` : ''}/>`;
   const shadow = o.shadow === false ? '' : 'filter:drop-shadow(0 ' + D * 0.06 + 'px ' + D * 0.12 + 'px rgba(2,8,24,.6))';
-  const sr = rect ? D * 18 / 320 + 'px' : '50%';
   return `<svg class="abs" style="left:${cx - box / 2}px;top:${cy - tall / 2}px;${shadow}" width="${box}" height="${tall}" viewBox="${-box / 2} ${-tall / 2} ${box} ${tall}">${defs}${strap}${body}</svg>
-<div class="abs scr" style="left:${cx - D / 2}px;top:${cy - H / 2}px;width:${D}px;height:${H}px;border-radius:${sr};overflow:hidden;background:#000">${s.svg}</div>
-<div class="abs" style="left:${cx - D / 2}px;top:${cy - H / 2}px;width:${D}px;height:${H}px;border-radius:${sr};background:linear-gradient(140deg,rgba(255,255,255,.08),rgba(255,255,255,0) 38%)"></div>`;
+<div class="abs scr" style="left:${cx - R}px;top:${cy - R}px;width:${D}px;height:${D}px;border-radius:50%;overflow:hidden;background:#000">${s.svg}</div>
+<div class="abs" style="left:${cx - R}px;top:${cy - R}px;width:${D}px;height:${D}px;border-radius:50%;background:linear-gradient(140deg,rgba(255,255,255,.08),rgba(255,255,255,0) 38%)"></div>`;
 }
 // where a point of the screen (fractions of its width and height, 0..1 from the top left) sits in the picture
 const onScreen = (s, cx, cy, D, [fx, fy]) => {
@@ -175,51 +163,89 @@ const onScreen = (s, cx, cy, D, [fx, fy]) => {
 
 // ---- the pieces of a picture ------------------------------------------------------------------------------------------
 
+// The screenshots: laid out at W × H (1000 × 500) and drawn at 2×; then the largest JPEG within the form's 150 KB, the
+// store's enlarged view being up to 890 CSS px wide (1780 px on a 2× screen) while its 256-colour PNGs of 1000 px came
+// out soft there: the widest of SHOT_WIDTHS that fits at quality 50 or better, at the best quality that fits
+const SHOT_SCALE = 2, SHOT_MAX = 146 * 1024, SHOT_WIDTHS = [1800, 1600, 1400, 1200, 1000];
+function jpeg(png, file, max) {
+  const small = path.join(tmp, 'small-' + path.basename(file, '.jpg') + '.png');
+  for (const w of SHOT_WIDTHS) {
+    execFileSync('sips', ['-Z', String(w), png, '--out', small], { stdio: 'ignore' });
+    for (let q = 80; q >= 50; q -= 5) {
+      execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', String(q), small, '--out', file], { stdio: 'ignore' });
+      if (fs.statSync(file).size <= max) { fs.rmSync(small); return file; }
+    }
+  }
+  throw new Error(`render.mjs: ${path.basename(file)} weighs more than ${max} bytes at ${SHOT_WIDTHS.at(-1)} px, quality 50`);
+}
 const SHOT_BG = `radial-gradient(ellipse 75% 85% at 50% 45%,#16507F 0%,${brand.bottom} 55%,#061A38 100%)`;
 const HERO_BG = `linear-gradient(115deg,${brand.top},${brand.bottom} 70%)`;
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
-// labels left and right of a watch, each a line to its place on the screen: [{ at: [fx, fy], name, sub, side }]
+// a screen as the website shows it: no watch around it, round or the square's rounded rectangle, centred at (cx, cy),
+// D px wide, a faint ring at its edge and a soft shadow under it
+const screenHeight = (s, D) => (s.rect ? D * s.h / s.w : D);
+function bare(s, cx, cy, D, o = {}) {
+  const H = screenHeight(s, D), r = s.rect ? D * 18 / 320 + 'px' : '50%', ring = Math.max(1.5, D * 0.006);
+  const shadow = o.shadow === false ? '' : `,0 ${D * 0.04}px ${D * 0.1}px rgba(2,8,24,.55)`;
+  return `<div class="abs scr" style="left:${cx - D / 2}px;top:${cy - H / 2}px;width:${D}px;height:${H}px;border-radius:${r};overflow:hidden;background:#000;box-shadow:0 0 0 ${ring}px rgba(255,255,255,.18)${shadow}">${s.svg}</div>`;
+}
+
+// labels left and right of a screen, each a line to its place on it: [{ at: [fx, fy], name, sub, side }]
 function labels(s, cx, cy, D, items, o = {}) {
-  const gap = o.gap || 62, colL = cx - D * 0.5 * 1.27 - (o.room || 54), colR = cx + D * 0.5 * 1.27 + (o.room || 54);
+  const rad = o.rad || D / 2 + 6, gap = o.gap || 62, colL = cx - rad - (o.room || 54), colR = cx + rad + (o.room || 54);
   const top = o.top || 40, bottom = o.bottom || 460;
   let svg = '', html = '';
   for (const side of ['left', 'right']) {
+    // as wide as asked, within the picture's 12 px edge
+    const lw = Math.min(o.labelW || 250, side === 'left' ? colL - 12 : o.w - colR - 12);
     const its = items.filter((i) => i.side === side).map((i) => ({ ...i, p: onScreen(s, cx, cy, D, i.at) })).sort((a, b) => a.p[1] - b.p[1]);
     // each where its place is, pushed apart; then back up if the last ran off the bottom
     let y = top;
-    // each as tall as its words (a sub of more than one line: about 9.6 px a character at 19 px)
-    const tall = (i) => 36 + (i.sub ? 23 * Math.ceil(i.sub.length * 9.6 / (o.labelW || 250)) : 0);
-    for (const i of its) { i.y = Math.max(i.p[1] - (i.sub ? 14 : 0), y); y = i.y + Math.max(gap, tall(i)); }
+    // each as tall as its words (a sub of more than one line: about 9.9 px a character at 19.5 px)
+    const tall = (i) => 37 + (i.sub ? 24 * Math.ceil(i.sub.length * 9.9 / lw) : 0);
+    for (const i of its) { i.y = Math.max(i.p[1] - (i.sub ? 16 : 0), y); y = i.y + Math.max(gap, tall(i)); }
     const over = its.length ? its[its.length - 1].y + tall(its[its.length - 1]) - bottom : 0;
-    if (over > 0) for (const i of its) i.y = Math.max(top, i.y - over);
+    // from the bottom up, each above the next; then down again from the top if that ran out of room
+    if (over > 0) { let lim = bottom; for (const i of [...its].reverse()) { i.y = Math.min(i.y, lim - tall(i)); lim = i.y; } let t = top; for (const i of its) { i.y = Math.max(i.y, t); t = i.y + tall(i); } }
     for (const i of its) {
-      const x0 = side === 'left' ? colL + 14 : colR - 14, ly = i.y + 15;
-      const elbow = side === 'left' ? Math.min(i.p[0] - 18, cx - D * 0.66) : Math.max(i.p[0] + 18, cx + D * 0.66);
-      svg += `<polyline points="${x0},${ly} ${elbow},${ly} ${i.p[0]},${i.p[1]}" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="2"/>
+      const x0 = side === 'left' ? colL + 12 : colR - 12, ly = i.y + 17;
+      const elbow = side === 'left' ? Math.min(i.p[0] - 16, cx - rad - 6) : Math.max(i.p[0] + 16, cx + rad + 6);
+      svg += `<polyline points="${x0},${ly} ${elbow},${ly} ${i.p[0]},${i.p[1]}" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="2"/>
 <circle cx="${i.p[0]}" cy="${i.p[1]}" r="6" fill="${brand.accent}" stroke="#061A38" stroke-width="2.5"/>`;
       const pos = side === 'left' ? `right:${o.w - colL}px;text-align:right` : `left:${colR}px`;
-      html += `<div class="abs" style="${pos};top:${i.y}px;width:${o.labelW || 250}px">
-<div style="font-size:27px;font-weight:700;line-height:30px">${esc(i.name)}</div>${i.sub ? `<div style="font-size:19px;line-height:23px;opacity:.75;margin-top:3px">${esc(i.sub)}</div>` : ''}</div>`;
+      html += `<div class="abs" style="${pos};top:${i.y}px;width:${lw}px">
+<div style="font-size:28px;font-weight:700;line-height:32px">${esc(i.name)}</div>${i.sub ? `<div style="font-size:19.5px;line-height:24px;opacity:.78;margin-top:2px">${esc(i.sub)}</div>` : ''}</div>`;
     }
   }
   return `<svg class="abs" style="left:0;top:0" width="${o.w}" height="${o.h}">${svg}</svg>${html}`;
 }
 
-// rows of watches, each with a caption under it ([[{ s, name, sub }, …], …]), under a title when it has one: each
-// row's watches and captions one block in its band, the captions on one line where the stubs fade
+// rows of screens, each with a caption under it ([[{ s, name, sub }, …], …]), under a title when it has one: each row
+// one block in its band; one or two in a row in their watch, more the screens alone, as large as the band and their
+// slot allow (the owner, 2026-11-23: frames only where they don't take the room the screens need)
 function grid(rows, w, h, o = {}) {
-  const head = o.title ? 50 : 0, band = (h - head) / rows.length, D = o.D, small = rows.length > 1 || rows[0].length > 4;
-  const title = o.title ? `<div class="abs" style="left:0;right:0;top:18px;text-align:center;font-size:27px;font-weight:700">${esc(o.title)}</div>` : '';
+  const head = o.title ? 54 : 0, band = (h - head) / rows.length, small = rows.length > 1 || rows[0].length > 4;
+  const capH = small ? 50 : 64, nameF = small ? 22 : 27, subF = small ? 16.5 : 20;
+  const title = o.title ? `<div class="abs" style="left:0;right:0;top:16px;text-align:center;font-size:30px;font-weight:700">${esc(o.title)}</div>` : '';
   return title + rows.map((items, r) => {
-    const slot = w / items.length, cy = head + band * (r + 0.5) - (small ? 24 : 30);
-    const capY = cy + Math.max(...items.map((it) => caseHeight(it.s, D))) / 2 + STUB * D * 0.45;
-    return items.map((it, k) => {
-      const cx = slot * (k + 0.5);
-      return watch(it.s, cx, cy, D, { strap: 'stub' }) + `<div class="abs" style="left:${cx - slot / 2 + 4}px;width:${slot - 8}px;top:${capY}px;text-align:center">
-<div style="font-size:${small ? 20 : 24}px;font-weight:700;line-height:1.15">${esc(it.name)}</div>${it.sub ? `<div style="font-size:${small ? 15.5 : 18}px;line-height:1.25;opacity:.78;margin-top:2px">${esc(it.sub)}</div>` : ''}</div>`;
-    }).join('');
+    const slot = w / items.length, framed = items.length <= 2;
+    if (framed) {
+      // the watch's case (1.27 D) and its strap's stub as tall as the band allows
+      const D = Math.min(slot * 0.62, (band - capH - 24) / (1.27 + STUB), o.max || 999), top = head + band * r + (band - D * (1.27 + STUB) - capH) / 2;
+      const cy = top + D * (0.635 + STUB / 2), capY = cy + D * 0.635 + STUB * D * 0.45;
+      return items.map((it, k) => watch(it.s, slot * (k + 0.5), cy, D, { strap: 'stub' }) + caption(it, slot * (k + 0.5), slot, capY)).join('');
+    }
+    const D = Math.min(slot * (rows.length > 1 ? 0.84 : 0.88), band - capH - 18, o.max || 999);
+    // a square screen as tall as the round ones
+    const Ds = items.map((it) => (it.s.rect ? D * it.s.w / it.s.h : D)), maxH = Math.max(...items.map((it, k) => screenHeight(it.s, Ds[k])));
+    const top = head + band * r + (band - maxH - 12 - capH) / 2, cy = top + maxH / 2, capY = top + maxH + 12;
+    return items.map((it, k) => bare(it.s, slot * (k + 0.5), cy, Ds[k]) + caption(it, slot * (k + 0.5), slot, capY)).join('');
   }).join('');
+  function caption(it, cx, slot, capY) {
+    return `<div class="abs" style="left:${cx - slot / 2 + 4}px;width:${slot - 8}px;top:${capY}px;text-align:center">
+<div style="font-size:${nameF}px;font-weight:700;line-height:1.15">${esc(it.name)}</div>${it.sub ? `<div style="font-size:${subF}px;line-height:1.25;opacity:.8;margin-top:2px">${esc(it.sub)}</div>` : ''}</div>`;
+  }
 }
 
 // Material Symbols' public_off (Apache-2.0; the app's ds_ic_public_off), in the text's colour: "no internet"
@@ -237,16 +263,16 @@ ${extra}</div>`;
 function noInternet(s, w) {
   // the app's own sensor icon (ds_ic_dia_sensor), the phone with Sukrara's icon, the watch with this app's screen
   const CGM = '<svg viewBox="0 0 960 960" width="84" height="84" fill="none" stroke="#fff"><circle cx="373" cy="587" r="230" stroke-width="80"/><circle cx="373" cy="587" r="80" fill="#fff" stroke="none"/><path d="M466.2,239.3 A360,360 0 0,1 720.7,493.8M512.6,138.2 A470,470 0 0,1 821.8,447.4" stroke-width="70" stroke-linecap="round"/></svg>';
-  const y = 300, xs = [190, 470, 780];
+  const y = 296, xs = [180, 460, 790];
   const phone = `<div class="abs" style="left:${xs[1] - 52}px;top:${y - 88}px;width:104px;height:176px;border-radius:20px;background:#15171B;border:4px solid #5A5D63;box-shadow:0 18px 40px rgba(2,8,24,.55);display:flex;align-items:center;justify-content:center">
 <div style="width:58px;height:58px;border-radius:15px;background:${HERO_BG};display:flex;align-items:center;justify-content:center">${glyph.replace('<svg ', '<svg width="38" height="38" ')}</div></div>`;
   const arrow = (x0, x1) => `<svg class="abs" style="left:${x0}px;top:${y - 12}px" width="${x1 - x0}" height="24"><path d="M2 12H${x1 - x0 - 6}M${x1 - x0 - 16} 3L${x1 - x0 - 5} 12L${x1 - x0 - 16} 21" fill="none" stroke="${brand.accent}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const cap = (x, t) => `<div class="abs" style="left:${x - 140}px;width:280px;top:425px;text-align:center;font-size:23px;font-weight:600;line-height:27px">${t}</div>`;
+  const cap = (x, t) => `<div class="abs" style="left:${x - 140}px;width:280px;top:420px;text-align:center;font-size:27px;font-weight:600;line-height:31px">${t}</div>`;
   return `<div class="abs" style="left:56px;top:40px;display:flex;align-items:center;gap:16px;font-size:44px;font-weight:700;color:${brand.accent}">${noNet(50)}Works without internet</div>
 <div class="abs" style="left:56px;top:106px;width:${w - 112}px;font-size:25px;line-height:32px;opacity:.88">Each new reading goes from your CGM to Sukrara on your phone, and straight on to your watch as it arrives.</div>
 <div class="abs" style="left:${xs[0] - 42}px;top:${y - 42}px">${CGM}</div>${cap(xs[0], 'Your CGM')}
 ${arrow(xs[0] + 70, xs[1] - 72)}${phone}${cap(xs[1], 'Sukrara on your phone')}
-${arrow(xs[1] + 72, xs[2] - 100)}${watch(s, xs[2], y, 128, { strap: 'stub' })}${cap(xs[2], 'Your watch')}`;
+${arrow(xs[1] + 72, xs[2] - 118)}${watch(s, xs[2], y, 160, { strap: 'stub' })}${cap(xs[2], 'Your watch')}`;
 }
 
 // a screen in its watch on the right, a few words about it on the left
@@ -254,7 +280,7 @@ function explain(s, head, lines) {
   return `<div class="abs" style="left:60px;top:0;bottom:0;width:500px;display:flex;flex-direction:column;justify-content:center">
 <div style="font-size:42px;font-weight:700;line-height:48px;margin-bottom:16px">${esc(head)}</div>
 ${lines.map((l) => `<div style="font-size:27px;line-height:35px;margin-top:6px;opacity:.9">${esc(l)}</div>`).join('')}</div>
-${watch(s, 770, 250, 290, { strapTo: 500 })}`;
+${watch(s, 770, 250, 330, { reach: 500 })}`;
 }
 
 // ---- what each listing shows ------------------------------------------------------------------------------------------
@@ -334,9 +360,9 @@ const LABELLED = {
 const W = 1000, H = 500;
 // a screen in its watch with its parts named (and what it is, when that needs saying)
 function named(s, items, title) {
-  const D = 290, cy = title ? 272 : 250;
+  const D = title ? 330 : 360, cy = title ? 278 : 250;
   const top = title ? `<div class="abs" style="left:0;right:0;top:18px;text-align:center;font-size:25px;font-weight:600;opacity:.85">${esc(title)}</div>` : '';
-  return watch(s, 500, cy, D, { strapTo: H }) + labels(s, 500, cy, D, items, { w: W, h: H, room: 36, labelW: 250, top: title ? 70 : 24, bottom: 494, gap: 54 }) + top;
+  return watch(s, 500, cy, D, { reach: H }) + labels(s, 500, cy, D, items, { w: W, h: H, rad: D * 0.635, room: 20, labelW: 262, top: title ? 66 : 14, bottom: 496, gap: 54 }) + top;
 }
 const labelled = (id) => named(screen(LABELLED[id].s), LABELLED[id].items, LABELLED[id].title);
 const rows = (r, o) => [W, H, grid(r, W, H, o)];
@@ -437,7 +463,7 @@ const SHOTS = {
 const ICON_MS = 1600;
 const iconFace = (cfg) => `<div class="abs scr" style="left:0;top:0;width:500px;height:500px;border-radius:50%;overflow:hidden">${face(cfg).svg}</div>`;
 const ICON_R = 500 / (1.335 + 1.27);
-const iconWatch = (cfg) => watch(screen(cfg), 1.335 * ICON_R, 250, 2 * ICON_R, { strapTo: 500, shadow: false });
+const iconWatch = (cfg) => watch(screen(cfg), 1.335 * ICON_R, 250, 2 * ICON_R, { reach: 500, shadow: false });
 const ICONS = {
   aura: () => ['11:40', '13:20', '20:10', '08:35', '11:20'].map((t) => iconFace(day(t))),
   app: () => [{ screen: 'appA' }, { screen: 'appNums' }, { screen: 'glance' }, { screen: 'actions' }, { screen: 'logDone' }].map(iconWatch),
@@ -451,7 +477,7 @@ async function render(app) {
   const l = listing(app);
   const out = path.join(root, l.images);
   fs.mkdirSync(out, { recursive: true });
-  for (const f of fs.readdirSync(out)) if (/^(icon-500|hero-[a-z]+|screen-.*)\.png$/.test(f)) fs.rmSync(path.join(out, f));
+  for (const f of fs.readdirSync(out)) if (/^(icon-500|hero-[a-z]+|screen-.*)\.(png|jpg)$/.test(f)) fs.rmSync(path.join(out, f));
   const jobs = [];
   // the icon: an animated PNG of ICONS' frames, the first the still a viewer without APNG shows
   const frames = ICONS[app]().map((body, k) => shoot(500, 500, 'transparent', body, path.join(tmp, `${app}-icon-${k + 1}.png`)));
@@ -470,19 +496,19 @@ async function render(app) {
       const dials = `<div style="display:flex;gap:10px;margin-top:30px">${DIALS.map((d) => `<div style="width:100px;display:flex;flex-direction:column;align-items:center;text-align:center">
 <div class="scr" style="width:88px;height:88px;border-radius:50%;overflow:hidden;background:#000;box-shadow:0 0 0 ${d === mine ? `3px ${brand.accent}` : '2px rgba(255,255,255,.25)'}">${face({ ...preview, dial: d }, lang, true).svg}</div>
 <div style="font-size:19px;margin-top:10px;line-height:22px;opacity:.85">${esc(dialName(d, lang))}</div></div>`).join('')}</div>`;
-      body = `<div class="abs" style="inset:0;background:${HERO_BG}"></div>${watch(face(RISE, lang), 400, 360, 470, { strapTo: 720 })}${words(l.kind[lang], title, l.tagline[lang], lang, 800, dials)}`;
+      body = `<div class="abs" style="inset:0;background:${HERO_BG}"></div>${watch(face(RISE, lang), 400, 360, 470, { reach: 720 })}${words(l.kind[lang], title, l.tagline[lang], lang, 800, dials)}`;
     } else {
       // the main screen, and in front of it a second: the report (the app) or the field's own alert (the data field)
       const [big, small] = app === 'app' ? [{ screen: 'appA' }, { screen: 'appNums' }] : [{ screen: 'dfSlot', form: 'band' }, { screen: 'dfAlert', scenario: 'low' }];
-      body = `<div class="abs" style="inset:0;background:${HERO_BG}"></div>${watch(screen(big), 330, 320, 420, { strapTo: 720 })}${watch(screen(small), 650, 545, 210, { strap: 'down', strapTo: 720 })}${words(l.kind[lang], title, l.tagline[lang], lang, 860)}`;
+      body = `<div class="abs" style="inset:0;background:${HERO_BG}"></div>${watch(screen(big), 330, 320, 420, { reach: 720 })}${watch(screen(small), 650, 545, 210, { strap: 'down', reach: 720 })}${words(l.kind[lang], title, l.tagline[lang], lang, 860)}`;
     }
     jobs.push(shoot(1440, 720, brand.bottom, body, path.join(out, `hero-${lang}.png`)));
   }
   for (const id of l.screenshots) {
     if (!SHOTS[app][id]) throw new Error(`render.mjs: no picture ${id} for ${app}`);
     const [w, h, body] = SHOTS[app][id]();
-    // in 256 colours: a screenshot may weigh 150 KB
-    jobs.push(shoot(w, h, SHOT_BG, body, path.join(out, `screen-${id}.png`)).then((f) => { fs.writeFileSync(f, png8(fs.readFileSync(f))); return f; }));
+    // drawn at SHOT_SCALE × its layout, then the best JPEG that weighs at most SHOT_MAX
+    jobs.push(shoot(w, h, SHOT_BG, body, path.join(tmp, `screen-${id}.png`), SHOT_SCALE).then((f) => jpeg(f, path.join(out, `screen-${id}.jpg`), SHOT_MAX)));
   }
   return Promise.all(jobs);
 }
