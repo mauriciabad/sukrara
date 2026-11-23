@@ -164,12 +164,33 @@ function slotsAlertChoices(logger as Logger) as Boolean {
     p.put("ring", [{"k" => "low", "side" => "low", "less" => true, "relaxed" => false}]);
     SlotCases.take(p);
     Application.Storage.deleteValue(Alerts.RUNG);
-    Test.assertEqual((Ring.kinds(Alerts.news(T))).toString(), (["low"]).toString());
-    Test.assertEqual(Alerts.news(T + 60).size(), 0);
-    Test.assertEqualMessage(Alerts.news(T + 400).size(), 0, "the reading aged: nothing rings");
-    Test.assertEqualMessage((Ring.kinds(Alerts.news(T + 60))).toString(), (["low"]).toString(), "rings again: new");
+    Test.assertEqual((Ring.kinds(Alerts.news(Link.payload(), Link.skew, T))).toString(), (["low"]).toString());
+    Test.assertEqual(Alerts.news(Link.payload(), Link.skew, T + 60).size(), 0);
+    Test.assertEqualMessage(Alerts.news(Link.payload(), Link.skew, T + 400).size(), 0, "the reading aged: nothing rings");
+    Test.assertEqualMessage((Ring.kinds(Alerts.news(Link.payload(), Link.skew, T + 60))).toString(), (["low"]).toString(), "rings again: new");
     Application.Storage.deleteValue(Alerts.RUNG);
     Link.reset();
+    return true;
+}
+
+// the notification's icon: the alert's colour (a level alert its band, a rate alert the value's, no data grey), as the
+// app's alert screen; its trend words from THE trend's band
+(:test)
+function slotsAlertIcon(logger as Logger) as Boolean {
+    var b = [55, 70, 140, 180, 250, 300];
+    Test.assertEqual(Alerts.colour("high", 207, b), "high");
+    Test.assertEqual(Alerts.colour("very_low", 50, b), "veryLow");
+    Test.assertEqual(Alerts.colour("extremely_high", 320, b), "extremelyHigh");
+    Test.assertEqualMessage(Alerts.colour("falling_fast", 120, b), "tight", "a rate alert: the value's band");
+    Test.assertEqual(Alerts.colour("rising_fast", 180, b), "high");
+    Test.assertEqual(Alerts.colour("rising_fast", 179, b), "target");
+    Test.assertEqual(Alerts.colour("falling_fast", 55, b), "veryLow");
+    Test.assertEqual(Alerts.colour("rising_fast", 301, b), "extremelyHigh");
+    Test.assertEqual(Alerts.colour("no_data", 120, b), "grey");
+    Test.assertEqual(Alerts.colour("falling_fast", null, b), "grey");
+    Test.assert(Alerts.trend(1) == Rez.Strings.TrendRising);
+    Test.assert(Alerts.trend(-3) == Rez.Strings.TrendFallingVeryFast);
+    Test.assert(Alerts.trend(null) == null);
     return true;
 }
 

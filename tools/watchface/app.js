@@ -920,6 +920,15 @@ var WL = (function () {
   // the phone's app (Waiting for your phone: the owner, 2026-11-22: the app that needs to be open, big enough to read).
   // r = half the icon's side, the glyph 78 % of it.
   function appIcon(g, cx, cy, r, op) { brandIcon(g, cx, cy, r, op, false); }
+  // Garmin's notification's icon for an alert of colour [b] (the watch's pictures: apps/garmin/tools/launcher_icons.py
+  // alert_icon): the alert screen in small, the bell in a ring of the colour, or on a disc of it for very low and
+  // extremely high (white; black on MIP)
+  function alertIcon(g, cx, cy, r, b) {
+    var col = PAL[b], block = b === 'veryLow' || b === 'extremelyHigh';
+    if (block) g.c(cx, cy, r, { fill: col });
+    else g.c(cx, cy, r - r * 0.09, { stroke: col, sw: r * 0.18 });
+    g.icon('bell', cx, cy + r * 0.05, r * 1.2, block ? (KC && KC.mip ? '#000000' : '#FFFFFF') : col);
+  }
   function phoneIcon(g, cx, cy, r, op) { brandIcon(g, cx, cy, r, op, true); }
   function brandIcon(g, cx, cy, r, op, phone) {
     var cyan = KC && KC.mip ? '#55AAFF' : '#75C7F4';
@@ -974,18 +983,19 @@ var WL = (function () {
   // The glance: the widget's top row (as the collapsed notification): the value and its arrow, then as many of the
   // person's metrics as fit, in the card's priority (main, last treatment, second…), the rings without their period
   // label and with a bigger number. A pill or the reading's time sits under the value.
+  // Vertically (the owner, 2026-11-23: "the metrics are not vertically centered … moved up and looks missaligned"): the
+  // value and the row under it are one block centred on the content's middle, and the places are centred there too;
+  // only where the row would reach under them do they rise beside the value, centred on it.
   S.glance = function (g, d, c) {
     glanceLoop(g, d, function (B) {
-      var X0 = 0, X1 = B.w, R = 23, SW = 5, gapR = 6;
+      var X0 = 0, X1 = B.w, R = 23, SW = 5, gapR = 6, W = 2 * R + SW;
       // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page
       // words in the glance's font (FONT_GLANCE), on one line where they fit the content's width, else the title's two
       // halves (the watch's strings SetupTitle1 / 2)
       var st = 'Waiting for your phone';
       if (c.setup) { glanceLines(g, ww(st, 'glance') <= X1 - X0 ? [st] : ['Waiting for', 'your phone'], X0, PAL.soft); return; }
-      var under = (d.pill && d.age < 5) || d.age >= 1.5 || !!c.sending;
-      // the row under the value: the glance's font, the pill 1.5 caps tall, at the content's bottom; the value over it
-      var gc = capOf('glance'), rowH = gc * 1.5, cy = B.h / 2 - rowH / 2 - 1;
-      var vy = under ? cy - rowH / 2 - 6 : 20, fs = under ? 54 : 58, sy = under ? Math.min(0, -B.h / 2 + R + SW / 2 + 2) : 0;
+      var late = d.age >= 1.5, pl = d.pill && d.age < 5 ? d.pill : null, snd = c.sending;
+      var fs = pl || late || snd ? 54 : 58;
       if (d.age >= 20 || d.sensorState === 'warmup') {
         if (d.sensorState === 'warmup') {
           var gc = capOf('glance');
@@ -1003,25 +1013,31 @@ var WL = (function () {
       // The places are decided per class with the widest value (288 and its arrow) at the smallest size (58 → 46; 54 →
       // 42 with a row under it), so they never change with the reading; a glance too narrow even then shows the main
       // place only, always. The value then takes the largest size that fits beside them (SPEC §14.1)
-      var mets = metricSlots(d, c).slice(0, 2), need = 2 * (2 * R + SW) + gapR + 10, floor = fs - 12;
-      if (X1 - (X0 + valueWidth({ g: 288, unit: d.unit, rate: 1 }, floor)) < need) { mets = mets.slice(0, 1); need = 2 * R + SW + 10; }
+      var mets = metricSlots(d, c).slice(0, 2), need = 2 * W + gapR + 10, floor = fs - 12;
+      if (X1 - (X0 + valueWidth({ g: 288, unit: d.unit, rate: 1 }, floor)) < need) { mets = mets.slice(0, 1); need = W + 10; }
       while (fs > floor && X1 - (X0 + valueWidth(d, fs)) < need) fs -= 2;
-      var v = value(g, d, X0, vy, fs, { anchor: 'start' });
-      var room = X1 - (v.x1 + 10), x = X1;
-      mets.forEach(function (m) {
-        var w = 2 * R + SW;
-        if (room < w) { room = -1; return; }
-        drawSlot(g, m, x - w / 2, sy, R, SW, 23, 'glance');
-        x -= w + gapR; room -= w + gapR;
+      // the places that fit beside the value, from the right edge (their centres); [left]: the last one's left edge
+      var room = X1 - (X0 + valueWidth(d, fs) + 10), xs = [], left = X1;
+      for (var i = 0; i < mets.length && room >= W; i++) { xs.push(left - W / 2); left -= W + gapR; room -= W + gapR; }
+      left += gapR;
+      // the row under the value: the reading's time when late, Sukrara's pill (1.5 caps tall), then the outbox's line
+      // (Waiting for the phone, Sent, The phone has a question) where it fits after the rest
+      var gc = capOf('glance'), rowH = gc * 1.5, items = [], ax = X0;
+      if (late) { items.push({ t: d.readAt, x: ax }); ax += ww(d.readAt, 'glance') + 10; }
+      if (pl) { items.push({ p: pl, x: ax }); ax += pillWidth(pl, 'glance') + 10; }
+      // the places stay on the middle while the row ends left of them
+      var mid = ax - 10 <= left - 10;
+      if (snd && ax + ww(snd.text, 'glance') <= (mid ? left - 10 : X1)) items.push({ s: snd, x: ax });
+      // the block (the value's caps, 8, the row) on the content's middle
+      var cap = fs * 0.668, vy = items.length ? (cap - 8 - rowH) / 2 : cap / 2, cy = vy + 8 + rowH / 2;
+      var sy = items.length && !mid ? vy - cap / 2 : 0;
+      value(g, d, X0, vy, fs, { anchor: 'start' });
+      xs.forEach(function (px, i) { drawSlot(g, mets[i], px, sy, R, SW, 23, 'glance'); });
+      items.forEach(function (it) {
+        if (it.t) g.t(it.x, cy + gc / 2, it.t, { f: 'glance', fill: PAL.soft, anchor: 'start' });
+        else if (it.p) pill(g, it.x, cy, it.p, { f: 'glance', anchor: 'start', tall: 1.5 });
+        else g.t(it.x, cy + gc / 2, it.s.text, { f: 'glance', fill: it.s.ask ? PAL.high : PAL.soft, anchor: 'start' });
       });
-      if (under) {
-        var late = d.age >= 1.5, ax = X0;
-        if (late) { g.t(ax, cy + gc / 2, d.readAt, { f: 'glance', fill: PAL.soft, anchor: 'start' }); ax += ww(d.readAt, 'glance') + 10; }
-        if (d.pill && d.age < 5) ax += pill(g, ax, cy, d.pill, { f: 'glance', anchor: 'start', tall: 1.5 }) + 10;
-        // the outbox (Waiting for the phone, Sent, The phone has a question), where it fits after the rest
-        var snd = c.sending;
-        if (snd && ax + ww(snd.text, 'glance') <= X1) g.t(ax, cy + gc / 2, snd.text, { f: 'glance', fill: snd.ask ? PAL.high : PAL.soft, anchor: 'start' });
-      }
     }, c);
   };
 
@@ -1283,9 +1299,10 @@ var WL = (function () {
     btnHint(g, 60, '', {});
   };
   S.wake = function (g, d) {
-    // Garmin's full-screen notification, sent by the app's background (API 5.1+): title, subtitle, icon, actions.
-    // Every action opens the app with that action; Remind less and Mute send it and close again at once.
-    appIcon(g, 0, -140, 20);
+    // Garmin's full-screen notification, sent by the app's background (API 5.1+): Garmin lays it out (SPEC §14.7); the
+    // app gives its icon, title, subtitle and actions. Every action opens the app with that action; Remind less and Mute
+    // send it and close again at once; the notification itself opens the app's alert (S.alert).
+    alertIcon(g, 0, -140, 20, 'low');
     g.t(0, -94, 'Low 62', { f: 'medium', fill: PAL.ink });
     g.t(0, -86 + capOf('tiny') + 4, 'Falling · 20:41', { f: 'tiny', fill: PAL.soft });
     var rows = [['carbs', 'Treatment', PAL.carbs], ['bellPause', 'Remind less', PAL.soft], ['bellOff', 'Mute lows 30m', PAL.soft]];

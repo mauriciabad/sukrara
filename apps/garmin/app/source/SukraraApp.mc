@@ -18,6 +18,7 @@ import Toybox.WatchUi;
 class SukraraApp extends Application.AppBase {
     var _from as Number? = null; // the complication it was opened from
     var _fg as Boolean = false; // the app's own process (the background's never calls getInitialView)
+    var _note as Dictionary? = null; // the notification's action it was opened with, until taken
 
     function initialize() {
         AppBase.initialize();
@@ -27,10 +28,15 @@ class SukraraApp extends Application.AppBase {
         Trace.log("onStart " + state);
         var c = state != null ? state.get(:launchedFromComplication) : null;
         _from = c instanceof Number ? c : null;
+        // opened from Garmin's notification (Core Topics › Notifications: the action's data in onStart's state): taken
+        // in getInitialView, once, whether or not the same also comes through onNote
+        var n = state != null ? state.get(:launchedFromNotification) : null;
+        _note = n instanceof Dictionary ? n : null;
     }
 
     // where it opens (SPEC §5, §10): holding the Log complication → the one list; the glance, the app list and the
-    // other complications → page 1; not set up (nothing from the phone yet) → the setup page (§4.3). A notification's action arrives through onNote.
+    // other complications → page 1; not set up (nothing from the phone yet) → the setup page (§4.3). A notification's
+    // action arrives in onStart's state and through onNote (take).
     function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
         start();
         // the phone's messages while the app is open, and those left waiting for it (pushes Garmin didn't hand the
@@ -44,9 +50,14 @@ class SukraraApp extends Application.AppBase {
             AppNav.fetch();
         }
         Outbox.flush(null);
+        // the notification's action it was opened with, then the ones Garmin queued (the same one once more: skipped)
+        if (_note != null) {
+            take(_note as Dictionary);
+        }
         if (Toybox has :Notifications && Notifications has :registerForNotificationMessages) {
             Notifications.registerForNotificationMessages(method(:onNote));
         }
+        _note = null;
         _fg = true;
         AppNav.begin();
         if (_from == Slots.LOG && Link.payload() != null) {
@@ -67,6 +78,17 @@ class SukraraApp extends Application.AppBase {
         if (!(act instanceof Dictionary)) {
             return;
         }
+        // the one onStart already brought (a Mute sent twice would say so twice)
+        var n = _note;
+        _note = null;
+        if (n != null && act.get("a") == n.get("a") && ("" + act.get("k")).equals("" + n.get("k"))
+            && ("" + act.get("side")).equals("" + n.get("side"))) {
+            return;
+        }
+        take(act);
+    }
+
+    function take(act as Dictionary) as Void {
         var a = act.get("a");
         var side = act.get("side");
         var low = "low".equals(side);

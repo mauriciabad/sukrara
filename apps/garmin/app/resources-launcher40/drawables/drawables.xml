@@ -1,7 +1,15 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara -->
 <!-- Copyright (C) 2026 Maurici Abad -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- The launcher icon at 40 px (apps/garmin/tools/launcher_icons.py). -->
+<!-- The launcher icon at 40 px; the alerts' icons for Garmin's notification, one per colour (apps/garmin/tools/launcher_icons.py). -->
 <drawables>
     <bitmap id="LauncherIcon" filename="launcher_icon.png" dithering="none"/>
+    <bitmap id="AlertVeryLow" filename="alert_veryLow.png" dithering="none" scope="background"/>
+    <bitmap id="AlertLow" filename="alert_low.png" dithering="none" scope="background"/>
+    <bitmap id="AlertTight" filename="alert_tight.png" dithering="none" scope="background"/>
+    <bitmap id="AlertTarget" filename="alert_target.png" dithering="none" scope="background"/>
+    <bitmap id="AlertHigh" filename="alert_high.png" dithering="none" scope="background"/>
+    <bitmap id="AlertVeryHigh" filename="alert_veryHigh.png" dithering="none" scope="background"/>
+    <bitmap id="AlertExtremelyHigh" filename="alert_extremelyHigh.png" dithering="none" scope="background"/>
+    <bitmap id="AlertGrey" filename="alert_grey.png" dithering="none" scope="background"/>
 </drawables>

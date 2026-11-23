@@ -76,13 +76,20 @@ class AppService extends LinkService {
     function hand(data as Dictionary) as Void {
         var now = Time.now().value();
         var p = data.get("d");
+        // a new alert first, before the run's storage writes (the payload alone is about 4 KB): Garmin's notification
+        // as soon as a newer payload is in (the order rule Link.accept keeps it by)
+        if (Link.valid(p)) {
+            var stored = Application.Storage.getValue(Link.SENT);
+            if (SukraraFace.replaces(stored instanceof Number ? stored : null, p as Dictionary, now)) {
+                Alerts.notify(p as Dictionary, SukraraFace.skewOf((p as Dictionary).get("sent") as Number, now), now);
+            }
+        }
         var out = AppRun.keep(data, now);
         Trace.log("background " + data.get("k") + " " + data.get("c") + " waiting " + data.get("n") + " kept " + out.get("kept"));
         keep(out);
         ensure(now);
         if (out.get("kept") == true) {
             Outbox.received(p as Dictionary, now);
-            Alerts.notify(now);
         }
         Slots.publish(now);
         _data = out;
@@ -114,8 +121,11 @@ module AppRun {
 }
 
 // A new alert from the phone as Garmin's own notification (SPEC §7 "Garmin's notification", API 5.1+; nothing on 5.0
-// watches, where Garmin Connect's forwarded phone notification stays): the alert's word and value, the reading's time,
-// and the phone's actions, each of which opens the app with it. It says again what Sukrara rings on the phone.
+// watches, where Garmin Connect's forwarded phone notification stays). Garmin lays it out (its type, colours and places:
+// SPEC §14.7); Sukrara gives it what it takes: the alert's bell in the alert's colour as its icon (a picture per colour,
+// apps/garmin/tools/launcher_icons.py: Garmin takes no BufferedBitmap there), the word and value, the trend and the
+// reading's time, and the phone's actions, each of which opens the app with it; the notification itself opens the app's
+// own alert (S.alert). It says again what Sukrara rings on the phone.
 (:background)
 module Alerts {
     const RUNG = "sukRung"; // the kinds the background last announced
@@ -152,17 +162,50 @@ module Alerts {
         return id != null ? id as ResourceId : Rez.Strings.AlertNoData;
     }
 
-    // the items that ring now and weren't announced yet; the announced kinds kept
-    function news(now as Number) as Array<Dictionary> {
-        var items = Ring.now(Link.payload(), now, Link.skew);
+    // THE ALERT'S COLOUR as the icon's name (AlertView.colour's): a level alert its band, a rate alert the value's band
+    // ([v] mg/dL, [b] the payload's six limits; AppMath.band's rule, which the background doesn't load), no data grey
+    function colour(k, v, b) as String {
+        var ks = ["very_low", "low", "high", "very_high", "extremely_high"];
+        var names = ["veryLow", "low", "high", "veryHigh", "extremelyHigh"];
+        for (var i = 0; i < ks.size(); i++) {
+            if (ks[i].equals(k)) {
+                return names[i] as String;
+            }
+        }
+        if ("no_data".equals(k) || !(v instanceof Number) || !(b instanceof Array) || b.size() != 6) {
+            return "grey";
+        }
+        var under = [v <= b[0], v < b[1], v <= b[2], v < b[3], v < b[4], v < b[5]];
+        var bands = ["veryLow", "low", "tight", "target", "high", "veryHigh"];
+        for (var i = 0; i < under.size(); i++) {
+            if (under[i]) {
+                return bands[i] as String;
+            }
+        }
+        return "extremelyHigh";
+    }
+
+    // the trend's words (THE trend's band −3 … 3, contracts/trend/bands.json); null = no trend
+    function trend(band) as ResourceId? {
+        var ids = [Rez.Strings.TrendFallingVeryFast, Rez.Strings.TrendFallingFast, Rez.Strings.TrendFalling,
+            Rez.Strings.TrendSteady, Rez.Strings.TrendRising, Rez.Strings.TrendRisingFast, Rez.Strings.TrendRisingVeryFast];
+        return band instanceof Number && band >= -3 && band <= 3 ? ids[band + 3] as ResourceId : null;
+    }
+
+    // the items of [p] ([skew]: the phone's clock lead) that ring at [now] and weren't announced yet; the announced
+    // kinds kept
+    function news(p as Dictionary?, skew as Number, now as Number) as Array<Dictionary> {
+        var items = Ring.now(p, now, skew);
         var seen = Application.Storage.getValue(RUNG);
         var fresh = Ring.fresh(items, seen instanceof Array ? seen : [] as Array);
         Application.Storage.setValue(RUNG, Ring.kinds(items));
         return fresh;
     }
 
-    function notify(now as Number) as Void {
-        var fresh = news(now);
+    // Garmin's notification for what newly rings in [p] (title "High 207", subtitle "Rising · 20:41", the icon, the
+    // actions)
+    function notify(p as Dictionary, skew as Number, now as Number) as Void {
+        var fresh = news(p, skew, now);
         if (fresh.size() == 0 || !(Toybox has :Notifications) || !(Notifications has :showNotification)) {
             return;
         }
@@ -172,25 +215,35 @@ module Alerts {
             return;
         }
         var it = fresh[0];
-        var p = Link.payload() as Dictionary;
+        var k = it.get("k");
         var g = p.get("g");
-        var title = Application.loadResource(word(it.get("k"))) as String;
-        if (g instanceof Dictionary && !"no_data".equals(it.get("k"))) {
-            title += " " + Glucose.value(g.get("v") as Number, Slots.unitOf(p));
+        var v = g instanceof Dictionary ? g.get("v") : null;
+        var title = Application.loadResource(word(k)) as String;
+        var sub = "";
+        if (g instanceof Dictionary) {
+            if (!"no_data".equals(k)) {
+                title += " " + Glucose.value(v as Number, Slots.unitOf(p));
+            }
+            // the trend's words, not again after a rate alert's own ("Rising fast 250"); then the reading's time
+            var tr = "falling_fast".equals(k) || "rising_fast".equals(k) ? null : trend(g.get("band"));
+            sub = (tr != null ? (Application.loadResource(tr) as String) + " · " : "") + Clock.hm((g.get("t") as Number) - skew);
         }
-        var at = Slots.readAt(p);
-        var sub = at != null ? Clock.hm(at) : "";
         var labels = {TREAT => Rez.Strings.Treatment, LESS => Rez.Strings.RemindLess, USUAL => Rez.Strings.RemindUsual,
             MUTE30 => "low".equals(it.get("side")) ? Rez.Strings.MuteLows30 : Rez.Strings.MuteHighs30};
         var codes = choices(it);
         var actions = [] as Array;
         for (var i = 0; i < codes.size(); i++) {
             actions.add({:label => Application.loadResource(labels.get(codes[i]) as ResourceId),
-                :data => {"a" => codes[i], "side" => it.get("side"), "k" => it.get("k")}});
+                :data => {"a" => codes[i], "side" => it.get("side"), "k" => k}});
         }
+        var icons = {"veryLow" => Rez.Drawables.AlertVeryLow, "low" => Rez.Drawables.AlertLow,
+            "tight" => Rez.Drawables.AlertTight, "target" => Rez.Drawables.AlertTarget, "high" => Rez.Drawables.AlertHigh,
+            "veryHigh" => Rez.Drawables.AlertVeryHigh, "extremelyHigh" => Rez.Drawables.AlertExtremelyHigh,
+            "grey" => Rez.Drawables.AlertGrey};
         try {
             Notifications.showNotification(title, sub, {
-                :data => {"a" => 0, "side" => it.get("side"), "k" => it.get("k")},
+                :icon => icons.get(colour(k, v, p.get("bands"))) as ResourceId,
+                :data => {"a" => 0, "side" => it.get("side"), "k" => k},
                 :actions => actions,
                 :dismissPrevious => true
             });

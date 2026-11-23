@@ -47,11 +47,14 @@ Garmin draws the list and Sukrara's icon (60 × 60); the app draws 248 × 103 to
 docs/47). No input: selecting it opens the app.
 - **The widget's top row**: value + arrow left (Atkinson 58, 54 when a row sits under it); from the right end, in the card's
   priority, as many slots as fit (r 23, stroke 5, 6 apart): the main metric's ring, then the last treatment (§8) when
-  there is one, else the second metric (dimmed). Rings carry **no period label** and a bigger number (23). With a row
-  under the value the places move to the content's top.
-- **Under the value**, only when needed, at the content's bottom: the reading's time when late (≥ 90 s), then Sukrara's
-  pill; both in the glance's font (`FONT_GLANCE`, §14.1), the pill 1.5 caps tall. Every word of the glance is in that
-  font.
+  there is one, else the second metric (dimmed). Rings carry **no period label** and a bigger number (23).
+- **Under the value**, only when needed: the reading's time when late (≥ 90 s), then Sukrara's pill, then the outbox's
+  line where it fits; all in the glance's font (`FONT_GLANCE`, §14.1), the pill 1.5 caps tall. Every word of the glance
+  is in that font.
+- **Vertically centred** (the owner, 2026-11-23: "the metrics are not vertically centered … moved up and looks
+  missaligned"): the value and its row are one block (the value's caps, 8, the row) on the content's middle, and the
+  places are centred there too, the row keeping left of them; only where the row would reach under them (late and a
+  pill on a narrow glance) do they rise beside the value, centred on it. No row: the value alone on the middle.
 - **States**: old (≥ 5 min) struck grey with a hollow ring for the arrow; no reading for 20 min → "No reading since" +
   the time; warming up → the pie + "Warming up" + "Ready at …"; no message from the phone yet → "Waiting for your phone" (§4.3), on one line
   where it fits the content's width, else on two, the title's halves as the watch's strings give them (*Waiting for* /
@@ -153,9 +156,15 @@ watch never decides it (payload `log.order`).
   payload's `ring`, contracts/alerts SPEC §1 "On the wrist") and pushes at once on an unlock; the watch only obeys
   `ring`. With the phone in hand the watch stays quiet: the value,
   its colour and the pill as always, no buzz, no alert screen (one open closes, the alert stays on the phone).
-- **Garmin's notification** (`S.wake`, the background's `showNotification`, `dismissPrevious`): Sukrara's icon, "Low 62",
-  "Falling · 20:41", three actions: *Treatment*, *Remind less*, *Mute lows 30m*. Each opens the app with the action;
-  Remind less and Mute send it, show their toast and close.
+- **Garmin's notification** (`S.wake`, the background's `showNotification`, `dismissPrevious`): the app's alert as far
+  as Garmin's notification goes (§14.7: Garmin lays it out in its own type and places). Its icon is the alert's bell in
+  the alert's colour, the alert screen in small (a ring of the colour; very low and extremely high a disc of it, the
+  bell white, black on MIP; a rate alert the value's band, no data grey; one picture per colour at the launcher icon's
+  size), the title "Low 62" (the word and the value), the subtitle "Falling · 20:41" (the trend's words, left out after
+  a rate alert's own, then the reading's time), three actions: *Treatment*, *Remind less*, *Mute lows 30m*. Each opens
+  the app with the action; Remind less and Mute send it, show their toast and close; the notification itself opens the
+  app's alert (`S.alert`), the designed screen. The background shows it first thing in its run, before it stores
+  anything.
 - **The app's alert** (`S.alert`, the app open; it vibrates itself): the alert's word with the bell, the value with
   **Aura's sparkline** (watch setting *Sparkline on alerts*, on by default; off: value + arrow, bigger), then the phone's
   three as buttons: *Treatment* (filled, the side's kind: carbs for lows, rapid for highs; START), *Remind less* / *Remind
@@ -230,7 +239,7 @@ Waiting for the phone (§4.3) → *Open on phone* (*Look at your phone*, 5 s) / 
 phone's first message. Glance → select → the app. App page 1 ↔ page 2 (UP / DOWN, swipe); BACK leaves the app. START → the one list → a kind →
 amount → hold to log (let go: back to the amount; BACK: the list) → logged (*Undo* 10 s) or OPEN (phone away). The list's
 *Mute alerts* → a length → muted (*Undo* 10 s); *Muted* → *Unmute* / *Change time* / BACK. Garmin's notification →
-Treatment (the amount) / Remind less / Mute (toast, close) / dismiss. The app's alert → Treatment / Remind less ↔ Remind as
+open (the app's alert) / Treatment (the amount) / Remind less / Mute (toast, close) / dismiss. The app's alert → Treatment / Remind less ↔ Remind as
 usual / Mute (lengths) / BACK (the alert stays on the phone). Data field: no input; its alert dismisses as Garmin's do.
 
 ## 13. Decided, and open
@@ -446,3 +455,23 @@ rectangle's edge (`rim`, `full`):
 | Data field | by room (§14.4) | by room | by room |
 | Complications | the face's | the face's | the face's |
 
+
+### 14.7 Garmin's notification: what Connect IQ lets the app shape (platform notes)
+The app's alert (`S.alert`) needs the app open, and only the person opens it: a background can't start it
+(`Background.requestApplicationWake` is a yes / no prompt), can't vibrate (`Attention` isn't in the background) and
+can't draw a screen. What it can do is `Notifications.showNotification` (API 5.1+): a title, a subtitle, a body, an
+icon and actions, which the watch lays out in its own type, places and colours (and its own buzz, per its
+notification settings). So the alert's design reaches it as words and as the icon (§7), and its open is the app's alert.
+- **The icon is a picture from the app's resources** (`WatchUi.BitmapResource` / `Graphics.BitmapReference`, scope
+  background): a bitmap the background draws at run time (`Graphics.createBufferedBitmap`, which the background may
+  call since 5.1) is refused (`UnexpectedTypeException`, SDK 9.3 simulator, 2026-11-23), so the value can't be in it.
+- **How watches show it**: full screen on the Descent Mk3 43 (icon at the top, the title, the subtitle small;
+  the owner, 2026-11-23); on a Forerunner 955 the subtitle wasn't shown and it didn't buzz, on an epix 2 Pro it buzzed
+  ([forum 406092](https://forums.garmin.com/developer/connect-iq/f/discussion/406092/new-notifications-api)). Not on
+  the API 5.0 watches (§13 decided 2).
+- **The SDK 9.3 simulator crashes** (SIGSEGV) when a notification shows on macOS: its look is checked on a watch.
+- Other Connect IQ apps that alert from a background do the same or less: faBolus and Blood Sugar Logger post a plain
+  `showNotification` ([faBolus](https://github.com/faBolus-app/faBolusGarmin/blob/HEAD/source/app/BgService.mc),
+  [BloodSugar](https://github.com/SebastiaanDenHertog/BloodSugar/blob/HEAD/source/services/BloodSugarNotificationManager.mc)),
+  Handsfree a notification whose action opens the app ([Handsfree](https://github.com/grigorye/Handsfree/blob/HEAD/WatchApp/source/BusinessLogic/OpeningAppOnIncomingCall.mc));
+  the CGM faces and widgets don't alert on the watch at all (docs/47 §5).

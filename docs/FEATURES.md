@@ -3144,9 +3144,12 @@ both drawn from `app.js` on every screen class, SPEC §14). Every watch with API
 - **A new alert from the phone, on the wrist** (`Ring`, `Alerts`): the phone says what the wrist says (what rang with
   the phone locked and is still up, unseen: the phone's side above, #248); while the reading is fresh (or for no data),
   a kind that appears is announced once (again at its next ring with the phone locked, after an unlock or a swipe). The app's background shows Garmin's
-  notification (API 5.1+; 5.0 watches keep Garmin Connect's forwarded one): the alert's word and value, the reading's
-  time, *Treatment* (the side's kind: carbs for lows, rapid insulin for highs), *Remind less* when it would slow it or
-  *Remind as usual* once relaxed, *Mute lows / highs 30m*. The data field shows its own alert page (on per activity:
+  notification first thing in its run, before it stores anything (API 5.1+; 5.0 watches keep Garmin Connect's
+  forwarded one), styled as far as Garmin lets an app (it lays the notification out itself, SPEC §14.7): the alert's
+  bell in the alert's colour as its icon (a ring of the colour, a disc for very low and extremely high, as the app's
+  alert screen), *High 207* (the word and value), *Rising · 11:52* (the trend, left out after a rate alert's own word,
+  and the reading's time), *Treatment* (the side's kind: carbs for lows, rapid insulin for highs), *Remind less* when it
+  would slow it or *Remind as usual* once relaxed, *Mute lows / highs 30m*; opening it shows the app's own alert. The data field shows its own alert page (on per activity:
   its Alerts › Connect IQ; `S.dfAlert`): the whole page in the alert's colour (a rate alert: the value's band; no data:
   grey), the bell and the word, the value and its arrow, *Sukrara · now* / *3 min ago*; and vibrates.
 - **The app** (every screen class, SPEC §14: round AMOLED 360 – 466 the 390 scaled, the round 64-colour MIP 218 – 280
@@ -3155,7 +3158,8 @@ both drawn from `app.js` on every screen class, SPEC §14). Every watch with API
   none for UP / DOWN on the two-button watches, which page and change the amount by swipe and tap): the
   glance (the value, the main metric's ring and the last treatment or second metric, the value shrinking to keep both;
   the reading's time when late, the pill, then the outbox's line: *Waiting for the phone*, *Sent*, *The phone has a
-  question* in the high colour), page 1 (the widget: clock, value between its two places, 12 h chart with the %
+  question* in the high colour; the value with its line and the places centred on the glance's middle, the places
+  rising beside the value only where that line would reach under them), page 1 (the widget: clock, value between its two places, 12 h chart with the %
   column, the pill or the sensor's days; the main metric's ring always in colour, the phone's *Dimmed* is for the places
   after it), page 2 (the phone's report card; a tap on a period chip or MENU switches the period here, never saved),
   the one list (the kinds in the phone's order with their last entry, then *Mute alerts* or *Muted* / *Lows muted*

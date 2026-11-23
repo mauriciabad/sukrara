@@ -4929,7 +4929,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2234,
+   "budget": 2244,
    "input": {
     "age": 0.5,
     "bands": [
@@ -5017,7 +5017,7 @@
    }
   },
   "glance-high": {
-   "budget": 3781,
+   "budget": 3777,
    "input": {
     "age": 0.5,
     "bands": [
@@ -5102,8 +5102,94 @@
     "x": {}
    }
   },
+  "glance-high-late": {
+   "budget": 4178,
+   "input": {
+    "age": 2.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {},
+    "clock": "12:11",
+    "clockH": 12.193,
+    "days": 14,
+    "deg": -48.0,
+    "doubled": false,
+    "g": 236,
+    "hm": [
+     2.5
+    ],
+    "hours": 12,
+    "hv": [
+     236
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": [
+     "rapid",
+     "Insulin",
+     true,
+     "rapid"
+    ],
+    "rate": 1.6,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": 5,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [
+     [
+      "ring",
+      {
+       "b": [
+        0,
+        21,
+        512,
+        310,
+        142,
+        15
+       ],
+       "k": "tir",
+       "v": 82
+      }
+     ],
+     [
+      "last",
+      "rapid",
+      37
+     ]
+    ],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
   "glance-waiting": {
-   "budget": 4375,
+   "budget": 2244,
    "input": {
     "age": 0.5,
     "bands": [
@@ -10455,7 +10541,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 2588,
+   "budget": 2585,
    "input": {
     "age": 0.5,
     "bands": [
@@ -15391,7 +15477,7 @@
    }
   },
   "day-glance": {
-   "budget": 3771,
+   "budget": 3775,
    "input": {
     "age": 0.5,
     "bands": [
@@ -15472,7 +15558,7 @@
    }
   },
   "glance-ask": {
-   "budget": 5191,
+   "budget": 3779,
    "input": {
     "age": 0.5,
     "bands": [
@@ -15560,7 +15646,7 @@
    }
   },
   "glance-high": {
-   "budget": 4308,
+   "budget": 4302,
    "input": {
     "age": 0.5,
     "bands": [
@@ -15645,8 +15731,94 @@
     "x": {}
    }
   },
+  "glance-high-late": {
+   "budget": 4733,
+   "input": {
+    "age": 2.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {},
+    "clock": "12:11",
+    "clockH": 12.193,
+    "days": 14,
+    "deg": -48.0,
+    "doubled": false,
+    "g": 236,
+    "hm": [
+     2.5
+    ],
+    "hours": 12,
+    "hv": [
+     236
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": [
+     "rapid",
+     "Insulin",
+     true,
+     "rapid"
+    ],
+    "rate": 1.6,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": 5,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [
+     [
+      "ring",
+      {
+       "b": [
+        0,
+        21,
+        512,
+        310,
+        142,
+        15
+       ],
+       "k": "tir",
+       "v": 82
+      }
+     ],
+     [
+      "last",
+      "rapid",
+      37
+     ]
+    ],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
   "glance-waiting": {
-   "budget": 4814,
+   "budget": 3779,
    "input": {
     "age": 0.5,
     "bands": [
@@ -20998,7 +21170,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 3780,
+   "budget": 3785,
    "input": {
     "age": 0.5,
     "bands": [
@@ -25934,7 +26106,7 @@
    }
   },
   "day-glance": {
-   "budget": 2186,
+   "budget": 2165,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26015,7 +26187,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2070,
+   "budget": 2096,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26103,7 +26275,7 @@
    }
   },
   "glance-high": {
-   "budget": 3544,
+   "budget": 3718,
    "input": {
     "age": 0.5,
     "bands": [
@@ -26188,8 +26360,94 @@
     "x": {}
    }
   },
+  "glance-high-late": {
+   "budget": 3957,
+   "input": {
+    "age": 2.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {},
+    "clock": "12:11",
+    "clockH": 12.193,
+    "days": 14,
+    "deg": -48.0,
+    "doubled": false,
+    "g": 236,
+    "hm": [
+     2.5
+    ],
+    "hours": 12,
+    "hv": [
+     236
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": [
+     "rapid",
+     "Insulin",
+     true,
+     "rapid"
+    ],
+    "rate": 1.6,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": 5,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [
+     [
+      "ring",
+      {
+       "b": [
+        0,
+        21,
+        512,
+        310,
+        142,
+        15
+       ],
+       "k": "tir",
+       "v": 82
+      }
+     ],
+     [
+      "last",
+      "rapid",
+      37
+     ]
+    ],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
   "glance-waiting": {
-   "budget": 4922,
+   "budget": 2096,
    "input": {
     "age": 0.5,
     "bands": [
@@ -31541,7 +31799,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 2470,
+   "budget": 2667,
    "input": {
     "age": 0.5,
     "bands": [
@@ -36477,7 +36735,7 @@
    }
   },
   "day-glance": {
-   "budget": 2256,
+   "budget": 2375,
    "input": {
     "age": 0.5,
     "bands": [
@@ -36558,7 +36816,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2172,
+   "budget": 2249,
    "input": {
     "age": 0.5,
     "bands": [
@@ -36646,7 +36904,7 @@
    }
   },
   "glance-high": {
-   "budget": 3841,
+   "budget": 4291,
    "input": {
     "age": 0.5,
     "bands": [
@@ -36731,8 +36989,94 @@
     "x": {}
    }
   },
+  "glance-high-late": {
+   "budget": 4369,
+   "input": {
+    "age": 2.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {},
+    "clock": "12:11",
+    "clockH": 12.193,
+    "days": 14,
+    "deg": -48.0,
+    "doubled": false,
+    "g": 236,
+    "hm": [
+     2.5
+    ],
+    "hours": 12,
+    "hv": [
+     236
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": [
+     "rapid",
+     "Insulin",
+     true,
+     "rapid"
+    ],
+    "rate": 1.6,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": 5,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [
+     [
+      "ring",
+      {
+       "b": [
+        0,
+        21,
+        512,
+        310,
+        142,
+        15
+       ],
+       "k": "tir",
+       "v": 82
+      }
+     ],
+     [
+      "last",
+      "rapid",
+      37
+     ]
+    ],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
   "glance-waiting": {
-   "budget": 6457,
+   "budget": 2249,
    "input": {
     "age": 0.5,
     "bands": [
@@ -42084,7 +42428,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 2283,
+   "budget": 2719,
    "input": {
     "age": 0.5,
     "bands": [
@@ -47020,7 +47364,7 @@
    }
   },
   "day-glance": {
-   "budget": 2236,
+   "budget": 2354,
    "input": {
     "age": 0.5,
     "bands": [
@@ -47101,7 +47445,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2148,
+   "budget": 2230,
    "input": {
     "age": 0.5,
     "bands": [
@@ -47189,7 +47533,7 @@
    }
   },
   "glance-high": {
-   "budget": 3816,
+   "budget": 4268,
    "input": {
     "age": 0.5,
     "bands": [
@@ -47274,8 +47618,94 @@
     "x": {}
    }
   },
+  "glance-high-late": {
+   "budget": 4356,
+   "input": {
+    "age": 2.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {},
+    "clock": "12:11",
+    "clockH": 12.193,
+    "days": 14,
+    "deg": -48.0,
+    "doubled": false,
+    "g": 236,
+    "hm": [
+     2.5
+    ],
+    "hours": 12,
+    "hv": [
+     236
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": [
+     "rapid",
+     "Insulin",
+     true,
+     "rapid"
+    ],
+    "rate": 1.6,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": 5,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [
+     [
+      "ring",
+      {
+       "b": [
+        0,
+        21,
+        512,
+        310,
+        142,
+        15
+       ],
+       "k": "tir",
+       "v": 82
+      }
+     ],
+     [
+      "last",
+      "rapid",
+      37
+     ]
+    ],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
   "glance-waiting": {
-   "budget": 6432,
+   "budget": 2230,
    "input": {
     "age": 0.5,
     "bands": [
@@ -52627,7 +53057,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 2263,
+   "budget": 2709,
    "input": {
     "age": 0.5,
     "bands": [
@@ -57563,7 +57993,7 @@
    }
   },
   "day-glance": {
-   "budget": 1490,
+   "budget": 1604,
    "input": {
     "age": 0.5,
     "bands": [
@@ -57644,7 +58074,7 @@
    }
   },
   "glance-ask": {
-   "budget": 1600,
+   "budget": 1487,
    "input": {
     "age": 0.5,
     "bands": [
@@ -57732,7 +58162,7 @@
    }
   },
   "glance-high": {
-   "budget": 2333,
+   "budget": 2284,
    "input": {
     "age": 0.5,
     "bands": [
@@ -57817,8 +58247,94 @@
     "x": {}
    }
   },
+  "glance-high-late": {
+   "budget": 2579,
+   "input": {
+    "age": 2.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {},
+    "clock": "12:11",
+    "clockH": 12.193,
+    "days": 14,
+    "deg": -48.0,
+    "doubled": false,
+    "g": 236,
+    "hm": [
+     2.5
+    ],
+    "hours": 12,
+    "hv": [
+     236
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": [
+     "rapid",
+     "Insulin",
+     true,
+     "rapid"
+    ],
+    "rate": 1.6,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": 5,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [
+     [
+      "ring",
+      {
+       "b": [
+        0,
+        21,
+        512,
+        310,
+        142,
+        15
+       ],
+       "k": "tir",
+       "v": 82
+      }
+     ],
+     [
+      "last",
+      "rapid",
+      37
+     ]
+    ],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
   "glance-waiting": {
-   "budget": 2569,
+   "budget": 1487,
    "input": {
     "age": 0.5,
     "bands": [
@@ -63170,7 +63686,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 1884,
+   "budget": 1885,
    "input": {
     "age": 0.5,
     "bands": [
@@ -68106,7 +68622,7 @@
    }
   },
   "day-glance": {
-   "budget": 2161,
+   "budget": 2145,
    "input": {
     "age": 0.5,
     "bands": [
@@ -68187,7 +68703,7 @@
    }
   },
   "glance-ask": {
-   "budget": 2124,
+   "budget": 2145,
    "input": {
     "age": 0.5,
     "bands": [
@@ -68275,7 +68791,7 @@
    }
   },
   "glance-high": {
-   "budget": 3171,
+   "budget": 3399,
    "input": {
     "age": 0.5,
     "bands": [
@@ -68360,8 +68876,94 @@
     "x": {}
    }
   },
+  "glance-high-late": {
+   "budget": 3315,
+   "input": {
+    "age": 2.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {},
+    "clock": "12:11",
+    "clockH": 12.193,
+    "days": 14,
+    "deg": -48.0,
+    "doubled": false,
+    "g": 236,
+    "hm": [
+     2.5
+    ],
+    "hours": 12,
+    "hv": [
+     236
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": [
+     "rapid",
+     "Insulin",
+     true,
+     "rapid"
+    ],
+    "rate": 1.6,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": 5,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [
+     [
+      "ring",
+      {
+       "b": [
+        0,
+        21,
+        512,
+        310,
+        142,
+        15
+       ],
+       "k": "tir",
+       "v": 82
+      }
+     ],
+     [
+      "last",
+      "rapid",
+      37
+     ]
+    ],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
   "glance-waiting": {
-   "budget": 2124,
+   "budget": 2145,
    "input": {
     "age": 0.5,
     "bands": [
@@ -73713,7 +74315,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 2429,
+   "budget": 2692,
    "input": {
     "age": 0.5,
     "bands": [
@@ -78649,7 +79251,7 @@
    }
   },
   "day-glance": {
-   "budget": 7036,
+   "budget": 7041,
    "input": {
     "age": 0.5,
     "bands": [
@@ -78730,7 +79332,7 @@
    }
   },
   "glance-ask": {
-   "budget": 7030,
+   "budget": 7036,
    "input": {
     "age": 0.5,
     "bands": [
@@ -78818,7 +79420,7 @@
    }
   },
   "glance-high": {
-   "budget": 8251,
+   "budget": 8609,
    "input": {
     "age": 0.5,
     "bands": [
@@ -78903,8 +79505,94 @@
     "x": {}
    }
   },
+  "glance-high-late": {
+   "budget": 8884,
+   "input": {
+    "age": 2.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {},
+    "clock": "12:11",
+    "clockH": 12.193,
+    "days": 14,
+    "deg": -48.0,
+    "doubled": false,
+    "g": 236,
+    "hm": [
+     2.5
+    ],
+    "hours": 12,
+    "hv": [
+     236
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": [
+     "rapid",
+     "Insulin",
+     true,
+     "rapid"
+    ],
+    "rate": 1.6,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": 5,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [
+     [
+      "ring",
+      {
+       "b": [
+        0,
+        21,
+        512,
+        310,
+        142,
+        15
+       ],
+       "k": "tir",
+       "v": 82
+      }
+     ],
+     [
+      "last",
+      "rapid",
+      37
+     ]
+    ],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
   "glance-waiting": {
-   "budget": 7030,
+   "budget": 7036,
    "input": {
     "age": 0.5,
     "bands": [
@@ -84256,7 +84944,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 7519,
+   "budget": 7748,
    "input": {
     "age": 0.5,
     "bands": [
@@ -89192,7 +89880,7 @@
    }
   },
   "day-glance": {
-   "budget": 7674,
+   "budget": 7669,
    "input": {
     "age": 0.5,
     "bands": [
@@ -89273,7 +89961,7 @@
    }
   },
   "glance-ask": {
-   "budget": 7630,
+   "budget": 7656,
    "input": {
     "age": 0.5,
     "bands": [
@@ -89361,7 +90049,7 @@
    }
   },
   "glance-high": {
-   "budget": 8885,
+   "budget": 8730,
    "input": {
     "age": 0.5,
     "bands": [
@@ -89446,8 +90134,94 @@
     "x": {}
    }
   },
+  "glance-high-late": {
+   "budget": 9159,
+   "input": {
+    "age": 2.5,
+    "bands": [
+     55,
+     70,
+     140,
+     180,
+     250,
+     300
+    ],
+    "cfg": {},
+    "clock": "12:11",
+    "clockH": 12.193,
+    "days": 14,
+    "deg": -48.0,
+    "doubled": false,
+    "g": 236,
+    "hm": [
+     2.5
+    ],
+    "hours": 12,
+    "hv": [
+     236
+    ],
+    "order": [
+     "rapid",
+     "long",
+     "carbs"
+    ],
+    "pill": [
+     "rapid",
+     "Insulin",
+     true,
+     "rapid"
+    ],
+    "rate": 1.6,
+    "readAt": "12:09",
+    "readyAt": "",
+    "rep": null,
+    "ro": [
+     2,
+     3,
+     1,
+     0,
+     4,
+     5
+    ],
+    "rows": [],
+    "screen": "glance",
+    "sel": 0,
+    "sensorDays": 5,
+    "sensorState": "ok",
+    "sent": true,
+    "side": true,
+    "slots": [
+     [
+      "ring",
+      {
+       "b": [
+        0,
+        21,
+        512,
+        310,
+        142,
+        15
+       ],
+       "k": "tir",
+       "v": 82
+      }
+     ],
+     [
+      "last",
+      "rapid",
+      37
+     ]
+    ],
+    "tra": [],
+    "trk": [],
+    "trm": [],
+    "unit": "mgdl",
+    "warm": 0.0,
+    "x": {}
+   }
+  },
   "glance-waiting": {
-   "budget": 10854,
+   "budget": 7656,
    "input": {
     "age": 0.5,
     "bands": [
@@ -94799,7 +95573,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 7797,
+   "budget": 7810,
    "input": {
     "age": 0.5,
     "bands": [

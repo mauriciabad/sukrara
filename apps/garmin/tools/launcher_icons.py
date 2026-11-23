@@ -183,10 +183,73 @@ def folder(n, mip):
     return "resources-launcher%d%s" % (n, "mip" if mip else "")
 
 
-def drawables(n, mip):
-    return (HEAD + "<!-- The launcher icon at %d px%s (apps/garmin/tools/launcher_icons.py). -->\n<drawables>\n"
-            "    <bitmap id=\"LauncherIcon\" filename=\"launcher_icon.png\" dithering=\"none\"/>\n</drawables>\n"
-            % (n, ", 64-colour MIP" if mip else ""))
+# Garmin's notification for an alert (the watch app's background, SPEC §7): its icon at the launcher icon's size (where
+# Garmin puts the app's icon by default), one per alert colour (Alerts.colour): the app's alert screen in small, the
+# bell (app.js ICON.bell, a little bolder) in a ring of the colour on black, or on a disc of it for very low and extremely
+# high (the screen's block: white, black on MIP). Aura's palette (app.js PAL / PAL_MIP).
+ALERTS = {
+    "veryLow": ("#C2413B", "#FF0000"), "low": ("#F0524F", "#FF5555"), "tight": ("#3DD47A", "#00FF55"),
+    "target": ("#8CC63F", "#AAFF00"), "high": ("#F5A524", "#FFAA00"), "veryHigh": ("#FF7A45", "#FF5500"),
+    "extremelyHigh": ("#E35BD0", "#FF55FF"), "grey": ("#8E8E93", "#AAAAAA"),
+}
+BLOCK = ("veryLow", "extremelyHigh")
+
+
+def rgb(h):
+    return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def bell(dr, k, ox, oy, sw, col):
+    """app.js ICON.bell (24 × 24 units, stroke 2.2) at k px per unit from (ox, oy): M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8
+    1.8H4.2z M10 20.5a2 2 0 0 0 4 0"""
+    import math
+    p = lambda x, y: (ox + x * k, oy + y * k)
+    body = [p(6, 16.5), p(6, 11)] + [p(12 - 6 * math.cos(math.pi * t / 24), 11 - 6 * math.sin(math.pi * t / 24))
+                                     for t in range(1, 24)]
+    body += [p(18, 11), p(18, 16.5), p(19.8, 18.3), p(4.2, 18.3), p(6, 16.5)]
+    clapper = [p(12 - 2 * math.cos(math.pi * t / 12), 20.5 + 2 * math.sin(math.pi * t / 12)) for t in range(13)]
+    for line in (body, clapper):
+        dr.line(line, fill=col, width=round(sw), joint="curve")
+        for q in line[:1] + line[-1:]:
+            dr.ellipse((q[0] - sw / 2, q[1] - sw / 2, q[0] + sw / 2, q[1] + sw / 2), fill=col)
+
+
+def alert_icon(n, mip, kind):
+    """the alert's icon, n × n RGBA (antialiased; MIP: palette colours, hard edges)"""
+    col = rgb(ALERTS[kind][1 if mip else 0])
+    block = kind in BLOCK
+    big = Image.new("RGBA", (n * SS, n * SS), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(big)
+    r = n * SS / 2
+    ring = max(2, round(n * 0.09)) * SS
+    if block:
+        dr.ellipse((0, 0, 2 * r - 1, 2 * r - 1), fill=col + (255,))
+    else:
+        dr.ellipse((0, 0, 2 * r - 1, 2 * r - 1), fill=(0, 0, 0, 255))
+        dr.ellipse((0, 0, 2 * r - 1, 2 * r - 1), outline=col + (255,), width=ring)
+    # the bell 0.6 of the side, its drawing's middle (y 4.5 … 22.5) on the icon's; on a MIP block in black (inkOn: very
+    # low FF0000 and extremely high FF55FF read better in black, SPEC §14.3)
+    k = n * SS * 0.6 / 24
+    ink = ((0, 0, 0) if mip else (255, 255, 255)) if block else col
+    bell(dr, k, r - 12 * k, r - 13.5 * k, 2.6 * k, ink + (255,))
+    img = big.reduce(SS)
+    if mip:
+        px = img.load()
+        for y in range(n):
+            for x in range(n):
+                c = px[x, y]
+                px[x, y] = nearest_mip(c[:3]) + (255,) if c[3] >= 128 else (0, 0, 0, 0)
+    return img
+
+
+def drawables(n, mip, alerts=False):
+    rows = "    <bitmap id=\"LauncherIcon\" filename=\"launcher_icon.png\" dithering=\"none\"/>\n"
+    if alerts:
+        rows += "".join("    <bitmap id=\"Alert%s\" filename=\"alert_%s.png\" dithering=\"none\" scope=\"background\"/>\n"
+                        % (k[0].upper() + k[1:], k) for k in ALERTS)
+    return (HEAD + "<!-- The launcher icon at %d px%s%s (apps/garmin/tools/launcher_icons.py). -->\n<drawables>\n%s"
+            "</drawables>\n" % (n, ", 64-colour MIP" if mip else "",
+                                "; the alerts' icons for Garmin's notification, one per colour" if alerts else "", rows))
 
 
 def files():
@@ -197,7 +260,10 @@ def files():
         for n, mip in sorted(set(tg.values())):
             d = GARMIN / app / folder(n, mip) / "drawables"
             out[d / "launcher_icon.png"] = icon(n, mip)
-            out[d / "drawables.xml"] = drawables(n, mip)
+            out[d / "drawables.xml"] = drawables(n, mip, app == "app")
+            if app == "app":
+                for k in ALERTS:
+                    out[d / ("alert_%s.png" % k)] = alert_icon(n, mip, k)
         for name, manifest in JUNGLES.get(app, (("monkey.jungle", "manifest.xml"),)):
             jungle, tj = GARMIN / app / name, targets(app, manifest)
             lines = [BEGIN, "# each watch's launcher icon at its launcherIcon size (MIP: the 64-colour one)"]

@@ -87,6 +87,14 @@
     <string id="AlertFallingFast" scope="background">Falling fast</string>
     <string id="AlertRisingFast" scope="background">Rising fast</string>
     <string id="AlertNoData" scope="background">No data</string>
+    <!-- the trend in Garmin's notification (contracts/trend/bands.json's words, sentence case) -->
+    <string id="TrendFallingVeryFast" scope="background">Falling very fast</string>
+    <string id="TrendFallingFast" scope="background">Falling fast</string>
+    <string id="TrendFalling" scope="background">Falling</string>
+    <string id="TrendSteady" scope="background">Steady</string>
+    <string id="TrendRising" scope="background">Rising</string>
+    <string id="TrendRisingFast" scope="background">Rising fast</string>
+    <string id="TrendRisingVeryFast" scope="background">Rising very fast</string>
 
     <!-- the watch settings (tools/settings/gen.py: set_<key>, opt_<value>) -->
     <string id="set_alertSpark">Sparkline on alerts</string>

@@ -1195,8 +1195,12 @@ watch; the watch shows the real value: check it against the phone, never photogr
       *Treatment* opens the amount on carbs (lows) / rapid (highs); *Remind less* → done with Undo, the button turns to
       *Remind as usual* on the next payload; *Mute* → that side's lengths; BACK leaves it; a payload with no ring closes it.
       With *Sparkline on alerts* off (Connect IQ app settings): the value and arrow, bigger.
-- [ ] On the watch (`tools/install.sh watch`): a real low from the phone with the app closed → Garmin's notification
-      (one buzz); tapping it opens the app's alert; with the app open → only the app's alert. Spanish with the watch in
+- [ ] On the watch (`tools/install.sh watch`; the 9.3 simulator crashes showing one): a real low from the phone with
+      the app closed and the phone locked → Garmin's notification (one buzz) sooner after the phone's ring than the
+      30 s of 2026-11-23 (`Sukrara.Garmin` in logcat: *push app* before *push aura*), its icon the bell in the alert's
+      colour, *Low 62* and
+      *Falling · 20:41*; opening it shows the app's alert, an action does what it says once (not twice); with the app
+      open → only the app's alert. Spanish with the watch in
       Spanish: no text cut, the alert words in capitals with their accents.
 
 ## Q20 The person and the feel

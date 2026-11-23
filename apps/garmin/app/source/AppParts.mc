@@ -210,14 +210,8 @@ module AppParts {
             return;
         }
         var snd = Sending.state(d.now);
-        var under = d.pill != null || d.age >= 1.5 || snd != null;
-        // the row under the value: the glance's font, the pill 1.5 caps tall, at the content's bottom; the value over
-        // it, the places at the content's top
-        var rowH = gc * 1.5;
-        var bh = AppDraw.gh;
-        var cy = bh / 2 - rowH / 2 - 1;
-        var vy = under ? cy - rowH / 2 - 6 : 20;
-        var fs = under ? 54 : 58;
+        var late = d.age >= 1.5;
+        var fs = d.pill != null || late || snd != null ? 54 : 58;
         // the same two places as page 1 (main, then the last treatment or the second metric), from the right edge;
         // decided with the widest value (288 and its arrow) at the smallest size, so they never change with the
         // reading; the value then takes the largest size that fits beside them (app.js S.glance, SPEC §14.1)
@@ -235,31 +229,54 @@ module AppParts {
         while (fs > floor && x1 - (x0 + width(str, d.rate != null, fs)) < need) {
             fs -= 2;
         }
-        var v = value(g, d, x0, vy, fs, START, true, null);
-        var room = x1 - (v[1] + 10);
-        var x = x1;
-        var sy = under ? -bh / 2 + rr + sw / 2.0 + 2 : 0;
-        for (var i = 0; i < n && room >= w; i++) {
-            drawSlot(g, d, d.slots[i] as Array, x - w / 2.0, sy < 0 ? sy : 0, rr, sw, 23, GL);
-            x -= w + 6;
+        // the places that fit beside the value, from the right edge; [left]: the last one's left edge
+        var room = x1 - (x0 + width(str, d.rate != null, fs) + 10);
+        var left = x1.toFloat();
+        var m = 0;
+        for (; m < n && room >= w; m++) {
+            left -= w + 6;
             room -= w + 6;
         }
-        if (under) {
-            var ax = x0.toFloat();
-            if (d.age >= 1.5) {
-                g.w(ax, cy + gc / 2, d.readAt, GL, AppMath.SOFT, START);
-                ax += AppDraw.ww(d.readAt, GL) + 10;
-            }
-            if (d.pill != null) {
-                ax += pill(g, ax, cy, d.pill as Array, GL, 1.5, START) + 10;
-            }
-            // the outbox: Waiting for the phone, Sent, The phone has a question; where it fits after the rest
-            if (snd != null) {
-                var s = sendingText(snd);
-                if (ax + AppDraw.ww(s, GL) <= x1) {
-                    g.w(ax, cy + gc / 2, s, GL, snd.equals("ask") ? AppMath.pal("high") : AppMath.SOFT, START);
-                }
-            }
+        left += 6;
+        // the row under the value: the reading's time when late, Sukrara's pill (1.5 caps tall), then the outbox's line
+        // (Waiting for the phone, Sent, The phone has a question) where it fits after the rest
+        var ax = x0.toFloat();
+        var tx = late ? ax : null;
+        if (late) {
+            ax += AppDraw.ww(d.readAt, GL) + 10;
+        }
+        var px = d.pill != null ? ax : null;
+        if (px != null) {
+            ax += pillWidth((d.pill as Array)[1] as String, GL) + 10;
+        }
+        // the places stay on the content's middle while the row ends left of them (SPEC §3; the owner, 2026-11-23:
+        // centred), else they rise beside the value, centred on it
+        var mid = ax - 10 <= left - 10;
+        var s = snd != null ? sendingText(snd) : null;
+        if (s != null && ax + AppDraw.ww(s, GL) > (mid ? left - 10 : x1)) {
+            s = null;
+        }
+        var row = tx != null || px != null || s != null;
+        // the block (the value's caps, 8, the row) centred on the content's middle
+        var rowH = gc * 1.5;
+        var cap = fs * 0.668;
+        var vy = row ? (cap - 8 - rowH) / 2 : cap / 2;
+        var cy = vy + 8 + rowH / 2;
+        var sy = row && !mid ? vy - cap / 2 : 0;
+        value(g, d, x0, vy, fs, START, true, null);
+        var x = x1;
+        for (var i = 0; i < m; i++) {
+            drawSlot(g, d, d.slots[i] as Array, x - w / 2.0, sy, rr, sw, 23, GL);
+            x -= w + 6;
+        }
+        if (tx != null) {
+            g.w(tx, cy + gc / 2, d.readAt, GL, AppMath.SOFT, START);
+        }
+        if (px != null) {
+            pill(g, px, cy, d.pill as Array, GL, 1.5, START);
+        }
+        if (s != null) {
+            g.w(ax, cy + gc / 2, s, GL, snd.equals("ask") ? AppMath.pal("high") : AppMath.SOFT, START);
         }
     }
 }

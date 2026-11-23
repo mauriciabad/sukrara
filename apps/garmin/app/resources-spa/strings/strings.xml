@@ -80,6 +80,13 @@
     <string id="AlertFallingFast" scope="background">Bajada rápida</string>
     <string id="AlertRisingFast" scope="background">Subida rápida</string>
     <string id="AlertNoData" scope="background">Sin datos</string>
+    <string id="TrendFallingVeryFast" scope="background">Bajando muy rápido</string>
+    <string id="TrendFallingFast" scope="background">Bajando rápido</string>
+    <string id="TrendFalling" scope="background">Bajando</string>
+    <string id="TrendSteady" scope="background">Estable</string>
+    <string id="TrendRising" scope="background">Subiendo</string>
+    <string id="TrendRisingFast" scope="background">Subiendo rápido</string>
+    <string id="TrendRisingVeryFast" scope="background">Subiendo muy rápido</string>
 
     <string id="set_alertSpark">Minigráfica en las alertas</string>
     <string id="set_logSlot">La complicación Registrar muestra</string>
