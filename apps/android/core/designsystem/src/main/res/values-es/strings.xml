@@ -305,4 +305,9 @@
         <item quantity="many">%1$s días de glucosa</item>
         <item quantity="other">%1$s días de glucosa</item>
     </plurals>
+    <string name="ds_update_app">Actualiza %1$s</string>
+    <string name="ds_update_sukrara">Actualiza Sukrara</string>
+    <string name="ds_update_text">Hasta entonces, solo muestra tu glucosa en %1$s.</string>
+    <string name="ds_update_newer_text">Hasta entonces, %1$s en %2$s solo muestra tu glucosa.</string>
+    <string name="ds_update">Actualizar</string>
 </resources>

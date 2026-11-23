@@ -8,11 +8,15 @@ import app.mauri.sukrara.integrations.garmin.AppLink
 import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.GarminLinkState
 import app.mauri.sukrara.integrations.garmin.GarminWatch
+import app.mauri.sukrara.integrations.garmin.LinkReport
+import app.mauri.sukrara.integrations.garmin.WatchPayload
+import app.mauri.sukrara.integrations.garmin.WatchProfile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** #199: what home's Garmin tip and setup's Garmin step read from the Garmin link. */
@@ -44,6 +48,27 @@ class AppGarminTest {
         assertNull(AppGarmin.tip(off.copy(on = true)))
         assertNull(AppGarmin.tip(off.copy(watches = listOf(watch("Venu 3")))))
         assertNull(AppGarmin.tip(GarminLinkState(on = false)))
+    }
+
+    @Test
+    fun theUpdateBannerNamesTheOlderSide() {
+        val on = GarminLinkState(garminConnect = true, watches = listOf(watch("Descent", GarminApp.Aura)))
+
+        fun reading(version: Int): GarminLinkState {
+            val r = LinkReport(Instant.EPOCH, emptyList(), null, null, version)
+            return on.copy(report = r, reports = mapOf(WatchProfile.Face to r))
+        }
+        // the face reads an older payload: update it; a newer one: update Sukrara
+        val older = AppGarmin.update(reading(WatchPayload.VERSION - 1))!!
+        assertEquals("Descent", older.watch)
+        assertEquals("aura", older.app)
+        assertEquals(R.string.in_garmin_aura_inline, older.name)
+        assertFalse(older.newer)
+        assertTrue(AppGarmin.update(reading(WatchPayload.VERSION + 1))!!.newer)
+        // the same version, no report, or sending off: none
+        assertNull(AppGarmin.update(reading(WatchPayload.VERSION)))
+        assertNull(AppGarmin.update(on))
+        assertNull(AppGarmin.update(reading(WatchPayload.VERSION - 1).copy(on = false)))
     }
 
     @Test

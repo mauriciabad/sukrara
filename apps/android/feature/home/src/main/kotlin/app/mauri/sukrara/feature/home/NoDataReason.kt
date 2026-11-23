@@ -357,6 +357,12 @@ sealed interface HomeAction {
     /** *Turn on* on the Garmin tip: *Send to Sukrara on your watch* goes on. */
     data object TurnOnGarmin : HomeAction
 
+    /** The update banner's *Update*: Sukrara's own update ([newer]), else [app]'s Connect IQ listing. */
+    data class UpdateGarmin(
+        val app: String,
+        val newer: Boolean,
+    ) : HomeAction
+
     /** NFC taps blocked by Android: its screen that allows them. */
     data object AllowTaps : HomeAction
 

@@ -1317,6 +1317,12 @@ class AppGraph(
                     .map(AppGarmin::tip)
                     .distinctUntilChanged()
             },
+            // one of Sukrara's apps on a watch reads another payload version
+            garminUpdate = {
+                integrations.aura.state
+                    .map(AppGarmin::update)
+                    .distinctUntilChanged()
+            },
         )
     }
 

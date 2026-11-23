@@ -98,6 +98,7 @@ import app.mauri.sukrara.integrations.DataFileRows
 import app.mauri.sukrara.integrations.broadcasts.BroadcastsPage
 import app.mauri.sukrara.integrations.export.ExportPage
 import app.mauri.sukrara.integrations.export.ExportPeriod
+import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.GarminPage
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectPage
 import app.mauri.sukrara.integrations.history.ImportPage
@@ -1156,6 +1157,24 @@ private fun route(
         HomeAction.TurnOnGarmin -> {
             val graph = context.graph
             graph.scope.launch { graph.integrations.aura.setOn(true) }
+        }
+
+        // Sukrara's own update (the GitHub version: About's updater; Google Play: its listing), or the watch app's
+        // Connect IQ listing in the phone's language
+        is HomeAction.UpdateGarmin -> {
+            if (action.newer) {
+                AppUpdate.open(context, context.graph.updates != null) { backStack.push(SettingsKey("about")) }
+            } else {
+                val app = GarminApp.entries.firstOrNull { it.key == action.app } ?: return
+                val language =
+                    context.resources.configuration.locales[0]
+                        .language
+                runCatching {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(app.storeUrl(language))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                }
+            }
         }
 
         HomeAction.AllowTaps -> {

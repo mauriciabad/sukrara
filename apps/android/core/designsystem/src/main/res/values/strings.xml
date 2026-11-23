@@ -315,4 +315,10 @@
         <item quantity="one">%1$s day of glucose</item>
         <item quantity="other">%1$s days of glucose</item>
     </plurals>
+    <!-- the update notice (updateBanner): another app reads another version of a shared format -->
+    <string name="ds_update_app">Update %1$s</string>
+    <string name="ds_update_sukrara">Update Sukrara</string>
+    <string name="ds_update_text">Until then, it shows only your glucose on %1$s.</string>
+    <string name="ds_update_newer_text">Until then, %1$s on %2$s shows only your glucose.</string>
+    <string name="ds_update">Update</string>
 </resources>

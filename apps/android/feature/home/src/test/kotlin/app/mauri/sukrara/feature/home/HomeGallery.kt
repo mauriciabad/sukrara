@@ -44,6 +44,7 @@ import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
+import app.mauri.sukrara.feature.home.banners.GarminUpdateTip
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.RoundedFont
 import app.mauri.sukrara.protocol.event.Avatar
@@ -55,6 +56,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.time.Duration
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * The home screen's states for the UX review (synthetic data only): light + dark × default + largest font, one phone
@@ -180,6 +182,13 @@ class HomeGallery {
             "follower-offline" to ui(follower).copy(followPath = LinkPath.Offline),
             "clinic-banner" to ui(Samples.wearer(), banner = BannerKind.ShareWithClinic),
             "updates-banner" to ui(Samples.wearer(), banner = BannerKind.TurnOnUpdates),
+            // a watch app of another payload version: the update notice (the Garmin page's own); "Sukrara" is the watch app
+            "garmin-update-banner" to
+                ui(Samples.wearer(), banner = BannerKind.GarminUpdate)
+                    .copy(garminUpdate = GarminUpdateTip("Descent Mk3i 43mm", "app", DsR.string.ds_source_short_sukrara, newer = false)),
+            "garmin-update-banner-newer" to
+                ui(Samples.wearer(), banner = BannerKind.GarminUpdate)
+                    .copy(garminUpdate = GarminUpdateTip("Descent Mk3i 43mm", "app", DsR.string.ds_source_short_sukrara, newer = true)),
             "widget-banner" to ui(Samples.wearer(), banner = BannerKind.AddWidget),
             // the launcher can't place it from the app: the hand-made way, no button (Close is the exit)
             "widget-banner-manual" to ui(Samples.wearer(), banner = BannerKind.AddWidget).copy(widgetPinnable = false),

@@ -3105,11 +3105,13 @@ each reads only the current version, but every mismatch is detected and **the de
 - **Watch payload** (built): a watch app that gets a payload of another version keeps its glucose alone (the frozen
   `g`: value and age, no trend, history, status or anything else) and knows which app to update: a newer payload →
   this app, an older one → Sukrara on the phone. Every fetch says the version it reads (`&v=`), so the phone's
-  **Garmin page** shows a warning notice under the main switch: *Sukrara Aura watch face on Descent needs an update* ·
-  "It can't read this phone's readings. Update it in Connect IQ, then sync the watch." + **Update** (its Connect IQ
-  listing), or *… is newer than this phone's Sukrara* · "This phone can't send it readings until Sukrara is updated." +
-  **Update Sukrara** (the GitHub version: About, its updater; Google Play: Sukrara's listing); the watch's line and the
-  app's row say the same, and Share with apps' Garmin row in the error colour. Writes from the watch (entries, undo,
+  **Garmin page** shows the update notice under the main switch (the designsystem's `updateBanner`, home's banner
+  too: one copy, no close): *Update the Sukrara Aura watch face* · "Until then, it shows only your glucose on
+  Descent." or *Update Sukrara* · "Until then, the Sukrara Aura watch face on Descent shows only your glucose." +
+  **Update** (its Connect IQ listing; Sukrara's own: the GitHub version's About and updater, Google Play's listing); the
+  app's row says *needs an update* / *newer than this phone's Sukrara* (the watch's line no longer repeats it), and
+  Share with apps' Garmin row in the error colour. **Home** shows the same notice in its one banner place
+  (`BannerKind.GarminUpdate`, above the tips, below the safety banners) until the watch reads this phone's version. Writes from the watch (entries, undo,
   mute) carry `v`; the phone answers another version `r: v` and reads nothing else; the watch keeps them and sends them
   after the first payload it can read.
 - **On the watch**: **Sukrara Aura** puts the update line in the chip row's place (SPEC §6.6b): *Update Sukrara* /
@@ -3121,8 +3123,8 @@ each reads only the current version, but every mismatch is detected and **the de
   app's Connect IQ listing; then *Look at your phone*, 5 s); its glance says the title alone; entries logged from the
   Log complication wait (*Waiting: update Sukrara*). The **data field**'s label says *UPDATE PHONE* / *UPDATE FIELD*
   over the current glucose; the **complications** keep the glucose.
-- Still to come (#262): home's banner, setup's Garmin step, followers, the wearer's Share rows, invites (docs/48's
-  table).
+- Still to come (#262): setup's Garmin step, followers, the wearer's Share rows, invites, the Mac's *Update Sukrara*
+  (docs/48's table).
 
 **States and exits**: *versions match* → nothing shown. *The watch reads another version* → the Garmin page's notice,
 the watch's line and the app's row name the app to update, with one button to that update; on the watch the face's
@@ -3130,8 +3132,8 @@ update line, the watch app's page (*Open on phone* → *Look at your phone* 5 s 
 its glance and the data field's label say it; the watch keeps showing the current glucose (ageing by the freshness
 steps), its entries wait in its outbox. Out: updating, which clears it at the first report or payload of the same
 version (no tap; the watch app's pages come back by themselves); Back leaves the page; nothing to close or mute because
-it ends by itself. Reachable without a notification: the Garmin page (Settings › Share with apps › Garmin), the watch
-face, the watch app and its glance. TalkBack reads the notice's title, text and button like any notice.
+it ends by itself. Reachable without a notification: home's banner, the Garmin page (Settings › Share with apps ›
+Garmin), the watch face, the watch app and its glance. TalkBack reads the notice's title, text and button like any notice.
 
 ## Sukrara on Garmin watches: the app and the data field (the watch)
 

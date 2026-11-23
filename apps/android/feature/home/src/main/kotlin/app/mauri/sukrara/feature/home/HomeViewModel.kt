@@ -33,6 +33,7 @@ import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BannerMemory
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.home.banners.GarminTip
+import app.mauri.sukrara.feature.home.banners.GarminUpdateTip
 import app.mauri.sukrara.feature.home.banners.HomeBanners
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.graph.GlucoseLook
@@ -272,6 +273,8 @@ data class HomeUiState(
     val libreAppStopped: Instant? = null,
     /** The watch and the apps the Garmin tip names ([BannerKind.GarminOff]). */
     val garminTip: GarminTip? = null,
+    /** The app on a watch to update, or Sukrara ([BannerKind.GarminUpdate]). */
+    val garminUpdate: GarminUpdateTip? = null,
     /**
      * The next LibreView maintenance window of LibreLinkUp's region while it begins within
      * [MAINTENANCE_AHEAD] (contracts/sources/librelinkup/status.json `warnHome_s`): home's quiet line under the card.
@@ -360,6 +363,7 @@ class HomeViewModel(
                 clinicBehind = env.clinicBehind,
                 libreAppStopped = env.libreAppStopped,
                 garminTip = env.garminShown(memory),
+                garminUpdate = env.garminUpdate,
                 dataProblems = problems,
                 treatments = listed,
                 history = history,

@@ -63,6 +63,13 @@ enum class BannerKind(val safety: Boolean) {
      */
     RestartSystemUi(safety = false),
 
+    /**
+     * One of Sukrara's apps on a watch reads another version of the watch payload ([HomeEnvironment.garminUpdate],
+     * docs/48 "When versions differ"): the designsystem's update notice, the Garmin page's own, with *Update* to the
+     * older side's update. It can't be closed: it ends by itself at the watch's first report of the same version.
+     */
+    GarminUpdate(safety = false),
+
     /** First-run setup isn't finished: the next step. "Later" hides it for [SETUP_LATER]. */
     FinishSetup(safety = false),
 
@@ -116,6 +123,8 @@ data class HomeEnvironment(
     val moveOffered: Boolean = false,
     /** Sukrara's apps on a watch while sending to it is off; null = none known, or sending is on. */
     val garminOff: GarminTip? = null,
+    /** One of Sukrara's apps on a watch reads another payload version; null = every one reads this phone's. */
+    val garminUpdate: GarminUpdateTip? = null,
 ) {
     /** The Garmin tip while one of the apps found isn't closed ([GarminTip.keys]). */
     fun garminShown(memory: BannerMemory): GarminTip? = garminOff?.takeIf { t -> t.keys.any { !memory.dismissedKey(it) } }
@@ -151,6 +160,17 @@ data class GarminTip(
     /** What a close remembers: each app found, so another one turning up shows the tip again. */
     val keys: List<String> get() = apps.map { "${BannerKind.GarminOff.name}:$it" }
 }
+
+/**
+ * What home's update banner names ([BannerKind.GarminUpdate]): the app [name] (its registry [app] key: `aura`, `app`,
+ * `field`) on [watch], and [newer] = it is newer than this phone's Sukrara (update Sukrara), else update it.
+ */
+data class GarminUpdateTip(
+    val watch: String,
+    val app: String,
+    @param:StringRes val name: Int,
+    val newer: Boolean,
+)
 
 /**
  * The NFC taps Android blocks while they are on: [pen] = pen reading On (never in *Ask*: the banner would nag people
@@ -230,6 +250,7 @@ private val KEYED =
         BannerKind.ClinicUploadBehind,
         BannerKind.RestartSystemUi,
         BannerKind.GarminOff,
+        BannerKind.GarminUpdate,
     )
 
 /** "Later" on Finish setup: it comes back after a day until setup is done. */
@@ -259,6 +280,7 @@ object HomeBanners {
                     BannerKind.LibreAppStopped -> env.stoppedKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.ClinicUploadBehind -> env.behindKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.RestartSystemUi -> env.restartKey?.let { !memory.dismissedKey(it) } == true
+                    BannerKind.GarminUpdate -> env.garminUpdate != null
                     BannerKind.FinishSetup -> env.nextSetupStep != null
                     BannerKind.TurnOnUpdates -> env.updateChecksOff == true
                     BannerKind.GarminOff -> env.garminShown(memory) != null

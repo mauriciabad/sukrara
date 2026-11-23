@@ -18,6 +18,7 @@ import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BannerMemory
 import app.mauri.sukrara.feature.home.banners.GarminTip
+import app.mauri.sukrara.feature.home.banners.GarminUpdateTip
 import app.mauri.sukrara.feature.home.banners.HomeBanners
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.graph.GraphConfig
@@ -516,6 +517,27 @@ class HomeViewModelTest {
             deps.environment.value = HomeEnvironment(garminOff = null)
             runCurrent()
             assertNull(vm.state.value.banner)
+        }
+
+    @Test fun `the update banner shows while a watch app reads another version, can't be closed and ends by itself`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.state.collect {} }
+            runCurrent()
+            val tip = GarminUpdateTip("Descent", "aura", 42, newer = false)
+            deps.environment.value = HomeEnvironment(garminUpdate = tip, garminOff = GarminTip("Descent", listOf("field"), 1))
+            runCurrent()
+            assertEquals(BannerKind.GarminUpdate, vm.state.value.banner)
+            assertEquals(tip, vm.state.value.garminUpdate)
+            // no close: a dismiss changes nothing
+            vm.dismiss(BannerKind.GarminUpdate)
+            runCurrent()
+            assertEquals(BannerKind.GarminUpdate, vm.state.value.banner)
+            // the watch reads this phone's version again: gone (the next tip shows)
+            deps.environment.value = HomeEnvironment(garminOff = GarminTip("Descent", listOf("field"), 1))
+            runCurrent()
+            assertEquals(BannerKind.GarminOff, vm.state.value.banner)
         }
 
     @Test fun `the Garmin tip sits below the safety banners and the updates tip, above the other tips`() {

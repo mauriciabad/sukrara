@@ -20,10 +20,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import app.mauri.sukrara.designsystem.banner.NoticeAction
-import app.mauri.sukrara.designsystem.banner.NoticeCard
-import app.mauri.sukrara.designsystem.banner.NoticeDefaults
-import app.mauri.sukrara.designsystem.banner.NoticeTone
+import app.mauri.sukrara.designsystem.banner.BannerSlot
+import app.mauri.sukrara.designsystem.banner.updateBanner
 import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.rows.ActionButtonsRow
@@ -562,7 +560,7 @@ fun GarminContent(
                 else -> null
             },
     )
-    if (status is GarminStatus.Outdated) UpdateNotice(status, actions, Modifier.padding(NoticeDefaults.PageMargins))
+    UpdateNotice(status as? GarminStatus.Outdated, actions)
     if (s.on) {
         if (s.garminConnect) {
             // always enabled: SPA draws a disabled button's label at full contrast, and a send with no watch near does no harm
@@ -715,27 +713,23 @@ fun GarminContent(
 }
 
 /**
- * THE VERSION RULE on the Garmin page: which app to update and the one button to its update (the Connect IQ listing,
- * or Sukrara's own update); it goes by itself at the first report of the same version.
+ * THE VERSION RULE on the Garmin page: the update notice (the designsystem's [updateBanner], home's banner too): the
+ * app to update and the one button to its update (the Connect IQ listing, or Sukrara's own update); it goes by itself
+ * at the first report of the same version. [status] null: none (it slides away).
  */
 @Composable
 fun UpdateNotice(
-    status: GarminStatus.Outdated,
+    status: GarminStatus.Outdated?,
     actions: GarminActions,
-    modifier: Modifier = Modifier,
 ) {
-    val watch = status.update == UpdateSide.Watch
-    NoticeCard(
-        stringResource(if (watch) R.string.in_garmin_update_watch_how else R.string.in_garmin_update_phone_how),
-        modifier,
-        title = updateText(status.app, status.watch, status.update),
-        tone = NoticeTone.Warning,
-        action =
-            NoticeAction(
-                stringResource(if (watch) R.string.in_garmin_update else R.string.in_garmin_update_sukrara),
-                { if (watch) actions.openStore(status.app) else actions.updateSukrara() },
-            ),
-    )
+    val banner =
+        status?.let {
+            val watch = it.update == UpdateSide.Watch
+            updateBanner(stringResource(it.app.inlineNameRes), it.watch, newer = !watch) {
+                if (watch) actions.openStore(it.app) else actions.updateSukrara()
+            }
+        }
+    BannerSlot(banner)
 }
 
 /** "Connected · has the 14:21 reading · …": one time per line, a clock time to compare with the phone's. */
@@ -756,13 +750,8 @@ internal fun watchText(
             parts += stringResource(R.string.in_garmin_watch_not_taking)
         }
 
-        WatchLine.Problem.Outdated -> {
-            parts += stringResource(R.string.in_garmin_watch_outdated)
-        }
-
-        WatchLine.Problem.PhoneOutdated -> {
-            parts += stringResource(R.string.in_garmin_watch_phone_outdated)
-        }
+        // the update notice above says it (never twice)
+        WatchLine.Problem.Outdated, WatchLine.Problem.PhoneOutdated -> {}
 
         WatchLine.Problem.Stuck -> {
             parts += stringResource(R.string.in_garmin_watch_stuck)

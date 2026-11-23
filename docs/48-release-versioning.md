@@ -245,6 +245,12 @@ A change that must move one of these is a new format beside the old one, not a v
 - **Data field**: the current glucose stays and its label row says *UPDATE PHONE* / *UPDATE FIELD* (amber), instead
   of `--` beside the words: the field reads `g` like the face, and in an activity the number matters most; a slot too
   narrow for the label shows the value alone (the face, the app and the phone say it).
+- **The phone's notice** (the owner, 2026-11-23: "not the best copywriting nor ui … we should also show a banner in
+  the homescreen"): one designsystem notice, `updateBanner`, on the Garmin page and as home's banner (Warning tone,
+  the update icon, no close). The title names the app to update and nothing else (*Update the Sukrara Aura watch
+  face* / *Update Sukrara*); the text says what the watch does until then (*shows only your glucose*), the device
+  named once; one button, *Update*. The watch's line on the Garmin page no longer repeats it; the app's row keeps its
+  state. Home's banner sits after the safety banners and before the tips.
 - **Complications** keep the current glucose (no trend, no history), not `---`: it is a real, current reading.
 
 ### Draft: States and exits (for FEATURES.md when built)
