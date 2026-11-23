@@ -379,12 +379,11 @@ app but the switch is off, a setup step, store links on the Garmin page and in A
 - **Setup's *Your Garmin watch*** (`SetupStep.Garmin`, optional, before *Bring your history back*, wearer and
   follower): offered while Garmin Connect is installed or a watch has an app; the switch, one line per app with *Get*
   or *On your watch*, *Continue* / *Skip* (final). An install whose walk went past it isn't sent back for it.
-- **Store ids in the registry**: `apps.json` `store` (null), read by the phone (`GarminApp.store`, `ConnectIqStore`,
-  `GarminAppsTest`) and the website (`CONNECT_IQ_STORE` replaced the placeholder `CONNECT_IQ_APP_ID`; the badge links
-  only a published listing). The Garmin page's *Connect IQ store* group and About's rows show only apps with an id.
-  #247 fills them in once Garmin publishes the listings.
-- **A debug fake** (`GARMIN_FAKE`, `FakeGarminConnect`): a made-up connected watch with the given apps and stand-in
-  store ids, for the emulator.
+- **Store ids in the registry**: `apps.json` `store`, read by the phone (`GarminApp.store`, `GarminApp.storeUrl`,
+  `GarminAppsTest`) and the website (`CONNECT_IQ_STORE` replaced the placeholder `CONNECT_IQ_APP_ID`). #247 filled them
+  in (2026-11-23, the listings submitted with 0.17.0).
+- **A debug fake** (`GARMIN_FAKE`, `FakeGarminConnect`): a made-up connected watch with the given apps, for the
+  emulator.
 
 Discarded, and why:
 - **Guessing the store URLs**: a listing's id is given when it is published and isn't the app id, so a guessed URL
@@ -408,6 +407,10 @@ page, gone from the watch's groups (no app twice); it and setup's *Get* open the
 (`apps.garmin.com/<en-US|es-ES>/search?keyword=Sukrara`) while the listing's id is null, so *Coming soon* is gone
 (#247 swaps in the listings). The watch-face icon's hands show 10:10, the data-field icon's middle line spans the band,
 and About's *Sukrara for Mac* has an Apple logo (`ds_ic_apple`).
+#247 (2026-11-23, the listings submitted): every app's listing id is in `apps.json`, so the phone and the website
+link the listings; the store's search stand-in, the website's *Coming soon*, the debug build's stand-in store ids
+(`GARMIN_FAKE --ez store`) and release.py's first-upload printout went (they only covered an app without an id; a new
+app's first upload is by hand, docs/20-publishing.md).
 **The app's background on the owner's watch** (2026-11-22, #217). The phone's diag log showed the app's fetch missing
 for hours after the crash fix's install while Aura's and the field's came every 5 min. Most of it was the watch on the
 Mac's USB for installs and log reads (no app runs then): the fetches came back every 5 min once it was unplugged

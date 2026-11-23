@@ -405,8 +405,6 @@ data class GarminUi(
     /** Each watch's own settings for the watch app (a watch not listed follows the app), and its name when they were set. */
     val own: Map<Long, WatchDisplay> = emptyMap(),
     val ownNames: Map<Long, String> = emptyMap(),
-    /** Sukrara's apps' Connect IQ store pages (an app on no watch is a row that opens its page). */
-    val store: ConnectIqStore = ConnectIqStore(),
 )
 
 class GarminViewModel(
@@ -415,15 +413,14 @@ class GarminViewModel(
     context: Context,
     io: CoroutineDispatcher,
     watches: WatchSettingsStore? = null,
-    private val store: ConnectIqStore = ConnectIqStore(),
 ) : ViewModel() {
     private val app = context.applicationContext
     private val readers = MutableStateFlow<List<ServerReader>>(emptyList())
     private val own = watches?.displays ?: flowOf(emptyMap())
     private val names = watches?.names ?: flowOf(emptyMap())
     val ui: StateFlow<GarminUi> =
-        combine(combine(link.state, xdrip.state, readers, ::Triple), own, names) { (l, x, r), o, n -> GarminUi(l, x, r, o, n, store) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GarminUi(link.state.value, store = store))
+        combine(combine(link.state, xdrip.state, readers, ::Triple), own, names) { (l, x, r), o, n -> GarminUi(l, x, r, o, n) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GarminUi(link.state.value))
 
     init {
         viewModelScope.launch { readers.value = withContext(io) { ServerReaders.installed(app) } }
@@ -449,7 +446,7 @@ class GarminViewModel(
         val language =
             app.resources.configuration.locales[0]
                 .language
-        return start(Intent(Intent.ACTION_VIEW, Uri.parse(store.url(watchApp, language))))
+        return start(Intent(Intent.ACTION_VIEW, Uri.parse(watchApp.storeUrl(language))))
     }
 
     private fun start(i: Intent) = runCatching { app.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
@@ -663,8 +660,7 @@ fun GarminContent(
             )
         }
     }
-    // each of Sukrara's apps on no watch, whatever the switch: a row that opens its Connect IQ store page (its listing,
-    // or the store's search until it has an id, #247)
+    // each of Sukrara's apps on no watch, whatever the switch: a row that opens its Connect IQ store listing
     val listed = storeApps(s, now)
     if (listed.isNotEmpty()) {
         SettingsGroup(title = stringResource(R.string.in_garmin_store_group)) {

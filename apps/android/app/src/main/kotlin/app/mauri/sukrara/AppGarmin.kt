@@ -5,7 +5,6 @@ package app.mauri.sukrara
 
 import app.mauri.sukrara.feature.home.banners.GarminTip
 import app.mauri.sukrara.feature.sharing.SetupWatchApp
-import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.GarminLinkState
 import app.mauri.sukrara.integrations.garmin.iconRes
@@ -32,18 +31,15 @@ internal object AppGarmin {
     /** Setup's Garmin step is offered: Garmin Connect is on this phone, or a watch has one of Sukrara's apps. */
     fun offered(s: GarminLinkState): Boolean = s.garminConnect || s.found.isNotEmpty()
 
-    /** Setup's Garmin step's apps: each with what it gives, its Connect IQ store page and whether a watch has it. */
-    fun apps(
-        s: GarminLinkState,
-        store: ConnectIqStore,
-    ): List<SetupWatchApp> =
+    /** Setup's Garmin step's apps: each with what it gives, its Connect IQ store listing and whether a watch has it. */
+    fun apps(s: GarminLinkState): List<SetupWatchApp> =
         GarminApp.entries.map { app ->
             SetupWatchApp(
                 app.key,
                 app.nameRes,
                 app.whatRes,
                 app.iconRes,
-                url = { language -> store.url(app, language) },
+                url = app::storeUrl,
                 onWatch = app in s.found,
             )
         }

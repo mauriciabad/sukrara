@@ -10,6 +10,7 @@ import { Steps } from '@astrojs/starlight/components';
 import ConnectIqBadge from '../../components/ConnectIqBadge.astro';
 import FaceGallery from '../../components/face-playground/FaceGallery.astro';
 import WatchScreens from '../../components/garmin/WatchScreens.astro';
+import { STORES } from '../../site';
 
 Your glucose on your Garmin watch, sent by [Sukrara for Android](/android/) within seconds of each reading. No cloud,
 no account.
@@ -23,7 +24,9 @@ no account.
 <Steps>
 
 1. Install [Sukrara for Android](/android/) and Garmin Connect on your phone.
-2. From the Connect IQ store, install a Sukrara watch face, the Sukrara watch app, the Sukrara data field, or all three.
+2. From the Connect IQ store, install a Sukrara watch face (<a href={STORES.connectIq('en', 'aura')}>Sukrara Aura</a>),
+   the <a href={STORES.connectIq('en', 'app')}>Sukrara watch app</a>, the
+   <a href={STORES.connectIq('en', 'field')}>Sukrara data field</a>, or all three.
 3. Nothing to set up: every reading reaches the watch by itself.
 
 </Steps>

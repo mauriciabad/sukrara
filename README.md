@@ -140,7 +140,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   `releases/latest/download/SukraraFace.barrel`) and its JSON Schema (the developer page:
   sukrara.mauri.app/developers/garmin-faces/, with a sample face in `apps/garmin/sample`).
 - Getting the Garmin apps going from the phone: a setup step when Garmin Connect is on the phone (what each app gives,
-  sending on or off, each one's Connect IQ store link once it's listed), and a home tip with *Turn on* when a watch has
+  sending on or off, each one's Connect IQ store link), and a home tip with *Turn on* when a watch has
   one of Sukrara's apps but sending is off.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
@@ -220,8 +220,11 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`. Either way Sukrara then
   updates itself (the cask says `auto_updates`, so `brew upgrade` leaves it to the app; `brew upgrade --greedy` still
   works).
-- **Garmin**: from the Connect IQ store (each app once Garmin's review approves it), or without the store from the
-  release: `<App>-<version>-sideload.zip` holds one `.prg` per watch model, to copy into the watch's `GARMIN/APPS`
+- **Garmin**: from the Connect IQ store
+  ([Sukrara Aura](https://apps.garmin.com/en-US/apps/2859fe48-7e9e-4e52-ae2a-a319fa76fcfc),
+  [the watch app](https://apps.garmin.com/en-US/apps/c8c7b5e9-35e6-4941-b811-3bf7c9238c9a),
+  [the data field](https://apps.garmin.com/en-US/apps/bae83264-c160-4498-8a4d-492b4ea7d630)), or without the store from
+  the release: `<App>-<version>-sideload.zip` holds one `.prg` per watch model, to copy into the watch's `GARMIN/APPS`
   folder (it doesn't update itself; the store's copy replaces it). All need Sukrara for Android and Garmin Connect on
   the phone:
   - Watch faces: Sukrara Aura (round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm,

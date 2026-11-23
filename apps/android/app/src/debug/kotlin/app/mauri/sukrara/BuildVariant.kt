@@ -11,7 +11,6 @@ import app.mauri.sukrara.debug.FakeGarminConnect
 import app.mauri.sukrara.debug.SimulatorConnectIq
 import app.mauri.sukrara.debug.SyntheticSource
 import app.mauri.sukrara.integrations.garmin.ConnectIqPort
-import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 import kotlinx.coroutines.withContext
 
 /**
@@ -42,9 +41,6 @@ internal object BuildVariant {
     ): ConnectIqPort? =
         FakeGarminConnect.apps(context)?.let(::FakeGarminConnect)
             ?: if (SimulatorConnectIq.isOn(context)) SimulatorConnectIq(log) else null
-
-    /** The `GARMIN_FAKE` command's stand-in Connect IQ store ids, or null: the registry's (release: always). */
-    fun garminStore(context: Context): ConnectIqStore? = FakeGarminConnect.store(context)
 
     /** Whether [wearerSource] gives a source, without building it (the starter's cheap check). */
     suspend fun hasWearerSource(graph: AppGraph): Boolean = withContext(graph.dispatchers.io) { SyntheticSource.isOn(graph.app) }

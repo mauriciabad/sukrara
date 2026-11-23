@@ -640,9 +640,8 @@ source lives in its own store (`source`), so a damaged setup file never asks for
   card per app, named as the phone names them (*What the phone calls them* under Garmin's apps), with its kind's
   Connect IQ icon in the text colour and what it gives in one line (*Sukrara Aura watch face*: your
   glucose and how far out of range…; *Sukrara watch app*: the glance, complications, logging and alerts; *Sukrara data
-  field*: during a workout) and at its end **Get** (its Connect IQ store page in the phone's language: its listing, or
-  the store's search for Sukrara while its id is null, #247) or *On your watch* (a check, when Garmin Connect says a
-  watch has it; it swaps in as it is found). Under the cards: *Settings › Share with apps › Garmin keeps all of this.* **Continue**
+  field*: during a workout) and at its end **Get** (its Connect IQ store listing in the phone's language) or *On your
+  watch* (a check, when Garmin Connect says a watch has it; it swaps in as it is found). Under the cards: *Settings › Share with apps › Garmin keeps all of this.* **Continue**
   keeps the switch as set; **Skip** leaves it as it is. Both are final (not on *Finish setup* again).
 - **Your followers** (optional): *Restore from your recovery code* (`ncryptsec` + password or `nsec`, typed as hidden text, never
   saved state) or *Start fresh*. The warning "Your followers move to this phone: the phone that shared until now stops
@@ -2924,9 +2923,8 @@ ages by itself from its own time with the phone away.
   reading since*), a quiet or mute that ran out shows no pill, the last treatment moves on and goes when the card's
   slot would, the warm-up and the sensor's end count down by themselves; a watch clock behind the phone's never makes a reading look younger. Garmin's own *No phone* field says
   the phone is away (`contracts/watchface/aura/SPEC.md` §6.10). Tests: `LinkTest` (`apps/garmin/tools/link-test.sh aura`).
-- Debug builds: `GARMIN_FAKE --es apps aura,app,field|none|off [--ez store true]` is a made-up Garmin Connect with
-  one connected watch, *Forerunner 265*, that has those apps (`store`: stand-in store ids, links that lead nowhere), for
-  the tip, the setup step and the store links on the emulator. `GARMIN_SIM --ez on true` sends to the Connect IQ simulator instead of Garmin Connect (adb forward
+- Debug builds: `GARMIN_FAKE --es apps aura,app,field|none|off` is a made-up Garmin Connect with one connected watch,
+  *Forerunner 265*, that has those apps, for the tip, the setup step and the store links on the emulator. `GARMIN_SIM --ez on true` sends to the Connect IQ simulator instead of Garmin Connect (adb forward
   tcp:7381, simulator › Connection › Start; the fetch through adb forward tcp:17582).
 
 **States and exits**: on the watch: *value* (fresh → late → old → no reading since → long gap) → leaves by itself
@@ -3032,14 +3030,14 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   and when a watch connects, so home's *Your watch gets no glucose* tip and setup's *Your Garmin watch* step know. A
   watch that isn't connected can't be asked: unknown until it is.
 - **Connect IQ store links** (#199, #247): each of Sukrara's apps' listing id is in the registry (`apps.json` `store`,
-  `GarminApp.store`, `ConnectIqStore`; the website's `CONNECT_IQ_STORE` reads the same file). The Garmin page's
+  `GarminApp.store`; the website's `CONNECT_IQ_STORE` reads the same file). The Garmin page's
   *Connect IQ store* group (whatever the switch says) has one row per app on no watch (`storeApps`: all of them while
   the switch is off or Garmin Connect is missing; else the ones no watch has, which leave the watch's groups, so no app
   is listed twice and a group left empty goes; name, what it gives in one line, its kind's icon), opening its store page
   in the phone's language (es → Garmin's Spanish store); setup's step has its *Get*. About has none: its one Garmin
-  row, *Sukrara for Garmin*, opens the website's Garmin page. While an id is null (all of them today: Garmin gives it
-  when the listing is published) the phone opens the store's search instead (`https://apps.garmin.com/en-US/search?keyword=Sukrara`,
-  `es-ES` in Spanish; `ConnectIqStore.url`, `GarminAppsTest`); the website says *Coming soon*.
+  row, *Sukrara for Garmin*, opens the website's Garmin page. Each opens `https://apps.garmin.com/<en-US|es-ES>/apps/<store>`
+  (`GarminApp.storeUrl`, `GarminAppsTest`); the website's Garmin pages link the same listings (the Connect IQ badge on
+  the Garmin page, Sukrara Aura's page and the download panels; *Get it*'s step names each app's).
 - **Where the Garmin apps come from** (#199, #246; from 0.17.0): each release uploads the three apps to the Connect IQ
   store by hand (no upload API; `release.py`'s `garmin` step prints each upload, the listings are
   `apps/garmin/<app>/store`), and the GitHub release carries, per app, the store package and

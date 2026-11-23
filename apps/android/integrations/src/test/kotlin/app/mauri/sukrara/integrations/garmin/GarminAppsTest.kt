@@ -6,7 +6,6 @@ package app.mauri.sukrara.integrations.garmin
 import app.mauri.sukrara.core.testing.Contracts
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -30,36 +29,24 @@ class GarminAppsTest {
             assertEquals(app.beta, s("beta"))
             assertEquals(app.profile.path, s("fetch"))
             assertEquals(app.logs, a.getValue("logs").jsonPrimitive.boolean)
-            // the store listing's id, null until it is published (#247)
-            assertEquals(app.store, a.getValue("store").jsonPrimitive.contentOrNull)
+            assertEquals(app.store, s("store"))
         }
         assertEquals(GarminLink.PORT, file.getValue("port").jsonPrimitive.int)
         assertEquals(GarminApp.ENTRIES, file.getValue("entries").jsonPrimitive.content)
         assertEquals(WatchWrites.MUTE, file.getValue("mute").jsonPrimitive.content)
         assertEquals(WatchWrites.UNDO, file.getValue("undo").jsonPrimitive.content)
-        // every id once, lowercase UUIDs
-        val ids = GarminApp.entries.flatMap { it.ids }
+        // every id once (a listing's isn't an app id), lowercase UUIDs
+        val ids = GarminApp.entries.flatMap { it.ids + it.store }
         assertEquals(ids.size, ids.toSet().size)
         ids.forEach { assertEquals(it, it.lowercase()) }
     }
 
     @Test
-    fun anAppOpensItsListingOnceItHasAnIdTheStoresSearchUntilThen() {
-        val one = ConnectIqStore(mapOf(GarminApp.Field to "abc-123"))
-        // an id: its listing, in the phone's language (any other language: the English store)
-        assertEquals("https://apps.garmin.com/en-US/apps/abc-123", one.url(GarminApp.Field, "en"))
-        assertEquals("https://apps.garmin.com/es-ES/apps/abc-123", one.url(GarminApp.Field, "es"))
-        assertEquals("https://apps.garmin.com/en-US/apps/abc-123", one.url(GarminApp.Field, "ca"))
-        // no id (#247): the store's search for Sukrara
-        assertEquals("https://apps.garmin.com/en-US/search?keyword=Sukrara", one.url(GarminApp.Aura, "en"))
-        assertEquals("https://apps.garmin.com/es-ES/search?keyword=Sukrara", one.url(GarminApp.Aura, "es"))
-        // the registry's own: its ids, the search for the rest
-        for (app in GarminApp.entries) {
-            val url = ConnectIqStore().url(app, "en")
-            assertEquals(
-                app.store?.let { "https://apps.garmin.com/en-US/apps/$it" } ?: "https://apps.garmin.com/en-US/search?keyword=Sukrara",
-                url,
-            )
-        }
+    fun anAppOpensItsListingInThePhonesLanguage() {
+        // the Spanish store for Spanish, the English one for any other language
+        assertEquals("https://apps.garmin.com/en-US/apps/bae83264-c160-4498-8a4d-492b4ea7d630", GarminApp.Field.storeUrl("en"))
+        assertEquals("https://apps.garmin.com/es-ES/apps/bae83264-c160-4498-8a4d-492b4ea7d630", GarminApp.Field.storeUrl("es"))
+        assertEquals("https://apps.garmin.com/en-US/apps/bae83264-c160-4498-8a4d-492b4ea7d630", GarminApp.Field.storeUrl("ca"))
+        assertEquals("https://apps.garmin.com/es-ES/apps/2859fe48-7e9e-4e52-ae2a-a319fa76fcfc", GarminApp.Aura.storeUrl("es"))
     }
 }

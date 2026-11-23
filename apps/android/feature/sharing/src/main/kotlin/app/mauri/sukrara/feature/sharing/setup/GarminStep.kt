@@ -42,9 +42,8 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 /**
  * *Your Garmin watch* (optional; only while Garmin Connect is on this phone or a watch has one of Sukrara's apps,
  * #199): *Send to Sukrara on your watch* (on by default; the same switch as Settings › Share with apps › Garmin, stored
- * as it turns), then each of Sukrara's watch apps in one line with *Get* (its Connect IQ store page: its listing, or
- * the store's search until it has an id, #247) or *On your watch*. *Continue* keeps the switch as set; *Skip* leaves it as it is. Both
- * are final: the Garmin page keeps all of it.
+ * as it turns), then each of Sukrara's watch apps in one line with *Get* (its Connect IQ store listing) or *On your
+ * watch*. *Continue* keeps the switch as set; *Skip* leaves it as it is. Both are final: the Garmin page keeps all of it.
  */
 @Composable
 internal fun ColumnScope.GarminStep(

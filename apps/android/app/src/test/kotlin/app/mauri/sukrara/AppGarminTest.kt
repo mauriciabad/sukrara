@@ -5,7 +5,6 @@ package app.mauri.sukrara
 
 import app.mauri.sukrara.integrations.R
 import app.mauri.sukrara.integrations.garmin.AppLink
-import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.GarminLinkState
 import app.mauri.sukrara.integrations.garmin.GarminWatch
@@ -55,19 +54,18 @@ class AppGarminTest {
     }
 
     @Test
-    fun theStepsAppsOpenTheirListingOrTheStoresSearch() {
+    fun theStepsAppsOpenTheirListing() {
         val s = GarminLinkState(garminConnect = true, watches = listOf(watch("Venu 3", GarminApp.App)))
-        val none = AppGarmin.apps(s, ConnectIqStore(emptyMap()))
-        assertEquals(GarminApp.entries.map { it.key }, none.map { it.key })
-        assertTrue(none.all { it.url("en") == "https://apps.garmin.com/en-US/search?keyword=Sukrara" })
-        assertEquals(listOf("app"), none.filter { it.onWatch }.map { it.key })
-        val one = AppGarmin.apps(s, ConnectIqStore(mapOf(GarminApp.Aura to "a1")))
-        assertEquals("https://apps.garmin.com/es-ES/apps/a1", one.first { it.key == "aura" }.url("es"))
-        assertEquals("https://apps.garmin.com/es-ES/search?keyword=Sukrara", one.first { it.key == "field" }.url("es"))
+        val apps = AppGarmin.apps(s)
+        assertEquals(GarminApp.entries.map { it.key }, apps.map { it.key })
+        assertEquals(listOf("app"), apps.filter { it.onWatch }.map { it.key })
+        // its listing, in the phone's language
+        assertEquals(GarminApp.entries.map { it.storeUrl("es") }, apps.map { it.url("es") })
+        assertEquals("https://apps.garmin.com/es-ES/apps/2859fe48-7e9e-4e52-ae2a-a319fa76fcfc", apps.first { it.key == "aura" }.url("es"))
         // each with its kind's Connect IQ icon
         assertEquals(
             listOf(DsR.drawable.ds_ic_watch_face, DsR.drawable.ds_ic_device_app, DsR.drawable.ds_ic_data_field),
-            none.map { it.icon },
+            apps.map { it.icon },
         )
     }
 }

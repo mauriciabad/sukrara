@@ -6,7 +6,6 @@ package app.mauri.sukrara
 import android.content.Context
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.integrations.garmin.ConnectIqPort
-import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 
 /**
  * Release builds: readings only ever come from the real sensor, the relays are the public ones and updates come from the
@@ -20,10 +19,6 @@ internal object BuildVariant {
         context: Context,
         log: (String) -> Unit,
     ): ConnectIqPort? = null
-
-    /** The Connect IQ store links are the registry's own (only the published listings, #247). */
-    @Suppress("UNUSED_PARAMETER")
-    fun garminStore(context: Context): ConnectIqStore? = null
 
     @Suppress("UNUSED_PARAMETER")
     fun relayChoice(context: Context): String? = null

@@ -124,8 +124,8 @@ class SetupGarmin(
 
 /**
  * One of Sukrara's watch apps on setup's Garmin step: its [name] and what it gives in one line ([what]; the
- * integrations' strings), its kind's Connect IQ [icon], its Connect IQ store page for a language ([url]: its listing,
- * or the store's search until it has an id, #247) and whether a watch has it already ([onWatch]).
+ * integrations' strings), its kind's Connect IQ [icon], its Connect IQ store listing for a language ([url]) and
+ * whether a watch has it already ([onWatch]).
  */
 data class SetupWatchApp(
     val key: String,

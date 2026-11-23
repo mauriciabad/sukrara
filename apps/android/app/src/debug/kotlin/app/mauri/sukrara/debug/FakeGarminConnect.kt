@@ -6,7 +6,6 @@ package app.mauri.sukrara.debug
 import android.content.Context
 import androidx.core.content.edit
 import app.mauri.sukrara.integrations.garmin.ConnectIqPort
-import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.IqDevice
 import app.mauri.sukrara.integrations.garmin.IqSend
@@ -15,9 +14,7 @@ import app.mauri.sukrara.integrations.garmin.IqSend
  * Debug builds: a made-up Garmin Connect for the emulator (#199: home's Garmin tip, setup's Garmin step, the Garmin
  * page), with one connected watch, "Forerunner 265", that has the Sukrara apps [apps] (registry keys; empty = none).
  * Every message "arrives" and goes nowhere. `GARMIN_FAKE --es apps aura,app,field|none|off` (off = the real Garmin
- * Connect again) and `--ez store true` (stand-in Connect IQ store ids, so the store links open listing URLs
- * instead of the store's search before the real listings exist: they lead nowhere). Saved, then the app process ends: open the app. Never in a release build (this
- * source set).
+ * Connect again). Saved, then the app process ends: open the app. Never in a release build (this source set).
  */
 class FakeGarminConnect(
     private val apps: Set<String>,
@@ -57,21 +54,11 @@ class FakeGarminConnect(
                 ?.filter { it.isNotEmpty() && it != "none" }
                 ?.toSet()
 
-        /** Stand-in store ids for every app (`--ez store true`), or null: the registry's (none yet). */
-        fun store(context: Context): ConnectIqStore? =
-            if (context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("store", false)) {
-                ConnectIqStore(GarminApp.entries.associateWith { "debug-${it.key}" })
-            } else {
-                null
-            }
-
         fun set(
             context: Context,
             apps: String?,
-            store: Boolean,
         ) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit(commit = true) {
             if (apps == null || apps == "off") remove("apps") else putString("apps", apps)
-            putBoolean("store", store)
         }
     }
 }

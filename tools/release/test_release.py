@@ -511,30 +511,12 @@ class GarminTest(unittest.TestCase):
             "field-iq": "apps/garmin/bin/dist/SukraraField-0.15.0.iq",
             "field-sideload": "apps/garmin/bin/dist/SukraraField-0.15.0-sideload.zip"})
 
-    def test_upload_kit_first_upload_has_the_listing(self):
-        app = release.garmin_apps(REGISTRY)[1]
-        listing = {"title": {"en": "Sukrara", "es": "Sukrara"}, "category": "Health & Fitness",
-                   "images": "docs/img/app/store/ciq", "screenshots": ["glance", "app"], "price": "Free",
-                   "privacy": {"en": "https://e/privacy/", "es": "https://e/es/privacy/"},
-                   "support": {"en": "https://e/garmin/", "es": "https://e/es/garmin/"}}
-        kit = release.garmin_upload_kit("0.17.0", app, "/r/Sukrara-0.17.0.iq", listing,
-                                        release.changelog_release(CHANGELOG, "0.17.0"))
-        self.assertIn("Sukrara (watch app), Connect IQ store, by hand at https://apps-developer.garmin.com/", kit)
-        self.assertIn("  1. Upload an App (the first upload of Sukrara; Beta App unticked)\n"
-                      "  2. File: /r/Sukrara-0.17.0.iq\n  3. App Version: 0.17.0.", kit)
-        self.assertIn("Description: apps/garmin/app/store/description-en.txt, apps/garmin/app/store/description-es.txt",
-                      kit)
-        self.assertIn("Screenshots, in order: screen-glance.jpg, screen-app.jpg (in docs/img/app/store/ciq)", kit)
-        self.assertIn("Hero: docs/img/app/store/ciq/hero-en.png, docs/img/app/store/ciq/hero-es.png", kit)
-        self.assertIn("contracts/watchface/payload/apps.json `store`", kit)
-        self.assertNotIn("What's new", kit)
-
-    def test_upload_kit_later_versions_have_the_garmin_lines(self):
-        app = dict(release.garmin_apps(REGISTRY)[0], store="abc")
+    def test_upload_kit_has_the_garmin_lines(self):
+        app = release.garmin_apps(REGISTRY)[0]
         changelog = release.changelog_release(CHANGELOG.replace(
             "- ***Sound", "- **Sukrara Aura** (#240): two fields on\n  top.\n- **Garmin data field**: faster.\n- ***Sound"),
             "0.18.0")
-        kit = release.garmin_upload_kit("0.18.0", app, "/r/SukraraAura-0.18.0.iq", {}, changelog)
+        kit = release.garmin_upload_kit("0.18.0", app, "/r/SukraraAura-0.18.0.iq", changelog)
         self.assertIn("  1. Sukrara Aura → Upload a new version\n  2. File: /r/SukraraAura-0.18.0.iq", kit)
         self.assertIn("       - **Sukrara Aura** (#240): two fields on top.\n       - **Garmin data field**: faster.", kit)
         self.assertNotIn("The Mac updates itself", kit)

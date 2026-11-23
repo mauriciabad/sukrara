@@ -18,13 +18,15 @@ export const GITHUB = `https://github.com/${REPO}`;
 export const RELEASES = `${GITHUB}/releases`;
 export const ISSUES = `${GITHUB}/issues`;
 
+/** Sukrara's Garmin apps, by their registry key (contracts/watchface/payload/apps.json `app`). */
+export type GarminApp = 'aura' | 'app' | 'field';
+
 /**
- * Each of Sukrara's Garmin apps' Connect IQ store listing id (`aura`, `app`, `field`), from the one registry the phone
- * reads too (contracts/watchface/payload/apps.json `store`): null until Garmin publishes the listing (it isn't the app
- * id), and while it is null nothing links to it (issue #247 fills them in).
+ * Each of Sukrara's Garmin apps' Connect IQ store listing id, from the one registry the phone reads too
+ * (contracts/watchface/payload/apps.json `store`; it isn't the app id).
  */
-export const CONNECT_IQ_STORE: Record<string, string | null> = Object.fromEntries(
-	garminApps.apps.map((a: { app: string; store: string | null }) => [a.app, a.store]),
+export const CONNECT_IQ_STORE: Record<string, string> = Object.fromEntries(
+	garminApps.apps.map((a: { app: string; store: string }) => [a.app, a.store]),
 );
 
 /**
@@ -37,14 +39,9 @@ export const STORES = {
 	appStore: (lang: string) => `https://apps.apple.com/${lang === 'es' ? 'es' : 'us'}/app/sukrara/id6833533014?mt=12`,
 	/** F-Droid's main repository (docs/20-publishing.md, #191). */
 	fdroid: (lang: string) => `https://f-droid.org/${lang}/packages/${brand.applicationId}/`,
-	/**
-	 * One of Sukrara's Garmin apps on the Connect IQ store (docs/20-publishing.md › Connect IQ store), or null while its
-	 * listing isn't published ([CONNECT_IQ_STORE]).
-	 */
-	connectIq: (lang: string, app = 'aura') => {
-		const id = CONNECT_IQ_STORE[app];
-		return id ? `https://apps.garmin.com/${lang === 'es' ? 'es-ES' : 'en-US'}/apps/${id}` : null;
-	},
+	/** One of Sukrara's Garmin apps' Connect IQ store listing ([CONNECT_IQ_STORE]; docs/20-publishing.md › Connect IQ). */
+	connectIq: (lang: string, app: GarminApp = 'aura') =>
+		`https://apps.garmin.com/${lang === 'es' ? 'es-ES' : 'en-US'}/apps/${CONNECT_IQ_STORE[app]}`,
 };
 
 /** Obtainium adds the GitHub releases and checks each APK is signed with Sukrara's key (docs/20-publishing.md). */

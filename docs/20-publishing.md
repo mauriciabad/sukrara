@@ -1498,6 +1498,7 @@ in the title, each image at its size and weight.
 | | Sukrara Aura | Sukrara (watch app) | Sukrara data field |
 |---|---|---|---|
 | Listing | [`apps/garmin/aura/store/`](../apps/garmin/aura/store/) | [`apps/garmin/app/store/`](../apps/garmin/app/store/) | [`apps/garmin/field/store/`](../apps/garmin/field/store/) |
+| Store page (`apps.json` `store`; submitted 2026-11-23 with 0.17.0, #247) | [`2859fe48-7e9e-4e52-ae2a-a319fa76fcfc`](https://apps.garmin.com/en-US/apps/2859fe48-7e9e-4e52-ae2a-a319fa76fcfc) | [`c8c7b5e9-35e6-4941-b811-3bf7c9238c9a`](https://apps.garmin.com/en-US/apps/c8c7b5e9-35e6-4941-b811-3bf7c9238c9a) | [`bae83264-c160-4498-8a4d-492b4ea7d630`](https://apps.garmin.com/en-US/apps/bae83264-c160-4498-8a4d-492b4ea7d630) |
 | Title (en / es) | Sukrara Aura (the manifest's `AppName`) | Sukrara (the `AppName`) | Sukrara Glucose Data Field / Sukrara Glucosa: campo de datos (searchable; on the watch, its `AppName`, *Sukrara Glucose* / *Sukrara Glucosa*: the owner, 2026-11-23) |
 | Images | [`docs/img/aura/store/ciq/`](img/aura/store/ciq/) | [`docs/img/app/store/ciq/`](img/app/store/ciq/) | [`docs/img/field/store/ciq/`](img/field/store/ciq/) |
 | Icon (500 × 500, animated PNG, 1.6 s a frame, transparent, edge to edge) | the face through a day: very high and rising, falling fast, in range, breakfast, a correction (the dial follows) | its watch with page 1 first, then your numbers, the glance, the list, logged | its watch with the whole screen first, then half, a band, a small slot with a low, its own alert |
@@ -1584,20 +1585,23 @@ Marked **[owner]**: only the owner does it. The developer account is set up (`ap
 name `mauri.app`, 2026-11-16).
 
 **Each release** (`release.py`; the gate built the files, `github` put them on the release): the `garmin` step prints,
-per app, what to do at https://apps-developer.garmin.com/developer/dashboard. For an app Garmin hasn't published yet
-(its `store` is `null` in `contracts/watchface/payload/apps.json`), that is the first upload:
+per app, **Upload a new version** at https://apps-developer.garmin.com/developer/dashboard with the file, the version
+and the What's new (the CHANGELOG entry's Garmin lines). **[owner]** **Submit**: Garmin reviews each version, which
+stays off the store until approved.
+
+**A new app**: its first upload is by hand, before its entry in `contracts/watchface/payload/apps.json` lands (the
+phone's Garmin page and setup and the website link every entry's listing, so an entry needs its id; the store build,
+`garmin-release.sh <app> <version>`, doesn't read the registry):
 
 1. **Upload an App**: *Choose file* `apps/garmin/bin/dist/<Name>-<version>.iq`, *App Version* the release's,
    **Beta App unticked**. **[owner]** **Continue** (it uploads the file and accepts the Developer License Agreement).
-2. Step 2, the listing, from `apps/garmin/<app>/store/` as printed: title, description (`description-en.txt`, and
+2. Step 2, the listing, from `apps/garmin/<app>/store/`: title, description (`description-en.txt`, and
    `description-es.txt` where the form has Spanish), category, icon, hero per language, screenshots in order, privacy
    and support links, price. An agent may fill it in with the owner watching; note here what the form really asks.
 3. **[owner]** **Submit**. Garmin reviews it (7–14 days lately) and e-mails when it is approved.
-4. After approval: the listing's id (the last part of its `apps.garmin.com/<locale>/apps/<id>` link) goes into
-   `apps.json` `store` (#247): the phone's Garmin page and setup then open the listing, the website shows the badge,
-   and later releases print **Upload a new version** with the What's new (the CHANGELOG entry's Garmin lines). Delete
-   any beta app from the dashboard and a sideloaded copy from the watch (the store copy replaces it: same id, same
-   key).
+4. The listing's id (the last part of its `apps.garmin.com/<locale>/apps/<id>` link; the dashboard shows it once
+   submitted) goes into the entry's `store`. After approval, delete any beta app from the dashboard and a sideloaded
+   copy from the watch (the store copy replaces it: same id, same key).
 
 A beta (optional, only the owner's account sees it, no review): `tools/release/garmin-release.sh <app> --beta`, then
 **Upload an App** with `<Name>-beta.iq`, **Beta App** ticked; install it from `apps.garmin.com/en-US/apps/<beta id>`

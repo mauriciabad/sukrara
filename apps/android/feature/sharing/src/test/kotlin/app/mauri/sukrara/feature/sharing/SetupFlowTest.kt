@@ -306,7 +306,7 @@ class SetupFlowTest {
                         R.string.sh_setup_pens_title,
                         R.string.sh_setup_pens_on,
                         DsR.drawable.ds_ic_watch_face,
-                        { "https://apps.garmin.com/$it/search" },
+                        { "https://apps.garmin.com/$it/apps/listing" },
                         onWatch = true,
                     ),
                     SetupWatchApp(
@@ -314,7 +314,7 @@ class SetupFlowTest {
                         R.string.sh_setup_root_yes,
                         R.string.sh_setup_root_no,
                         DsR.drawable.ds_ic_data_field,
-                        { "https://apps.garmin.com/$it/search" },
+                        { "https://apps.garmin.com/$it/apps/listing" },
                         onWatch = false,
                     ),
                 ),
@@ -332,8 +332,7 @@ class SetupFlowTest {
         shows("On your watch")
         tap("Get")
         val opened = shadowOf(compose.activity).nextStartedActivity
-        assertEquals("https://apps.garmin.com/en/search", opened.dataString)
-        compose.onNodeWithText("Coming soon", substring = true).assertDoesNotExist()
+        assertEquals("https://apps.garmin.com/en/apps/listing", opened.dataString)
         // the switch is THE Garmin switch, stored at once
         tap("Send to Sukrara on your watch")
         compose.waitUntil(2_000) { !on.value }

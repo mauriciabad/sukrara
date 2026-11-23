@@ -77,9 +77,8 @@
   "site.badge.fdroid": "Get it on",
   "site.garmin.button": "Sukrara for Garmin",
   "site.garmin.store": "Free on the Connect IQ store",
-  "site.garmin.soon": "Coming soon to the Connect IQ store",
   "site.garmin.try": "Try Sukrara Aura",
   "site.garmin.step1": "Install Sukrara for Android and Garmin Connect on your phone.",
-  "site.garmin.step2": "From the Connect IQ store (coming soon): a Sukrara watch face, the watch app or the data field.",
+  "site.garmin.step2": "From the Connect IQ store: a Sukrara watch face, the watch app or the data field.",
   "site.garmin.step3": "That’s it: Sukrara sends each reading to the watch by itself."
 }

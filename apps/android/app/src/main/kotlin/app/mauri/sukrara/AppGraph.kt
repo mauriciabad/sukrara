@@ -76,7 +76,6 @@ import app.mauri.sukrara.integrations.IntegrationsModule
 import app.mauri.sukrara.integrations.broadcasts.BcState
 import app.mauri.sukrara.integrations.broadcasts.LiveReading
 import app.mauri.sukrara.integrations.garmin.ConnectIq
-import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 import app.mauri.sukrara.integrations.garmin.GarminWatches
 import app.mauri.sukrara.integrations.garmin.WatchEntries
 import app.mauri.sukrara.integrations.garmin.WatchEntry
@@ -707,9 +706,6 @@ class AppGraph(
         )
     }
 
-    /** Sukrara's watch apps' Connect IQ store listings: the registry's (none yet, #247), or a debug build's stand-ins. */
-    private val garminStore by lazy { BuildVariant.garminStore(app) ?: ConnectIqStore() }
-
     /** Uploads, the local xDrip+ server and export (each off until switched on in Settings › Share with apps). */
     val integrations by lazy {
         IntegrationsModule(
@@ -802,7 +798,6 @@ class AppGraph(
             libreLinkUpServer = BuildVariant.libreLinkUpServer(app),
             // a lost one only makes each watch follow the app's settings again
             garminWatches = data.typedStore("watches", GarminWatches.serializer(), GarminWatches(), whenCorrupt = GarminWatches()),
-            garminStore = garminStore,
             // the one heads-up an hour before LibreView's maintenance stops LibreLinkUp (docs/45)
             maintenanceAhead = { w -> MaintenanceNotice.post(app, w.start, w.end) },
             // Sukrara on the watch logs through the phone's own Add treatment (the treatments module is built later)
@@ -925,7 +920,7 @@ class AppGraph(
                             .distinctUntilChanged(),
                     on = integrations.aura.on,
                     setOn = integrations.aura::setOn,
-                    apps = integrations.aura.state.map { AppGarmin.apps(it, garminStore) },
+                    apps = integrations.aura.state.map { AppGarmin.apps(it) },
                 ),
             // the root step and the status bar text
             systemAccess = monitor.root.access,

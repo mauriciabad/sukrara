@@ -48,8 +48,8 @@ left (resume with --from <step>; every step can run again):
                  review it waits on TestFlight, and a later release submits the newest
   garmin         the Connect IQ store has no upload API: per app, the release's .iq (built and signed with the store key
                  in the gate, on the GitHub release) and what to enter at the developer dashboard, for the owner's
-                 upload: the listing for an app Garmin hasn't published yet (no store id in apps.json), else the new
-                 version with its What's new
+                 upload: Upload a new version, with its What's new (an app's first upload, with its listing, is by
+                 hand, before its apps.json entry lands: docs/20-publishing.md › Connect IQ store: the owner's steps)
   summary        every channel's state
 
 --dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
@@ -286,14 +286,13 @@ def manifest_with_version(manifest, version):
 
 def garmin_apps(registry):
     """Sukrara's Garmin apps from the registry (contracts/watchface/payload/apps.json, its text), in its order: app (the
-    folder under apps/garmin), name, kind, file (garmin-release.sh's <Name>), manifest, store (the listing's id, None
-    until Garmin publishes it)."""
+    folder under apps/garmin), name, kind, file (garmin-release.sh's <Name>), manifest."""
     out = []
     for a in json.loads(registry)["apps"]:
         if a["app"] not in GARMIN_FILES:
             raise ValueError("apps.json: release.py doesn't know the Garmin app %r (GARMIN_FILES)" % a["app"])
         out.append({"app": a["app"], "name": a["name"], "kind": GARMIN_KINDS[a["type"]], "file": GARMIN_FILES[a["app"]],
-                    "manifest": a["manifest"], "store": a.get("store")})
+                    "manifest": a["manifest"]})
     return out
 
 
@@ -415,43 +414,20 @@ def garmin_whats_new(changelog, version, app):
     return [b for b in bullets if b.startswith("- ") and ("Garmin" in b or app["name"] in b)]
 
 
-def garmin_upload_kit(version, app, iq, listing, changelog):
+def garmin_upload_kit(version, app, iq, changelog):
     """What the owner does at the Connect IQ developer dashboard (no upload API) for one app: the lines release.py
-    prints. Before Garmin has published the app (no store id in apps.json): Upload an App with the listing; after:
-    Upload a new version with the What's new."""
-    head = "%s (%s), Connect IQ store, by hand at %s (sign in as the developer account):" % (
-        app["name"], app["kind"], GARMIN_DASHBOARD)
-    if app["store"]:
-        notes = garmin_whats_new(changelog, version, app) or ["(no Garmin lines in the CHANGELOG entry: say what changed)"]
-        return "\n".join([
-            head,
-            "  1. %s → Upload a new version" % app["name"],
-            "  2. File: %s" % iq,
-            "  3. App Version: %s" % version,
-            "  4. What's new (the CHANGELOG entry's Garmin lines; trim to what changed on the watch):",
-        ] + ["       " + line for line in "\n".join(notes).splitlines()] + [
-            "  5. Submit. Garmin reviews it; the new version stays off the store until it is approved (e-mail).",
-        ])
-    d = "apps/garmin/%s/store" % app["app"]
-    shots = [rel for what, rel, _, _ in listing_files(app["app"], listing) if what.startswith("screenshot")]
+    prints. Every app in apps.json has its listing (its first upload is by hand), so: Upload a new version with the
+    What's new."""
+    notes = garmin_whats_new(changelog, version, app) or ["(no Garmin lines in the CHANGELOG entry: say what changed)"]
     return "\n".join([
-        head,
-        "  1. Upload an App (the first upload of %s; Beta App unticked)" % app["name"],
+        "%s (%s), Connect IQ store, by hand at %s (sign in as the developer account):" % (
+            app["name"], app["kind"], GARMIN_DASHBOARD),
+        "  1. %s → Upload a new version" % app["name"],
         "  2. File: %s" % iq,
-        "  3. App Version: %s. Continue (accepts the Developer License Agreement)" % version,
-        "  4. The listing (%s/listing.json), per language where the form has languages:" % d,
-        "       Title: %s" % " / ".join("%s %s" % (lang, listing["title"][lang]) for lang in GARMIN_LANGS),
-        "       Description: %s" % ", ".join("%s/description-%s.txt" % (d, lang) for lang in GARMIN_LANGS),
-        "       Category: %s" % listing["category"],
-        "       Icon: %s/icon-500.png" % listing["images"],
-        "       Hero: %s" % ", ".join("%s/hero-%s.png" % (listing["images"], lang) for lang in GARMIN_LANGS),
-        "       Screenshots, in order: %s" % ", ".join(os.path.basename(s) for s in shots) + " (in %s)" % listing["images"],
-        "       Privacy policy: %s" % " / ".join(listing["privacy"][lang] for lang in GARMIN_LANGS),
-        "       Support: %s" % " / ".join(listing["support"][lang] for lang in GARMIN_LANGS),
-        "       Price: %s" % listing["price"],
-    ] + (["       Contact e-mail: %s" % listing["contact"]] if listing.get("contact") else []) + [
-        "  5. Submit. Garmin reviews it (7–14 days lately) and e-mails on approval; then the listing's id (the last part",
-        "     of its apps.garmin.com link) goes into contracts/watchface/payload/apps.json `store` (#247).",
+        "  3. App Version: %s" % version,
+        "  4. What's new (the CHANGELOG entry's Garmin lines; trim to what changed on the watch):",
+    ] + ["       " + line for line in "\n".join(notes).splitlines()] + [
+        "  5. Submit. Garmin reviews it; the new version stays off the store until it is approved (e-mail).",
     ])
 
 
@@ -1030,13 +1006,10 @@ class Release:
         for a in self.garmin_apps():
             iq = self.path(garmin_artifacts(self.v, [a])[a["app"] + "-iq"])
             self.ok(self.dry or os.path.exists(iq), "no %s: run the gate" % iq)
-            with open(self.path("apps/garmin/%s/store/listing.json" % a["app"]), encoding="utf-8") as f:
-                listing = json.load(f)
-            kit = garmin_upload_kit(self.v, a, iq, listing, self.current_changelog())
+            kit = garmin_upload_kit(self.v, a, iq, self.current_changelog())
             print("\n".join("  " + line for line in kit.splitlines()) + "\n")
-            self.notes_state.append("Connect IQ store: %s %s at %s (the garmin step's lines)" % (
-                "upload a new version of " + a["name"] if a["store"] else "upload " + a["name"] + " as a new app",
-                os.path.basename(iq), GARMIN_DASHBOARD))
+            self.notes_state.append("Connect IQ store: upload a new version of %s %s at %s (the garmin step's lines)" % (
+                a["name"], os.path.basename(iq), GARMIN_DASHBOARD))
 
     def summary(self):
         print("Sukrara %s (%d):" % (self.v, self.code))
