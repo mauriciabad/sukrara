@@ -3736,7 +3736,8 @@ digit by digit).
   `brief_mode`, `sensor` → `sensor_status` "dd-mm-yy HH:MM (Xd Yh)"), `/pebble`, `/status.json`; readings from the
   phone's store, newest first, ≥ 270 s apart by default, `_id` `<serial>#<minute>`, `device` `Sukrara`, 5-minute
   `delta` and `direction` from THE trend (*Trend arrow*; none and `NONE` without one, never a 0 that reads flat). "Last asked" lives in memory
-  only: no request log.
+  only: no request log. Faces checked against their source: Dotscout (data source *xDrip+*: `sgv.json?count=24&brief_mode=Y`,
+  reads `date`, `sgv`, `delta`, `direction`; `LocalHttpServerTest`).
 - *Files* group: *Export data* ([Data export](#data-export)).
 - *Your clinic* group: *LibreView* (wearer, [LibreView upload](#libreview-upload)) and *Tidepool* (both roles,
   [Tidepool upload](#tidepool-upload-docs27)).
@@ -3755,9 +3756,10 @@ digit by digit).
   then 64 bits of its source and millisecond, so two sources' readings in one second never share one), `api/v1/treatments`
   (not deleted, the last 30 days, the upload's mapping; `enteredBy` and `device` say `Sukrara`, or `Sukrara (following)`
   on a follower's phone, as its readings do), `api/v1/verifyauth`, `api/v2/properties` (`bgnow`, `delta`, `direction` only:
-  no insulin / carbs on board or pump data), `devicestatus` / `profile` / `food` → `[]`, `api/v3/*` → 404 so clients
-  fall back to v1. Readings of the last 7 days, newest first; each entry's `device` says where it came from:
-  `Sukrara · FreeStyle Libre 3`, `Sukrara · Juggluco`, `Sukrara · Dexcom G7 (untested)` (and the other untested
+  no insulin / carbs on board or pump data), `devicestatus` / `profile` / `food` → `[]`, `api/v3/*` and the v3 token
+  (`api/v2/authorization/request/…`) → 404 so clients fall back to v1 (Dotscout's *Nightscout* source with the URL
+  `http://127.0.0.1:17581` and the secret as token reads its entries and skips its 3 h backfill; `NightscoutApiTest`).
+  Readings of the last 7 days, newest first; each entry's `device` says where it came from: `Sukrara · FreeStyle Libre 3`, `Sukrara · Juggluco`, `Sukrara · Dexcom G7 (untested)` (and the other untested
   families), `Sukrara (following)` for a followed person's readings; a reading from any other source, or another role's
   (a wearer never serves readings left from following someone, and the other way round), is never served. The stores
   are read only while the API is on; a secure-store failure shows *The API secret can't be read* instead of a crash.

@@ -133,11 +133,12 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   them.
 - Sukrara data field for Garmin: your glucose and its recent line on an activity's data screen, a full-page alert
   during the activity if you turn it on, and your glucose saved in the activity, charted in Garmin Connect.
-- Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server, and any Connect IQ watch face can
-  read Sukrara's own watch-face data with the SukraraFace Monkey Barrel (`apps/garmin/sdk`, 0BSD: the fetch, the
-  version, never an old value as current, the unit and LO / HI, typed fields; built on every release as
-  `SukraraFace-<version>.barrel`, the newest always at `releases/latest/download/SukraraFace.barrel`) and its JSON
-  Schema (the developer page: sukrara.mauri.app/developers/garmin-faces/, with a sample face in `apps/garmin/sample`).
+- Other Garmin faces and data fields made for xDrip+ (Dotscout, with its data source set to xDrip+) read Sukrara's
+  xDrip+ server, and any Connect IQ watch face can read Sukrara's own watch-face data with the SukraraFace Monkey Barrel
+  (`apps/garmin/sdk`, 0BSD: the fetch, the version, never an old value as current, the unit and LO / HI, typed
+  fields; built on every release as `SukraraFace-<version>.barrel`, the newest always at
+  `releases/latest/download/SukraraFace.barrel`) and its JSON Schema (the developer page:
+  sukrara.mauri.app/developers/garmin-faces/, with a sample face in `apps/garmin/sample`).
 - Getting the Garmin apps going from the phone: a setup step when Garmin Connect is on the phone (what each app gives,
   sending on or off, each one's Connect IQ store link once it's listed), and a home tip with *Turn on* when a watch has
   one of Sukrara's apps but sending is off.

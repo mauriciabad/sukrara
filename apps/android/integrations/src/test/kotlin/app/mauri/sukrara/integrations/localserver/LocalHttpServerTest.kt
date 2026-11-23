@@ -8,9 +8,12 @@ import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.integrations.CurrentSensor
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -98,6 +101,23 @@ class LocalHttpServerTest {
                 .jsonObject
         assertFalse("_id" in o)
         assertEquals("Flat", o["direction"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `Dotscout's xDrip+ source gets what it reads`() {
+        // Dotscout (github.com/AlFontal/dotscout-garmin, source/CgmService.mc) asks this through Garmin Connect and reads
+        // date, sgv, delta and direction
+        server.bind()
+        val arr =
+            Json.parseToJsonElement(body(get("GET /sgv.json?count=24&brief_mode=Y HTTP/1.1\r\nHost: 127.0.0.1:17580\r\n\r\n"))).jsonArray
+        val dates = arr.map { it.jsonObject["date"]!!.jsonPrimitive.long }
+        // newest first, 5 minutes apart: a dot per slot of its 3 h graph, and its next fetch timed after the next reading
+        assertEquals(now.toEpochMilli(), dates.first())
+        assertTrue(dates.toString(), dates.zipWithNext().all { (a, b) -> a - b == 300_000L })
+        val newest = arr[0].jsonObject
+        assertEquals(100, newest["sgv"]!!.jsonPrimitive.int)
+        assertEquals(2.0, newest["delta"]!!.jsonPrimitive.double, 1e-9)
+        assertEquals("Flat", newest["direction"]!!.jsonPrimitive.content)
     }
 
     @Test

@@ -188,6 +188,28 @@ class NightscoutApiTest {
     }
 
     @Test
+    fun `Dotscout's Nightscout source reads with the secret as its token, without the 3 h backfill`() {
+        // Dotscout (github.com/AlFontal/dotscout-garmin, source/CgmService.mc) with the URL http://127.0.0.1:17581 and the
+        // secret as its token: entries, then (graph mostly empty) a v3 token, then the properties
+        val token = mapOf("token" to secret)
+        val entries = call("api/v1/entries/sgv.json", mapOf("count" to "12") + token, headers = emptyMap())
+        assertEquals("200 OK", entries.status)
+        val e = array(entries).map { it.jsonObject }
+        assertEquals(12, e.size)
+        assertEquals(now.toEpochMilli(), e[0]["date"]!!.jsonPrimitive.long)
+        assertEquals(100, e[0]["sgv"]!!.jsonPrimitive.int)
+        assertEquals("Flat", e[0]["direction"]!!.jsonPrimitive.content)
+        assertTrue(e[0]["delta"] != null)
+        // no v3 token here: anything but 200 makes it skip the backfill (the graph fills as readings come)
+        assertNotEquals("200 OK", call("api/v2/authorization/request/$secret", headers = emptyMap()).status)
+        val props = call("api/v2/properties/iob,cob,basal", token, headers = emptyMap())
+        assertEquals("200 OK", props.status)
+        // no loop data on this phone: its insulin, carbs and basal fields stay empty
+        val p = Json.parseToJsonElement(props.body).jsonObject
+        assertTrue(p.keys.toString(), p.keys.none { it in setOf("iob", "cob", "basal") })
+    }
+
+    @Test
     fun `two sources' readings in the same second never share an id`() {
         val t = now.plusMillis(250)
         val libre = Reading(t, 120, null, SourceId.Libre3)
