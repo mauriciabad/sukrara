@@ -36,7 +36,7 @@
     <string name="st_quiet_for">Durante %1$s</string>
     <string name="st_quiet_length">Cuánto tiempo</string>
     <string name="st_quiet_use">Usar este silencio</string>
-    <string name="st_quiet_insulin_footer">La insulina rápida que registras silencia las alertas de glucosa alta, muy alta y subida rápida mientras empieza a actuar. La glucosa extremadamente alta siempre avisa.</string>
+    <string name="st_quiet_insulin_footer">La insulina rápida que registras silencia todas las alertas de glucosa alta y de subida rápida mientras empieza a actuar. Si después sigue alta, avisa al momento.</string>
     <string name="st_quiet_carbs_footer">Los hidratos que registras silencian las alertas de baja y bajada rápida mientras actúan, y también la muy baja en el móvil que recibe tu glucosa. Un móvil o Mac que te sigue avisa igualmente de una muy baja.</string>
     <string name="st_quiet_falling_footer">Mientras las últimas lecturas muestran que la glucosa baja claramente hacia el rango a tiempo, las alertas de alta y muy alta esperan. Llegan enseguida si se estanca o dejan de llegar lecturas.</string>
     <string name="st_quiet_rising_footer">Mientras las últimas lecturas muestran que la glucosa sube claramente hacia el rango a tiempo, las alertas de baja esperan. Llegan enseguida si se estanca o dejan de llegar lecturas. Una muy baja solo espera en el móvil que recibe tu glucosa, nunca su primera alerta.</string>

@@ -11685,18 +11685,18 @@
         }
       }
     },
-    "Rapid insulin you log keeps high, very high and rising fast alerts quiet while it starts working. Extremely high always alerts." : {
+    "Rapid insulin you log keeps every high and rising fast alert quiet while it starts working. If glucose is still high after that, it alerts at once." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rapid insulin you log keeps high, very high and rising fast alerts quiet while it starts working. Extremely high always alerts."
+            "value" : "Rapid insulin you log keeps every high and rising fast alert quiet while it starts working. If glucose is still high after that, it alerts at once."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La insulina rápida que registras silencia las alertas de glucosa alta, muy alta y subida rápida mientras empieza a actuar. La glucosa extremadamente alta siempre avisa."
+            "value" : "La insulina rápida que registras silencia todas las alertas de glucosa alta y de subida rápida mientras empieza a actuar. Si después sigue alta, avisa al momento."
           }
         }
       }

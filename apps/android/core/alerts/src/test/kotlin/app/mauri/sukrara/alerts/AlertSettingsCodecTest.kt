@@ -144,7 +144,7 @@ class AlertSettingsCodecTest {
 
     @Test fun mutedByFollowsTheSpec() {
         val s = AlertSettings()
-        assertNull(s.mutedBy(AlertKind.EXTREMELY_HIGH))
+        assertEquals(TreatmentKind.RAPID, s.mutedBy(AlertKind.EXTREMELY_HIGH))
         assertNull(s.mutedBy(AlertKind.NO_DATA))
         assertEquals(TreatmentKind.CARBS, s.mutedBy(AlertKind.VERY_LOW))
         assertEquals(TreatmentKind.RAPID, s.mutedBy(AlertKind.RISING_FAST))

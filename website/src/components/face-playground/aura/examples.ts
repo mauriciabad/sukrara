@@ -86,7 +86,7 @@ const GROUPS: Group[] = [
 				},
 			},
 			{ case: 'alerts-very-high', title: L('Very high', 'Muy alta'), note: L('Further up the rail, in its own colour.', 'Más arriba en el riel, en su propio color.') },
-			{ case: 'alerts-extremely-high', title: L('Extremely high', 'Extremadamente alta'), note: L('From 300; a treatment never quiets it.', 'Desde 300; un tratamiento nunca la calla.') },
+			{ case: 'alerts-extremely-high', title: L('Extremely high', 'Extremadamente alta'), note: L('From 300, in its own colour.', 'Desde 300, en su propio color.') },
 			{ case: 'alerts-falling-fast-in-range', title: L('Falling fast, in range', 'Bajando rápido, en rango'), note: L('Nothing to do yet: the steep arrow and the trail say it.', 'Aún nada que hacer: lo dicen la flecha empinada y la estela.') },
 		],
 	},

@@ -40,7 +40,7 @@ private struct Scene {
 
 /// The alert decision the layout scenes are drawn with: the alert engine's default rules (contracts/alerts/SPEC.md §3:
 /// very low at or below 55, low below 70, high 180, very high 250, extremely high 300; carbs quiet lows 15 min, rapid insulin quiets
-/// highs 60 min, never extremely high), as Android does for these fixtures.
+/// every high 60 min), as Android does for these fixtures.
 enum DefaultAlertRules {
     private static let levels: [(kind: String, side: AlertStatus.Side, low: Bool, mgdl: Double)] = [
         ("very_low", .low, true, 55), ("extremely_high", .high, false, 300), ("very_high", .high, false, 250),
@@ -68,7 +68,7 @@ enum DefaultAlertRules {
                 $0.kind == "low" ? r.v < $0.mgdl : $0.low ? r.v <= $0.mgdl : r.v >= $0.mgdl
             })
         else { return .none }
-        let by = level.kind == "extremely_high" ? nil : (level.side == .low ? "carbs" : "rapid")
+        let by = level.side == .low ? "carbs" : "rapid"
         let cover = marks.filter { $0.k == by && $0.t <= now }
             .compactMap { m in muteEnd(m).map { (m, $0) } }
             .filter { $0.1 > now }

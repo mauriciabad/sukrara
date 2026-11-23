@@ -10,7 +10,7 @@ One rule set for **Sukrara for Android** (wearer + follower) and **Sukrara for M
 | `low` | `sgv < mgdl` (and not very low) | on | 70 mg/dL | 5 min | *lost a life*: short, descending |
 | `high` | `sgv ≥ mgdl` (and not very high) | on | 180 mg/dL | 15 min | *final lap*: short "speed up" jingle (frequent → brief) |
 | `very_high` | `sgv ≥ mgdl` (and not extremely high) | on | 250 mg/dL | 10 min | *boss incoming*: a bit longer than high |
-| `extremely_high` | `sgv ≥ mgdl` | on | 300 mg/dL | 5 min, alarm volume | *final boss*: the most insistent high, never muted |
+| `extremely_high` | `sgv ≥ mgdl` | on | 300 mg/dL | 5 min, alarm volume | *final boss*: the most insistent high |
 | `falling_fast` | `held ≤ −rate` (*Fast alerts read the trend*, below) | off | 2.0 mg/dL/min | 30 min | quick down sweep |
 | `rising_fast` | `held ≥ +rate` | off | 2.0 mg/dL/min | 30 min | quick up sweep |
 | `no_data` | no reading for `min` minutes since the last reading, or since the reading source started when that is newer (a source that never delivers a first reading alerts too), unless the sensor has ended or is warming up (core/SensorLife; a running one clears) | on | 20 min | 60 min | *connection lost* blip |
@@ -190,8 +190,12 @@ extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.tx
 
 ## 2. Mute rules
 
-Extremely high and no data are never muted by a treatment: extremely high is the ceiling no treatment rule can
-silence. Very low is muted by carbs **on the wearer's own phone only** (2026-10-18: you ate, give it time; #2, the
+No data is never muted by a treatment. Rapid insulin quiets **every** high, extremely high too (the owner, 2026-11-23,
+after one rang 8 min after a 6.5 U dose at 300: "why would i want to get a notification of high glucose a few minutes
+after injecting insulin?! it is pointless, i already know i'm high and done something about it"; until then extremely
+high was never quieted by a treatment). Nothing is lost by it: a dose that doesn't work still alerts the moment its
+window ends (§1 "a treatment restarts the count"), and more insulin within the hour is what a high must never suggest
+(stacking, §1 "Headline"). Very low is muted by carbs **on the wearer's own phone only** (2026-10-18: you ate, give it time; #2, the
 owner's choice E: carbs can be logged from the lock screen by anyone holding the phone, so the wearer's run for the
 followers, every follower — mirroring or with its own rules — and the Mac keep alerting on a very low until the value
 is really above it; the person who ate keeps the 15-min recheck window ADA / ISPAD describe; neither Dexcom nor Libre
@@ -199,7 +203,7 @@ ever quiets urgent low because of carbs). The user's own Mute / Mute all (below)
 
 | Option | Default | Applies to | Rule |
 |---|---|---|---|
-| `muteAfterInsulin` | on, 60 min | `high`, `very_high`, `rising_fast` | A `rapid` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
+| `muteAfterInsulin` | on, 60 min | `high`, `very_high`, `extremely_high`, `rising_fast` | A `rapid` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
 | `muteAfterCarbs` | on, 15 min | `very_low` (the wearer's own phone only, #2), `low`, `falling_fast` | A `carbs` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
 | `muteFallingHigh` | on, 20 min | `high`, `very_high` | The readings show a clear fall (*Clear move in the readings*, below) and `sgv + slope × min < high.mgdl`: back below the high threshold within `min` minutes at that slope. Any alert of the side, the first too. Re-evaluated on every reading and when the newest reading gets too old for a trend (the timer wakes then). It only postpones: when it ends (the fall stalls, the readings stop, or it no longer gets back in time), an alert that came due meanwhile fires at once; it doesn't restart the count. |
 | `muteRisingLow` | on, 20 min | `low`; `very_low` (the wearer's own phone only, and never its first alert nor the escalation to it) | The low-side mirror (#193): a clear rise and `sgv + slope × min` back in range (it matches no enabled low kind: at least `low.mgdl`, or above `very_low.mgdl` when low is off) within `min` minutes. Low: any alert, the first too (a dip that is already rebounding). Very low: only once a very low has alerted in the episode, so the first very low and low → very low alert at once; it holds its repeats and the alert at the end of a mute or treatment window. Never depends on treatments. Re-evaluated and ended like the falling one: the moment the rise stalls (flat or falling), the readings stop or it no longer gets back in time, a low that came due meanwhile alerts at once; it doesn't restart the count. Off → every low repeats as without it. |
@@ -291,8 +295,7 @@ low would be muted, and we don't want that … I don't want muting to stop when 
 - Mute and Remind less act on **one side**: lows (low and very low), highs (high, very high, extremely high), falling fast,
   rising fast, no data. A high's Mute can never quiet a low, and vice versa.
 - They cover **every kind of the side**, very low and extremely high included (the user's explicit decision, round
-  f30; before, the notification never muted those two). Treatment mutes are unchanged: rapid insulin never quiets
-  extremely high.
+  f30; before, the notification never muted those two).
 - They don't end with the episode. A Mute ends at its time; Mute and Remind less both end once the side is **back by the
   margin**: the reading moved `backMgdl` further out still matches no enabled kind of the side (§1 "Back by the
   margin": lows from the low threshold + `backMgdl`, 80 at the defaults, or more than very low's + `backMgdl` when low

@@ -347,7 +347,7 @@ enum QuietRuleKind: String, CaseIterable, Identifiable {
         switch self {
         case .afterInsulin:
             L10n.t(
-                "Rapid insulin you log keeps high, very high and rising fast alerts quiet while it starts working. Extremely high always alerts."
+                "Rapid insulin you log keeps every high and rising fast alert quiet while it starts working. If glucose is still high after that, it alerts at once."
             )
         case .afterCarbs:
             L10n.t(

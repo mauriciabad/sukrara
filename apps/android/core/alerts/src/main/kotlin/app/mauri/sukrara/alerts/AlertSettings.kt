@@ -145,11 +145,11 @@ data class AlertSettings(
 
     /**
      * The treatment whose window quiets [kind] now, or null: its rule is off, or [kind] is never quieted by a
-     * treatment (extremely high, no data).
+     * treatment (no data; very low on a follower). Rapid insulin quiets every high, extremely high too (the owner,
+     * 2026-11-23: an alarm minutes after the dose is pointless; its window's end still alerts).
      */
     fun mutedBy(kind: AlertKind): TreatmentKind? =
         when {
-            kind == AlertKind.EXTREMELY_HIGH -> null
             kind == AlertKind.VERY_LOW && !wearersOwn -> null
             kind.answeredBy == TreatmentKind.CARBS -> TreatmentKind.CARBS.takeIf { afterCarbs.on }
             kind.answeredBy == TreatmentKind.RAPID -> TreatmentKind.RAPID.takeIf { afterInsulin.on }

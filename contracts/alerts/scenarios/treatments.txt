@@ -62,13 +62,26 @@ scenario Insulin quiets highs for 60 min; the alert never suggests more insulin
 145              => High glucose · still high after more insulin
 146
 
-scenario Extremely high is never quiet, even right after insulin
+scenario Insulin quiets extremely high too: no alarm minutes after the dose, at once if still there when it ends  # the owner, 2026-11-23
+ 0  glucose 300  => Extremely high glucose
+ 1  insulin 6    => clear extremely_high
+ 2  glucose 299                             # very high: quiet (insulin)
+ 8  glucose 300                             # extremely high again 7 min after the dose: quiet too (rang before)
+13                                          # would have been the repeat
+20  glucose 320                             # still climbing: the dose needs time
+61               => Extremely high glucose · still high after insulin
+66               => Extremely high glucose · still high after insulin
+67
+
+scenario Insulin before the climb: very high → extremely high stays quiet until the window ends
  0  glucose 260  => Very high glucose
  1  insulin 4    => clear very_high
- 2  glucose 300  => Extremely high glucose · still high after insulin
- 3  glucose 290  => clear extremely_high    # very high again: quiet (insulin)
- 7  glucose 310  => Extremely high glucose · still high after insulin
- 8
+ 2  glucose 300                             # extremely high: quiet (insulin)
+ 3  glucose 290                             # very high again
+ 7  glucose 310                             # quiet
+61               => Extremely high glucose · still high after insulin
+66               => Extremely high glucose · still high after insulin
+67
 
 scenario Carbs don't quiet highs
  0  glucose 200, carbs 10  => High glucose

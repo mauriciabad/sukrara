@@ -23,15 +23,14 @@ import Testing
         }
     }
 
-    @Test func noTreatmentEverQuietsExtremelyHighOrNoData() {
+    @Test func insulinQuietsExtremelyHighNothingQuietsNoData() {
         let s = AlertSettings()
-        #expect(s.quietedBy(.extremelyHigh) == nil)
+        #expect(s.quietedBy(.extremelyHigh) == .rapidInsulin)
         #expect(s.quietedBy(.noData) == nil)
         var e = AlertEngine(context: AlertContext(treatments: [AlertTreatment(kind: .rapidInsulin, at: at(0))]))
         #expect(
-            kinds(e.handle(.reading(GlucoseSample(at: at(1), mgdl: 320, rate: 0)), at: at(1))) == [
-                "fire extremely_high"
-            ])
+            !kinds(e.handle(.reading(GlucoseSample(at: at(1), mgdl: 320, rate: 0)), at: at(1))).contains(
+                "fire extremely_high"))
     }
 
     @Test func scheduleIsAlwaysTheLastEffect() {

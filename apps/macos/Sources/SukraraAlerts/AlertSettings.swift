@@ -212,9 +212,10 @@ public struct AlertSettings: Equatable, Sendable {
     }
 
     /// The treatment whose quiet window covers `kind`, or nil: the rule is off, or `kind` is never quieted by a
-    /// treatment (extremely high, no data).
+    /// treatment (no data; very low on a follower). Rapid insulin quiets every high, extremely high too (the owner,
+    /// 2026-11-23: an alarm minutes after the dose is pointless; its window's end still alerts).
     public func quietedBy(_ kind: AlertKind) -> TreatmentKind? {
-        guard kind != .extremelyHigh, kind != .veryLow || wearersOwn, let t = kind.treatment else {
+        guard kind != .veryLow || wearersOwn, let t = kind.treatment else {
             return nil
         }
         return quietRule(t).on ? t : nil
