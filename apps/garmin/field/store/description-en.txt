@@ -1,4 +1,4 @@
-Sukrara Glucose shows your glucose during an activity, on any data screen and in any size of slot, and saves it with the activity so Garmin Connect charts it beside your heart rate and pace. It is part of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+Sukrara Glucose shows your glucose during an activity, on any data screen and in any size of slot, and saves it with the activity so Garmin Connect charts it beside your heart rate and pace. Each reading goes straight from Sukrara on your phone to your watch as it arrives, with no cloud and no internet. It is part of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
 
 What you need
 • The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone, with you during the activity. Sukrara sends each reading to the field through Garmin Connect.

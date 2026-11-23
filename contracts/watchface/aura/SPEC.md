@@ -805,8 +805,9 @@ sizes or states: `node tools/watchface/build.mjs --case <id> --bezel --size <px>
 `cases.json`'s `store` and `cases`). The bezel is a drawing of the owner's watch, GARMIN print included; check
 Garmin's marketing guidelines before using it on the store or the website, or render without it (`bezel: false`) and
 place the screen on Garmin's official device image.
-The Connect IQ store's icon, hero and screens are bezel-less, in `docs/img/aura/store/ciq/`
-(`node assets/brand/sukrara/connectiq/render.mjs`; the listing text: docs/20-publishing.md › Connect IQ store).
+The Connect IQ store's hero and screens show the screen in a watch of our own (no marks; not this bezel), the icon the
+bare screen, in `docs/img/aura/store/ciq/` (`node assets/brand/sukrara/connectiq/render.mjs`; the listing text:
+docs/20-publishing.md › Connect IQ store).
 
 **Descriptions** (store alt text, the website, any accessible label the face gets): Sukrara's spoken sentence for the
 card ([`contracts/graph/spoken/card.json`](../../graph/spoken/card.json)), e.g. "112 milligrams per decilitre,

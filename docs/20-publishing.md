@@ -1447,7 +1447,9 @@ Garmin publishes an upload API, that step becomes a call like `play` and `appsto
 | Updates | Same key forever ("Signature check failed" otherwise), same app id ("App-id deviates"), a higher version | [[C15]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/402228/developer-key-lost), [[C25]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/443221/two-apps-stuck-in-pending-since-aug-31-replacement-upload-rejected-with-a-misleading-manifest-id-error/2059294) |
 | Store icon | 500 × 500, sRGB, 10 px margin, a solid background (not black, not transparent), no text, no Garmin branding; for a watch face "a preview of the watch face often works best". ≤ 300 KB (forum, not documented) | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/), [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations) |
 | Hero image | 1440 × 720, one per language when it has text; the featured carousel uses it (name + tagline); ≤ 2 MB (forum) | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/), [[C28]](https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/we-want-you-to-feel-seen), [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations) |
-| Screenshots | No documented size; others upload the device's resolution (390 × 390 here); ≤ 150 KB each (forum) | [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations), [[C29]](https://github.com/EnO33/foulee/issues/468) |
+| Screenshots | No documented size; ≤ 150 KB each (forum). **One set for every language**: the store's app record holds `screenshotFileIds` once and a `heroImageFileId` per locale (a listing in 28 languages has one set of 5), so words in a screenshot are English. The web store shows them 180 px high in their own aspect (500 × 500 and 1000 × 500 are common; a 2022 thread saw non-square ones squashed, no longer so) | [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations), [[C29]](https://github.com/EnO33/foulee/issues/468), [[C41]](https://apps.garmin.com/en-US/apps/7444d838-74cd-4fef-af80-d82c2e306f9e), [[C42]](https://forums.garmin.com/developer/connect-iq/f/discussion/289275/how-to-take-screenshots-with-watch-frame-for-the-store) |
+| What screenshots show (2026-11-23) | Nearly every popular listing shows the screen **in a watch**, mostly Garmin's own product renders (bezel with GARMIN, which Sukrara may not use): komoot, Wikiloc, Race Screen, Dozen Run, Helix, GraVision, Black Grid, Futura; the forum asks for screenshots "with the watch frame" and tools exist only for that. Popular faces add **a picture with every part named** (the watch in the middle, names left and right with lines: Helix, GraVision, Black Grid, Running Data Field) and a row of variants; CGM listings mix bare captures, named parts (AndroidAPS) and lifestyle photos | [[C42]](https://forums.garmin.com/developer/connect-iq/f/discussion/289275/how-to-take-screenshots-with-watch-frame-for-the-store), [[C43]](https://apps.garmin.com/en-US/apps/42c7615d-5dc8-46e0-8945-85085bf23ae9), [[C44]](https://apps.garmin.com/en-US/apps/c823674b-3a55-46b8-b352-c0a1a301d9cd), [[C45]](https://apps.garmin.com/en-US/apps/6a30651b-ca67-41a5-96dc-60634983fc93), [[C46]](https://apps.garmin.com/en-US/apps/3d163641-8b13-456e-84c3-470ecd781fb1) |
+| Kinds of app | The store labels each listing above its title: WATCH FACE, DEVICE APP, DATA FIELD (in English on the Spanish store too); its filter adds Widget and Music. Garmin's manuals: *Watch Faces*, *Device Apps* ("such as glances"), *Data Fields*; the developer docs add *Glances* and *Complications*. Spanish (Garmin's store home in Spanish, `apps.garmin.com/es-ES`, and its manuals): *pantallas de reloj*, *aplicaciones*, *vistazos* (*widgets en un vistazo*), *campos de datos* | [[C45]](https://apps.garmin.com/en-US/apps/6a30651b-ca67-41a5-96dc-60634983fc93), [[C47]](https://developer.garmin.com/connect-iq/articles/connect-iq-basics/App_Types.html), [[C48]](https://www8.garmin.com/manuals/webhelp/GUID-0221611A-992D-495E-8DED-1DD448F7A066/EN-US/GUID-C3289B5E-1A70-4BB2-A7F0-9B16CF60D75D.html), [[C49]](https://www8.garmin.com/manuals/webhelp/GUID-C001C335-A8EC-4A41-AB0E-BAC434259F92/ES-XM/GUID-C3289B5E-1A70-4BB2-A7F0-9B16CF60D75D.html) |
 | Description | Plain text, no markdown, ≤ 4000 characters, checked only after the CAPTCHA (count it first) | [[C30]](https://forums.garmin.com/developer/connect-iq/f/discussion/7753/ciq-store-doesn-t-enforce-4000-char-limit-while-typing-only-after-captcha) |
 | What a description must say | Every feature, requirement and dependency ("if the app's core features do not work without …, you must disclose that"), the compatible devices, no Garmin partnership or affiliation claim, whether it needs payment | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §4 |
 | Medical | An app for "diagnosis, cure, mitigation, treatment or prevention" needs regulatory clearance; otherwise the description, features and functionality must not indicate it, "informational purposes only". Also §1b: nothing that creates a false sense of security | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §1b–c, [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html) |
@@ -1465,8 +1467,8 @@ not for insulin dosing) [[C37]](https://apps.garmin.com/en-US/apps/b309a480-c7f4
 **What follows for Sukrara Aura.** The listing follows the [Mac App Store listing](#mac-app-store-the-listing-entered-2026-11-11)
 and the Play one: no accuracy claim, no dosing words, the not-a-medical-device paragraph, the owner's own-risk line,
 not affiliated with Garmin or any sensor maker. *Garmin Connect* is named once, as the requirement the guidelines ask
-to disclose; never "Garmin" in the title, icon or images. The images use no bezel (the reference bezel prints GARMIN)
-and no *Carbs* / *Insulin* pill (the pill stays in the description as "the state of Sukrara's alerts"). The
+to disclose; never "Garmin" in the title, icon or images. The images show the screens in a watch of our own (the
+reference bezel prints GARMIN) and no *Carbs* / *Insulin* pill (the pill stays in the description as "the state of Sukrara's alerts"). The
 Communications permission is explained in the description, since the store words it as the internet while the face
 only reaches Sukrara on the same phone.
 
@@ -1496,27 +1498,41 @@ in the title, each image at its size and weight.
 | Title (en / es) | Sukrara Aura (the manifest's `AppName`) | Sukrara (the `AppName`) | Sukrara Glucose Data Field / Sukrara Glucosa: campo de datos (searchable; on the watch, its `AppName`, *Sukrara Glucose* / *Sukrara Glucosa*: the owner, 2026-11-23) |
 | Images | [`docs/img/aura/store/ciq/`](img/aura/store/ciq/) | [`docs/img/app/store/ciq/`](img/app/store/ciq/) | [`docs/img/field/store/ciq/`](img/field/store/ciq/) |
 | Icon (500 × 500) | the default face | Sukrara's glyph on the brand gradient | the same as the app (one brand identity) |
-| Hero (1440 × 720, en, es) | the face, *Your glucose on your wrist* | page 1 and a face with the complications, *Your glucose on your wrist · Log insulin and carbs* | the field on a run's data screen with its alert, *Your glucose during your workout · Saved with the activity* |
-| Screenshots | 10 at 390 × 390: the default face, sparkline, four dials, muted, hiking fields, always-on, night | 12 at 454 × 454 (fēnix 8 47 mm), one MIP 260 and one Venu Sq 2: glance, page 1, your numbers, complications, the list, amount, hold to log, logged, an alert, an old reading | 7: on a data screen, whole, half, a low in a quarter, its alert, an old reading, MIP |
+| Hero (1440 × 720, en, es) | *Watch face* over the title; the face high and rising steeply (the aura spreads), *Your glucose on your wrist*, *Straight from your phone, no cloud*, previews of the five dials that follow the glucose (not black nor the map) | *Device app · Glance · Complications · Alerts*; page 1 with the report (your numbers) in front, *Your glucose on your wrist · Log insulin and carbs*, *no cloud* | *Data field*; the field on a run's data screen with its own alert in front, *Your glucose during your workout · Saved with the activity*, *no cloud* |
+| Screenshots | 10: the parts named, values (in range, high, low, old), no cloud, the face, four dials, your fields, always-on / night / private | 10: page 1 and the glance with their parts named, no cloud, your numbers, complications named, logging in four steps, an alert (how it arrives), variants (in range, high, old, new sensor), mute, round AMOLED / MIP / square | 5: on a data screen with its parts named, whole / half / small slot, its own alert, no cloud, old reading and MIP |
 | Category | Watch face (the type) | the closest to Health & Fitness the form offers | the same |
 | Privacy / support | /privacy/ (es /es/privacy/) / /garmin/aura/ | /privacy/ / /garmin/ | the same |
 | Price | Free | Free | Free |
 
 The images come from [`assets/brand/sukrara/connectiq/render.mjs`](../assets/brand/sukrara/connectiq/render.mjs)
 (`node assets/brand/sukrara/connectiq/render.mjs [aura|app|field]`): the reference renderers with synthetic data, no
-bezel, no Carbs / Insulin pill. Run it again after a screen's design changes, look at every picture, commit them with
-the change. The screens are in English (the reference renderer draws English); the heroes have a Spanish version.
+Carbs / Insulin pill. Decided 2026-11-23 from the owner's review and the research above: every screen **in a watch of
+our own** (a graphite case, a plain bezel without marks or numbers, five buttons, a strap; the Venu Sq 2's square),
+since listings show watches and Garmin's renders print GARMIN; the first screenshot of each app **names its parts**
+(fewer and bigger than the website's tour: Aura's places come from the website's adapter, the app's and the field's
+are picked by eye in `render.mjs`), then rows of **variants** with a caption each; a **no cloud** picture (sensor →
+Sukrara on the phone → the watch) and the hero's line *Straight from your phone, no cloud*; over each hero's title
+the kind of app in the store's own words. The **alert** is shown as it works (#256): the app's picture says the alert
+arrives as a notification and opening it shows this screen; only the data field's alert shows by itself. The
+screenshots are one set for all languages, so their words and the screens are English (the reference renderer draws
+English); the heroes have a Spanish version. Screenshots are 256-colour PNGs (`png8.mjs`) to stay under 150 KB. Run
+it again after a screen's design changes, look at every picture, commit them with the change; a label's line points
+at a place picked by eye, so check them after a layout change.
 
 What every text says, by the rules above:
 
 - What it does for the person, then **what you need**: Sukrara on an Android phone reading the sensor, Garmin Connect
   on the same phone, **no iPhone**; the watches (Aura's nine by name; the app's and the field's families, the store
   lists the 73).
+- **No cloud**, in the first paragraph: each reading goes straight from Sukrara on the phone to the watch as it
+  arrives, with no cloud and no internet. No timing promise (a message takes seconds, and §1b forbids a false sense of
+  security), no other app named.
 - **Not a medical device** ("does not diagnose, treat, cure or prevent any condition; it is for information only"),
   values can be wrong, late or missing, check the sensor's app or a meter, the owner's own-risk line, not affiliated
   with Garmin or any sensor maker. *Garmin Connect* only as the requirement; never Garmin in a title, icon or image.
-- **Alerts** (§1b, no false sense of security): the watch shows the alert Sukrara rings on a locked phone and doesn't
-  replace the phone's alerts; it can be late or not arrive; the watches without alerts of their own (API 5.0: the
+- **Alerts** (§1b, no false sense of security): the watch shows the alert Sukrara rings on a locked phone as Garmin's
+  notification (the bell in its colour, the value, the trend, the phone's actions; opening it shows the app's alert
+  screen, #256; only the data field shows its own alert by itself) and doesn't replace the phone's alerts; it can be late or not arrive; the watches without alerts of their own (API 5.0: the
   Venu 2 family, Venu Sq 2, D2 Air X10). Aura sounds no alerts.
 - **Logging**: "log", "records what you enter; it gives no dosing advice". No screenshot or hero shows an amount to
   take; the logged-entry screens show the person's own entry.

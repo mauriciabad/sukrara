@@ -1,4 +1,4 @@
-Sukrara puts your glucose in your watch's glance list and on watch faces, with its chart and your numbers a press away, and lets you log insulin and carbs from the wrist. It is the watch app of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+Sukrara puts your glucose in your watch's glance list and on watch faces, with its chart and your numbers a press away, and lets you log insulin and carbs from the wrist. Each reading goes straight from Sukrara on your phone to your watch as it arrives, with no cloud and no internet. It is the watch app of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
 
 What you need
 • The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone.
@@ -19,7 +19,7 @@ Log from your wrist
 • It records what you enter; it gives no dosing advice.
 
 Alerts and mute
-• When Sukrara's alert rings on your phone while the phone is locked, the watch shows it too, with the phone's actions: log a treatment, remind less, mute. With the phone in your hand only the phone alerts. The watch does not replace the phone's alerts: keep them on. Needs Connect IQ 5.1 or newer (not the Venu 2 family, Venu Sq 2 and D2 Air X10).
+• When Sukrara's alert rings on your phone while the phone is locked, the watch shows it as a notification: the bell in the alert's colour, the value, the trend and the time, with the phone's actions (log a treatment, remind less, mute). Open it for Sukrara's alert screen. With the phone in your hand only the phone alerts. The watch does not replace the phone's alerts: keep them on. Needs Connect IQ 5.1 or newer (not the Venu 2 family, Venu Sq 2 and D2 Air X10).
 • Mute Sukrara's alerts for 15 minutes to 2 hours, or until you unmute, with Undo.
 
 Complications

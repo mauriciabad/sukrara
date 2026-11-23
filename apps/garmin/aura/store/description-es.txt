@@ -1,4 +1,4 @@
-Sukrara Aura muestra tu glucosa junto a la hora: el valor en el color de su rango, las últimas horas como un minigráfico o la flecha de tendencia, y hace cuánto se leyó. La esfera, el aura, se concentra en tu nivel y se extiende cuanto más te alejas del rango. Es una esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
+Sukrara Aura muestra tu glucosa junto a la hora: el valor en el color de su rango, las últimas horas como un minigráfico o la flecha de tendencia, y hace cuánto se leyó. Cada lectura va directa de Sukrara en tu móvil a tu reloj en cuanto llega, sin nube y sin internet. La esfera, el aura, se concentra en tu nivel y se extiende cuanto más te alejas del rango. Es una esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
 
 Qué necesitas
 • La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil. Sukrara envía cada lectura a la esfera a través de Garmin Connect.
