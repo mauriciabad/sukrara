@@ -1,0 +1,29 @@
+Sukrara Glucose shows your glucose during an activity, on any data screen and in any size of slot, and saves it with the activity so Garmin Connect charts it beside your heart rate and pace. It is part of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+
+What you need
+• The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone, with you during the activity. Sukrara sends each reading to the field through Garmin Connect.
+• iPhone is not supported.
+• Until Sukrara on your phone has sent anything, the field says "Waiting for phone".
+
+During the activity
+• Add it to a data screen in the activity's settings › Data Screens: it is Sukrara Glucose in the Connect IQ list.
+• A whole or half screen: the value with its line of the last hours and your limits marked. A small slot: the value and its trend arrow.
+• A low turns the slot its colour. A late reading shows its time; an old one is struck through and grey, never shown as current.
+• An optional alert: when Sukrara's alert rings on your phone while the phone is locked, the field shows a full-page alert. Turn it on in the activity's settings › Alerts › Connect IQ. It shows the phone's alerts and does not replace them: keep the phone's alerts on.
+
+In the activity
+• Your glucose is saved with the activity while the reading is fresh, so Garmin Connect charts it beside your other data. The field's setting Record glucose turns it off.
+
+Watches
+Every watch with Connect IQ 5 or newer that this page lists: fēnix, epix, enduro, Forerunner, Venu, vívoactive, Instinct AMOLED, MARQ, Descent, Approach and D2 models.
+
+Permissions and privacy
+The field talks only to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes it asks Sukrara on the same phone for the latest one. That is the Communications permission, used in the background: nothing goes to the internet. The activity data permission saves your glucose in the activity, which your watch syncs to your Garmin account with the rest of the activity; the alert permission shows the alert. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy/
+
+Free, with no purchases and no ads, and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
+In English and Spanish. Help and questions: https://sukrara.mauri.app/garmin/ or an issue on GitHub; I answer as time allows.
+
+Important
+Sukrara Glucose is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and an alert can be late or not arrive. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
+
+Sukrara is not affiliated with Garmin or with any sensor maker.

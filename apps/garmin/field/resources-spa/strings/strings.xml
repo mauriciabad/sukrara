@@ -3,7 +3,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Sukrara data field's words, Spanish. -->
 <strings>
-    <string id="AppName">Sukrara campo de datos</string>
+    <string id="AppName">Sukrara Glucosa</string>
     <string id="NoReadings">Sin lecturas</string>
     <string id="Setup1">Esperando</string>
     <string id="Setup2">al móvil</string>

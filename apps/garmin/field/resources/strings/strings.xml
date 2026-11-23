@@ -3,7 +3,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Sukrara data field's words, English (resources-spa: Spanish); the design's (contracts/watchface/app/SPEC.md §9). -->
 <strings>
-    <string id="AppName">Sukrara data field</string>
+    <string id="AppName">Sukrara Glucose</string>
     <string id="NoReadings">No readings</string>
     <string id="Setup1">Waiting</string>
     <string id="Setup2">for phone</string>

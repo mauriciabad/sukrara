@@ -1,0 +1,15 @@
+{
+  "about": "Sukrara's (the watch app's) Connect IQ store listing (docs/20-publishing.md › Connect IQ store: the listings). The texts are description-<lang>.txt (plain text, at most 4000 characters; tools/release/test_release.py counts them in UTF-8 bytes); the images are made by assets/brand/sukrara/connectiq/render.mjs into `images`: icon-500.png, hero-<lang>.png (the title and `tagline`), screen-<id>.png for each of `screenshots`, in this order. release.py's garmin step prints it for the upload.",
+  "title": { "en": "Sukrara", "es": "Sukrara" },
+  "tagline": {
+    "en": ["Your glucose on your wrist", "Log insulin and carbs"],
+    "es": ["Tu glucosa en la muñeca", "Registra insulina e hidratos"]
+  },
+  "category": "Health & Fitness, or the closest the form offers",
+  "images": "docs/img/app/store/ciq",
+  "screenshots": ["glance", "app", "app-numbers", "complications", "list", "log-amount", "log-hold", "log-done",
+    "alert-low", "app-old", "app-mip", "app-square"],
+  "privacy": { "en": "https://sukrara.mauri.app/privacy/", "es": "https://sukrara.mauri.app/es/privacy/" },
+  "support": { "en": "https://sukrara.mauri.app/garmin/", "es": "https://sukrara.mauri.app/es/garmin/" },
+  "price": "Free"
+}

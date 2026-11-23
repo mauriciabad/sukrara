@@ -1378,7 +1378,7 @@ go to the **Connect IQ Store**, each its own listing:
   phone's local server) is shown on the store page.
 - Effort: small once the app exists (screenshots for 2–3 device sizes, description, privacy link).
 
-### Connect IQ: CI and publishing (2026-11-16, Sukrara Aura)
+### Connect IQ: CI and publishing (2026-11-16; every app 2026-11-23)
 
 The owner: "Would be nice if we configure the ci as well as automatic deployments/publishing (or at least leave it
 ready to complete later)". Built: Checks' `garmin` job and release.py's Garmin path; the setup and the owner's steps
@@ -1428,14 +1428,16 @@ rejected. *Beta apps* (a separate app id, only the developer's account sees it, 
 the same way, so they don't automate anything either; useful only to try the face's phone settings before a public
 version.
 
-**The flow.** Every pushed change: the `garmin` job builds and tests the face. A release (`release.py`, once
-`tools/release/garmin-key.sha256` exists): the `version` step writes the version into the manifest; the gate builds
-the store package and every device's sideload `.prg` with the store key (debug code compiled out); `github` puts them
-on the normal GitHub release (the `.prg` for people who sideload); the `garmin` step prints the upload for the owner:
-the file, the version, the What's New text and the dashboard link (about two minutes), and `summary` lists it as
-the one manual step. If Garmin publishes an upload API, that step becomes a call like `play` and `appstore`.
+**The flow.** Every pushed change: the `garmin` job builds and tests the apps and the barrel. A release
+(`release.py`, once `tools/release/garmin-key.sha256` exists, which it does from 0.17.0): the `version` step writes
+the version into every manifest; the preconditions check each app's listing; the gate builds, per app, the store
+package and a zip of every watch's sideload `.prg` with the store key (debug code compiled out), and the SukraraFace
+barrel; `github` puts them on the normal GitHub release (the zips for people who sideload, the barrel for other
+faces' developers); the `garmin` step prints each upload for the owner: the file, the version, the listing (first
+upload) or the What's New (later ones) and the dashboard link, and `summary` lists them as the manual steps. If
+Garmin publishes an upload API, that step becomes a call like `play` and `appstore`.
 
-### Connect IQ store: what it asks and checks (research 2026-11-16, Sukrara Aura)
+### Connect IQ store: what it asks and checks (research 2026-11-16, 2026-11-23)
 
 | Topic | What the store wants | Source |
 |---|---|---|
@@ -1468,364 +1470,115 @@ and no *Carbs* / *Insulin* pill (the pill stays in the description as "the state
 Communications permission is explained in the description, since the store words it as the internet while the face
 only reaches Sukrara on the same phone.
 
-### Connect IQ store: the listing (drafts, en + es)
+**More of what it asks** (research 2026-11-23, for the watch app, the data field and the SukraraFace barrel):
 
-Nothing entered yet: Step 2 opens only after an upload is verified. The owner's display name is set (`mauri.app`).
-
-| Field | en | es |
+| Topic | What the store wants | Source |
 |---|---|---|
-| Title | `Sukrara Aura` (the manifest's `AppName`, the same in both) | `Sukrara Aura` |
-| Store icon | `docs/img/aura/store/ciq/icon-500.png` (500 × 500, 49 KB) | the same |
-| Hero | `docs/img/aura/store/ciq/hero-en.png` (1440 × 720, 327 KB): *Your glucose on your wrist* / *From Sukrara on your phone* | `hero-es.png`: *Tu glucosa en la muñeca* / *Desde Sukrara en tu móvil* |
-| Screenshots, in order | `docs/img/aura/store/ciq/screen-*.png` (390 × 390, ≤ 70 KB): hero, sparkline, contours, glow, lasers, waterline, muted, hiking fields, always-on, night | the same (no Spanish one without a pill yet) |
-| Category | Watch face (the manifest's type); any other category the form offers: Health / Medical, whichever is closest | the same |
-| Privacy policy / support | https://sukrara.mauri.app/privacy / https://sukrara.mauri.app | the same |
-| Price | Free | |
-
-The images are made by [`assets/brand/sukrara/connectiq/render.mjs`](../assets/brand/sukrara/connectiq/render.mjs)
-from the reference renderer with synthetic data (cases.json): `node assets/brand/sukrara/connectiq/render.mjs`, and
-again once the face's final look is approved (the digit spacing, defaults and sparkline were still changing on
-2026-11-16).
-
-**Description, en** (3117 characters):
-
-```text
-Sukrara Aura shows your glucose on your watch face, next to the time: the value in its range colour, the last hours as a line or the trend arrow, and how long ago it was read. It is a watch face of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
-
-What you need
-• The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone. Sukrara sends every reading to the watch face through Garmin Connect.
-• iPhone is not supported.
-• Without Sukrara on your phone the face shows the time and your watch's own data, and "No readings".
-
-At a glance
-• Your glucose in your range's colours, with up to the last 3 hours as a sparkline on a fixed scale, or Sukrara's trend arrow.
-• A level rail on the right with your own limits marked, and the last 30 minutes as a fading trail.
-• The reading ages on the watch's own clock: its time appears when it is late, then it is struck through and grey, then "No reading since" and the time. An old value never looks current, even with the phone out of reach.
-• The state of Sukrara's alerts on your phone (needs you, handled, muted and for how long) and of your sensor (warming up, ending, ended).
-• A background, the aura, that gathers at your level and spreads the further out of range you are: grain, contours, waterline, lasers or glow; or a map, or plain black.
-• Always-on and night modes that stay dim.
-• Private: hides the number until you touch and hold the screen.
-
-Fields
-• One field on top and two along the bottom: weather, steps, sunset, Body Battery, altitude, notifications, today's time in range, a second time zone, floors, heart rate, or the last treatment you logged in Sukrara.
-• The watch's battery as a rail, in days, percent or both.
-
-Settings
-In the Connect IQ app, or on the watch (hold MENU on the face › Watch face › Customize): dial, halo, trend (arrow or sparkline), seconds sweep, green in range, the three fields, battery label, private and second time zone.
-
-Watches
-Round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm.
-
-Privacy
-The face only talks to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes the face asks Sukrara on the same phone for the latest one (that is the Communications permission; nothing goes to the internet). Your watch's data (heart rate, steps, Body Battery, sleep times) stays on the watch. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy
-
-Free and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
-In English and Spanish. Help and feedback: https://sukrara.mauri.app
-
-Important
-Sukrara Aura is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and the watch face sounds no alerts. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
-
-Sukrara is not affiliated with Garmin or with any sensor maker.
-```
-
-**Description, es** (3308 characters):
-
-```text
-Sukrara Aura muestra tu glucosa en la esfera del reloj, junto a la hora: el valor en el color de su rango, las últimas horas como una línea o la flecha de tendencia, y hace cuánto se leyó. Es una esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
-
-Qué necesitas
-• La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil. Sukrara envía cada lectura a la esfera a través de Garmin Connect.
-• No funciona con iPhone.
-• Sin Sukrara en el móvil, la esfera muestra la hora y los datos del propio reloj, y «Sin lecturas».
-
-De un vistazo
-• Tu glucosa en los colores de tu rango, con hasta las últimas 3 horas como un minigráfico a escala fija, o la flecha de tendencia de Sukrara.
-• Una barra de nivel a la derecha con tus propios límites marcados y los últimos 30 minutos como un rastro que se desvanece.
-• La lectura envejece con la hora del propio reloj: cuando llega tarde aparece su hora, luego se tacha y se vuelve gris, y luego «Sin lectura desde» y la hora. Un valor antiguo nunca parece actual, aunque el móvil esté lejos.
-• El estado de las alertas de Sukrara en tu móvil (te necesita, atendida, silenciada y hasta cuándo) y el de tu sensor (calentando, acabándose, terminado).
-• Un fondo, el aura, que se concentra en tu nivel y se extiende cuanto más te alejas del rango: grano, curvas, línea de agua, láseres o brillo; o un mapa, o negro.
-• Modos siempre encendido y noche que se mantienen tenues.
-• Privado: oculta el número hasta que mantienes pulsada la pantalla.
-
-Datos
-• Un dato arriba y dos abajo: tiempo, pasos, puesta de sol, Body Battery, altitud, notificaciones, tiempo en rango de hoy, una segunda zona horaria, pisos, frecuencia cardiaca o el último tratamiento que apuntaste en Sukrara.
-• La batería del reloj como una barra, en días, porcentaje o ambos.
-
-Ajustes
-En la app Connect IQ, o en el reloj (mantén MENU en la esfera › Esfera del reloj › Personalizar): esfera, halo, tendencia (flecha o minigráfico), barrido de segundos, verde en rango, los tres datos, texto de batería, privado y segunda zona horaria.
-
-Relojes
-AMOLED redonda de 390 × 390: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) y MARQ Aviator, Approach S70 42 mm.
-
-Privacidad
-La esfera solo habla con Sukrara en tu móvil: las lecturas llegan a través de Garmin Connect, y cada 5 minutos la esfera pide la última a Sukrara en el mismo móvil (ese es el permiso de Comunicaciones; nada sale a internet). Los datos de tu reloj (frecuencia cardiaca, pasos, Body Battery, horas de sueño) se quedan en el reloj. Sin cuenta, sin analíticas, sin anuncios. Política de privacidad: https://sukrara.mauri.app/privacy
-
-Libre y gratuita (GPL-3.0): https://github.com/mauriciabad/sukrara
-En inglés y español. Ayuda y comentarios: https://sukrara.mauri.app
-
-Importante
-Sukrara Aura no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad; es solo informativa. Los valores pueden ser erróneos, llegar tarde o faltar, y la esfera no hace sonar alertas. No tomes decisiones de tratamiento basándote en ella: comprueba la app de tu sensor o un glucómetro, y pide consejo médico a tu médico o a tu equipo de diabetes. Hice Sukrara para mí y la comparto con todo el mundo; úsala bajo tu propia responsabilidad.
-
-Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
-```
-
-Before pasting, check the texts against the approved face: the setting names (`apps/garmin/aura/resources*/strings`), the
-watch's Customize path and the devices in the manifest. A new device or setting changes both texts.
-
-### Connect IQ store: Sukrara and Sukrara data field (drafts, en + es)
-
-Two more listings beside Sukrara Aura (docs/47 "Choice": a data field is its own app), each its own upload, beta id
-first (`contracts/watchface/payload/apps.json`). The rules of
-[what it asks and checks](#connect-iq-store-what-it-asks-and-checks-research-2026-11-16-sukrara-aura) and what
-followed for Aura hold for both; the new parts of these two:
-
-- **Alerts** (§1b, no false sense of security): the texts say the watch *shows the alerts Sukrara on the phone rings
-  and doesn't replace them*, that one can be late or not arrive, and which watches show none (API 5.0).
-- **Logging**: "log", "record", "entry"; "it records what you enter; it gives no dosing advice". The app's own
-  button *Treatment* is described as "log a treatment".
-- **Permissions**, each explained in the description: the app asks for Background, Communications,
-  ComplicationPublisher and Notifications; the data field for Background, Communications, FitContributor and
-  DataFieldAlert. Communications shows as the internet on the store page; both reach only Sukrara on the same phone.
-- **The activity file**: the data field's glucose goes to the person's Garmin account with the activity; the privacy
-  policy says so (Share with apps › Garmin row, 2026-11-22).
-- **Complications** are described by what they show, never by another app's name.
-
-| Field | Sukrara (watch app) | Sukrara data field |
-|---|---|---|
-| Title | `Sukrara` (en and es, the manifest's `AppName`) | `Sukrara data field` / es `Sukrara campo de datos` (the manifest's `AppName`) |
-| Store icon | 500 × 500 from Sukrara's launcher icon on a solid background, no text, no Garmin marks (to make, `assets/brand/sukrara/connectiq/`) | the same icon |
-| Hero | 1440 × 720 per language: the glance and the card; *Your glucose on your wrist* / *Log from your wrist* (es *Tu glucosa en la muñeca* / *Registra desde la muñeca*) | the field on a run's data screen; *Your glucose during your workout* (es *Tu glucosa mientras entrenas*) |
-| Screenshots, in order | From the simulator (or `tools/watchface/app.js`) with synthetic data only (the link cases), no bezel, ≤ 150 KB each, at each screen class's size once its layout is designed: the glance; the card; your numbers; the log list; the amount; hold to log; logged with Undo; an alert; muted; a face with the complications | whole page; half page; a quarter; a low; its alert |
-| Category | The closest the form offers to Health & Fitness (check what it lists) | the same |
-| Privacy policy | en https://sukrara.mauri.app/privacy, es https://sukrara.mauri.app/es/privacy | the same |
-| Support | https://sukrara.mauri.app/garmin (es `/es/garmin`) | the same |
-| Price | Free | Free |
-
-Before pasting, check against the builds: the setting names (`apps/garmin/{app,field}/resources*/strings`), the
-watches without alerts of their own (API 5.0 in the manifests; the store lists the devices itself), and the screens'
-words. A new device, setting or screen changes all four texts.
-
-**Sukrara, en** (3587 characters):
-
-```text
-Sukrara shows your glucose on your Garmin watch, in the glance list and on watch faces, and lets you log insulin and carbs from the wrist. It is the watch app of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
-
-What you need
-• The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone. Sukrara sends every reading to the watch through Garmin Connect.
-• iPhone is not supported.
-• Without Sukrara on your phone the app shows "Open Sukrara on the phone".
-
-Glance
-• The value, its trend arrow, your main ring (time in range, or what you chose in Sukrara) and your last treatment.
-
-App
-• The card: the value, your rings, a chart of the last hours with your ranges and treatment marks.
-• Your numbers: time in ranges, average, GMI and variability over 1, 7, 14 or 30 days, as Sukrara's glucose report shows them.
-• An old value never looks current: its time appears when it is late, then it is struck through, then "No reading since" and the time.
-
-Log from the wrist
-• Rapid insulin, long-acting insulin or carbs: pick the amount with the buttons or one of your usual amounts, hold START to log, Undo for 10 seconds. The entry goes to Sukrara's log on your phone.
-• It tells you first when you logged the same kind in the last 15 minutes.
-• With the phone out of reach the watch keeps the entry and sends it, with its own time, when the phone is back.
-• It records what you enter; it gives no dosing advice.
-
-Alerts and mute
-• When Sukrara's alert rings on your phone, the watch shows it with the phone's actions: log a treatment, remind less, mute. It shows the phone's alerts and does not replace them: keep the phone's alerts on. Needs Connect IQ 5.1 (not on the Venu 2 family, Venu Sq 2 and D2 Air X10).
-• Mute Sukrara's alerts for 15 minutes to 2 hours, or until you unmute, with Undo.
-
-Complications
-• For watch faces that take other apps' complications: glucose, glucose with its trend and limits, the last 24 hours, and Log (the time since your last treatment; hold it on a touch screen to log).
-
-Settings
-In the Connect IQ app: Sparkline on alerts, and what the Log complication shows. Everything else follows Sukrara on your phone.
-
-Watches
-Every watch with Connect IQ 5 or newer: the store lists them on this page.
-
-Privacy
-The app only talks to Sukrara on your phone: readings arrive through Garmin Connect, every 5 minutes it asks Sukrara on the same phone for the latest one, and what you log or mute goes to Sukrara on the same phone, signed with a key only Sukrara gives the watch (that is the Communications permission; nothing goes to the internet). Background keeps the glance and complications current while the app is closed, Notifications shows the alerts, ComplicationPublisher offers the complications. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy
-
-Free and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
-In English and Spanish. Help and feedback: https://sukrara.mauri.app/garmin
-
-Important
-Sukrara is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and an alert on the watch can be late or not arrive. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
-
-Sukrara is not affiliated with Garmin or with any sensor maker.
-```
-
-**Sukrara, es** (3831 characters):
-
-```text
-Sukrara muestra tu glucosa en tu reloj Garmin, en la lista de vistazos y en las esferas, y te deja registrar insulina e hidratos desde la muñeca. Es la app de reloj de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
-
-Qué necesitas
-• La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil. Sukrara envía cada lectura al reloj a través de Garmin Connect.
-• No funciona con iPhone.
-• Sin Sukrara en el móvil, la app muestra «Abre Sukrara en el móvil».
-
-Vistazo
-• El valor, su flecha de tendencia, tu anillo principal (tiempo en rango, o lo que elegiste en Sukrara) y tu último tratamiento.
-
-App
-• La tarjeta: el valor, tus anillos y una gráfica de las últimas horas con tus rangos y las marcas de tratamientos.
-• Tus números: tiempo en rangos, media, GMI y variabilidad en 1, 7, 14 o 30 días, como los muestra el informe de glucosa de Sukrara.
-• Un valor antiguo nunca parece actual: cuando llega tarde aparece su hora, luego se tacha, y luego «Sin lecturas desde» y la hora.
-
-Registra desde la muñeca
-• Insulina rápida, insulina lenta o hidratos: elige la cantidad con los botones o una de tus cantidades habituales, mantén START para registrar, Deshacer durante 10 segundos. La entrada va al registro de Sukrara en tu móvil.
-• Si ya registraste el mismo tipo en los últimos 15 minutos, te lo dice primero.
-• Con el móvil fuera de alcance, el reloj guarda la entrada y la envía, con su propia hora, cuando el móvil vuelve.
-• Registra lo que introduces; no da consejos de dosis.
-
-Alertas y silencio
-• Cuando la alerta de Sukrara suena en tu móvil, el reloj la muestra con las acciones del móvil: registrar un tratamiento, recordar menos, silenciar. Muestra las alertas del móvil y no las sustituye: deja activadas las alertas del móvil. Necesita Connect IQ 5.1 (no en la familia Venu 2, Venu Sq 2 ni D2 Air X10).
-• Silencia las alertas de Sukrara de 15 minutos a 2 horas, o hasta que las reactives, con Deshacer.
-
-Complicaciones
-• Para las esferas que admiten complicaciones de otras apps: glucosa, glucosa con su tendencia y límites, las últimas 24 horas y Registrar (el tiempo desde tu último tratamiento; mantenla pulsada en una pantalla táctil para registrar).
-
-Ajustes
-En la app Connect IQ: la minigráfica en las alertas y lo que muestra la complicación Registrar. Todo lo demás sigue a Sukrara en tu móvil.
-
-Relojes
-Cualquier reloj con Connect IQ 5 o más nuevo: la tienda los lista en esta página.
-
-Privacidad
-La app solo habla con Sukrara en tu móvil: las lecturas llegan a través de Garmin Connect, cada 5 minutos pide la última a Sukrara en el mismo móvil, y lo que registras o silencias va a Sukrara en el mismo móvil, firmado con una clave que solo Sukrara da al reloj (ese es el permiso de Comunicaciones; nada sale a internet). Segundo plano mantiene al día el vistazo y las complicaciones con la app cerrada, Notificaciones muestra las alertas y el permiso de complicaciones las ofrece. Sin cuenta, sin analíticas, sin anuncios. Política de privacidad: https://sukrara.mauri.app/es/privacy
-
-Libre y gratuita (GPL-3.0): https://github.com/mauriciabad/sukrara
-En inglés y español. Ayuda y comentarios: https://sukrara.mauri.app/es/garmin
-
-Importante
-Sukrara no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad; es solo informativa. Los valores pueden ser erróneos, llegar tarde o faltar, y una alerta en el reloj puede llegar tarde o no llegar. No tomes decisiones de tratamiento basándote en ella: comprueba la app de tu sensor o un glucómetro, y pide consejo médico a tu médico o a tu equipo de diabetes. Hice Sukrara para mí y la comparto con todo el mundo; úsala bajo tu propia responsabilidad.
-
-Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
-```
-
-**Sukrara data field, en** (2399 characters):
-
-```text
-Sukrara data field shows your glucose during an activity: the value, its recent line and trend, on any data screen. It is part of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
-
-What you need
-• The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone, with you during the activity. Sukrara sends every reading to the field through Garmin Connect.
-• iPhone is not supported.
-
-During the activity
-• A whole or half screen: the value over or beside its recent line, your limits marked. A small slot: the value and its arrow.
-• A low turns the field its colour. A late reading shows its time; an old one is struck through, never shown as current.
-• An optional alert: when Sukrara's alert rings on your phone, the field shows a full-page alert. Turn it on in the activity's settings › Alerts › Connect IQ. It shows the phone's alerts and does not replace them: keep the phone's alerts on.
-
-In the activity
-• Your glucose is saved with the activity, so Garmin Connect charts it beside your other data. Its setting Record glucose turns it off.
-
-Watches
-Every watch with Connect IQ 5 or newer: the store lists them on this page.
-
-Privacy
-The field only talks to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes it asks Sukrara on the same phone for the latest one (that is the Communications permission, with Background; nothing goes to the internet). FitContributor saves your glucose in the activity, which your watch syncs to your Garmin account with the rest of the activity; DataFieldAlert shows the alert. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy
-
-Free and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
-In English and Spanish. Help and feedback: https://sukrara.mauri.app/garmin
-
-Important
-Sukrara data field is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and an alert can be late or not arrive. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
-
-Sukrara is not affiliated with Garmin or with any sensor maker.
-```
-
-**Sukrara campo de datos, es** (2566 characters):
-
-```text
-Sukrara campo de datos muestra tu glucosa durante una actividad: el valor, su línea reciente y su tendencia, en cualquier pantalla de datos. Es parte de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
-
-Qué necesitas
-• La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil, contigo durante la actividad. Sukrara envía cada lectura al campo a través de Garmin Connect.
-• No funciona con iPhone.
-
-Durante la actividad
-• Pantalla entera o media: el valor sobre su línea reciente o junto a ella, con tus límites marcados. Un hueco pequeño: el valor y su flecha.
-• Una baja pinta el campo de su color. Una lectura que llega tarde muestra su hora; una antigua aparece tachada, nunca como actual.
-• Una alerta opcional: cuando la alerta de Sukrara suena en tu móvil, el campo muestra una alerta a pantalla completa. Actívala en los ajustes de la actividad › Alertas › Connect IQ. Muestra las alertas del móvil y no las sustituye: deja activadas las alertas del móvil.
-
-En la actividad
-• Tu glucosa se guarda con la actividad, así que Garmin Connect la dibuja junto a tus otros datos. Su ajuste Registrar la glucosa lo desactiva.
-
-Relojes
-Cualquier reloj con Connect IQ 5 o más nuevo: la tienda los lista en esta página.
-
-Privacidad
-El campo solo habla con Sukrara en tu móvil: las lecturas llegan a través de Garmin Connect, y cada 5 minutos pide la última a Sukrara en el mismo móvil (ese es el permiso de Comunicaciones, con Segundo plano; nada sale a internet). El permiso de datos de actividad guarda tu glucosa en la actividad, que tu reloj sincroniza con tu cuenta de Garmin junto con el resto de la actividad; el de alertas muestra la alerta. Sin cuenta, sin analíticas, sin anuncios. Política de privacidad: https://sukrara.mauri.app/es/privacy
-
-Libre y gratuita (GPL-3.0): https://github.com/mauriciabad/sukrara
-En inglés y español. Ayuda y comentarios: https://sukrara.mauri.app/es/garmin
-
-Importante
-Sukrara campo de datos no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad; es solo informativo. Los valores pueden ser erróneos, llegar tarde o faltar, y una alerta puede llegar tarde o no llegar. No tomes decisiones de tratamiento basándote en él: comprueba la app de tu sensor o un glucómetro, y pide consejo médico a tu médico o a tu equipo de diabetes. Hice Sukrara para mí y la comparto con todo el mundo; úsalo bajo tu propia responsabilidad.
-
-Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
-```
-
-The build and the owner's steps are Aura's (below), per app: `tools/release/garmin-release.sh app|field --beta`, then
-the public upload, each its own **Upload an App**.
+| Languages | The listing takes a description and a hero per language; Garmin recommends localizing the app, the hero and the description (at least English, Spanish, German, French, Italian, Chinese, Japanese). Sukrara has en and es | [[C28]](https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/we-want-you-to-feel-seen), [[C38]](https://forums.garmin.com/developer/connect-iq/i/bug-reports/ciq-fitcontribution-and-ciq-store-translations-are-not-displayed-on-gcm-and-gc-web) |
+| Featured | The carousel draws from the hero: the app's name, a tagline saying what it is, one image per locale; ask in the forum to be featured | [[C28]](https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/we-want-you-to-feel-seen) |
+| Icon, apps and data fields | "Focus on a consistent brand identity" (a face preview is for faces): the app and the data field both show Sukrara's glyph | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/) |
+| Payment, support | Say whether a primary feature needs payment; explain the support policy and keep to it ("Free, with no purchases and no ads"; "Help and questions: … I answer as time allows") | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §2b, §4d |
+| Devices, other systems | Disclose the supported devices accurately; no compatibility claim with a third-party system without its certification (so no sensor brand is named as compatible: "your glucose sensor") | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §4a–b |
+| Activity data | No overriding of data the watch records (speed, distance…): the data field adds its own glucose field to the activity, nothing else | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §2a |
+| Upload size | No documented limit; 5 MB and later 15 MB were refused years ago, 22 MB uploads work, around 43–46 MB time out (a new app's upload is then discarded). The watch app's `.iq` is 22 MB and the data field's 14 MB (73 watches each, 2026-11-23). If one times out: a faster connection, or a first upload with fewer watches and the rest as an update | [[C39]](https://forums.garmin.com/developer/connect-iq/i/bug-reports/bug-can-t-upload-app-above-certain-size), [[C40]](https://forums.garmin.com/developer/connect-iq/f/discussion/212864/15mb-upload-limit-for-app-iq-file) |
+| Part numbers | A store package lists one entry per part number, not per device (the MARQ (Gen 2) has two): 9 watches are 10 entries for Aura, 73 are 93 for the app and the data field | the `.iq`'s manifest, 2026-11-23 |
+
+### Connect IQ store: the listings
+
+One listing per app (docs/47 "Choice": a data field is its own app), each its own **Upload an App**. The texts and
+the list of images are files, so release.py prints them and checks them (`listing_problems`, in the preconditions and
+`test_release.py`): every field, each description within 4000 bytes in plain text, the required sentences, no Garmin
+in the title, each image at its size and weight.
+
+| | Sukrara Aura | Sukrara (watch app) | Sukrara data field |
+|---|---|---|---|
+| Listing | [`apps/garmin/aura/store/`](../apps/garmin/aura/store/) | [`apps/garmin/app/store/`](../apps/garmin/app/store/) | [`apps/garmin/field/store/`](../apps/garmin/field/store/) |
+| Title (en / es) | Sukrara Aura (the manifest's `AppName`) | Sukrara (the `AppName`) | Sukrara Glucose Data Field / Sukrara Glucosa: campo de datos (searchable; on the watch, its `AppName`, *Sukrara Glucose* / *Sukrara Glucosa*: the owner, 2026-11-23) |
+| Images | [`docs/img/aura/store/ciq/`](img/aura/store/ciq/) | [`docs/img/app/store/ciq/`](img/app/store/ciq/) | [`docs/img/field/store/ciq/`](img/field/store/ciq/) |
+| Icon (500 × 500) | the default face | Sukrara's glyph on the brand gradient | the same as the app (one brand identity) |
+| Hero (1440 × 720, en, es) | the face, *Your glucose on your wrist* | page 1 and a face with the complications, *Your glucose on your wrist · Log insulin and carbs* | the field on a run's data screen with its alert, *Your glucose during your workout · Saved with the activity* |
+| Screenshots | 10 at 390 × 390: the default face, sparkline, four dials, muted, hiking fields, always-on, night | 12 at 454 × 454 (fēnix 8 47 mm), one MIP 260 and one Venu Sq 2: glance, page 1, your numbers, complications, the list, amount, hold to log, logged, an alert, an old reading | 7: on a data screen, whole, half, a low in a quarter, its alert, an old reading, MIP |
+| Category | Watch face (the type) | the closest to Health & Fitness the form offers | the same |
+| Privacy / support | /privacy/ (es /es/privacy/) / /garmin/aura/ | /privacy/ / /garmin/ | the same |
+| Price | Free | Free | Free |
+
+The images come from [`assets/brand/sukrara/connectiq/render.mjs`](../assets/brand/sukrara/connectiq/render.mjs)
+(`node assets/brand/sukrara/connectiq/render.mjs [aura|app|field]`): the reference renderers with synthetic data, no
+bezel, no Carbs / Insulin pill. Run it again after a screen's design changes, look at every picture, commit them with
+the change. The screens are in English (the reference renderer draws English); the heroes have a Spanish version.
+
+What every text says, by the rules above:
+
+- What it does for the person, then **what you need**: Sukrara on an Android phone reading the sensor, Garmin Connect
+  on the same phone, **no iPhone**; the watches (Aura's nine by name; the app's and the field's families, the store
+  lists the 73).
+- **Not a medical device** ("does not diagnose, treat, cure or prevent any condition; it is for information only"),
+  values can be wrong, late or missing, check the sensor's app or a meter, the owner's own-risk line, not affiliated
+  with Garmin or any sensor maker. *Garmin Connect* only as the requirement; never Garmin in a title, icon or image.
+- **Alerts** (§1b, no false sense of security): the watch shows the alert Sukrara rings on a locked phone and doesn't
+  replace the phone's alerts; it can be late or not arrive; the watches without alerts of their own (API 5.0: the
+  Venu 2 family, Venu Sq 2, D2 Air X10). Aura sounds no alerts.
+- **Logging**: "log", "records what you enter; it gives no dosing advice". No screenshot or hero shows an amount to
+  take; the logged-entry screens show the person's own entry.
+- **Every permission explained**, since the store shows Communications as the internet while the apps only reach
+  Sukrara on the same phone: Aura Background, Communications, ComplicationSubscriber (the fields), UserProfile (sleep
+  and wake times for night mode); the app Background, Communications, ComplicationPublisher, Notifications; the data
+  field Background, Communications, FitContributor (glucose saved in the activity, synced to the person's Garmin
+  account: the privacy policy says so), DataFieldAlert.
+- **Complications** by what they show, never by another app's name.
+- Free, no purchases, no ads, open source; en and es; help at the website or a GitHub issue.
+
+Before an upload, check against the builds: the setting names (`apps/garmin/<app>/resources*/strings`), the watches in
+the manifests, the screens' words. A new device, setting or screen changes the texts (both languages) and, for a
+screen, the pictures.
 
 ### Connect IQ store: the build
 
-- `tools/release/garmin-release.sh aura --beta` → `apps/garmin/bin/dist/SukraraAura-beta.iq`: `build.sh aura export-beta`, the
-  face under the beta app id `635140ec-f724-44fb-bc08-976fa9111250` (fixed, so every beta upload updates the one beta
-  app), signed with the store key.
-- `tools/release/garmin-release.sh aura <version>` → `SukraraAura-<version>.iq` (the public app id) and each device's
-  `.prg`; needs `tools/release/garmin-key.sha256` (below) and the manifest at that version.
-- Every `.iq` is checked before it is kept: it unpacks (a 7-zip; `bsdtar`), carries the expected app id, version and
-  every manifest device, its `dev_key.pub` is the store key's public key, and each device's `.prg` passes
-  `verify_prg.sh` (the id, no debug code). Tried 2026-11-16 on the release Mac: both packages verified (418 KB, one
-  device). Nothing was uploaded.
+- `tools/release/garmin-release.sh <aura|app|field> <version>` → `apps/garmin/bin/dist/<Name>-<version>.iq` (the
+  public app id; `SukraraAura`, `Sukrara`, `SukraraField`) and `<Name>-<version>-sideload.zip` (one release `.prg`
+  per watch, `<Name>-<watch>.prg`, each through `verify_prg.sh`); needs `tools/release/garmin-key.sha256` and the
+  manifest at that version. `<app> --beta` → `<Name>-beta.iq` under the app's beta id (`contracts/watchface/payload/apps.json`).
+- Every `.iq` is checked before it is kept: it unpacks (a 7-zip; `bsdtar`), carries the expected app id and version,
+  its part numbers are exactly those of the manifest's devices (the SDK's `compiler.json`; one device can have
+  several), its `dev_key.pub` is the store key's public key, and each `.prg` in it passes `verify_prg.sh` (the id, no
+  debug code).
+- `tools/release/garmin-release.sh sdk` → `SukraraFace-<its version>.barrel` and `SukraraFace.barrel` (the same file;
+  the second name makes `https://github.com/mauriciabad/sukrara/releases/latest/download/SukraraFace.barrel` the
+  newest): `build.sh sdk release` for every product of `apps/garmin/sdk/manifest.xml`, checked to be the SukraraFace
+  barrel of that version. Not signed. Its version is its own (the payload's major; docs/GARMIN-FACES.md › Versions).
+- Dry run on the release Mac, 2026-11-23, version 0.16.0 (the manifests'): Aura 9 watches in 1 min (`.iq` 6.3 MB,
+  zip 5.5 MB), the app 73 in 10 min (22 MB, 14 MB), the data field 73 in 5 min (14 MB, 10 MB), the barrel in 12 s
+  (8 KB; a copy of the sample face built against it). Nothing was uploaded.
 - **The beta gets pushes like the public app** (#199): the phone pushes to every Sukrara app id Garmin Connect says is
-  installed, the beta ids included (`contracts/watchface/payload/apps.json`, `GarminApp`), and opens the 5-minute
-  fetch while a watch has any of them. The beta of Sukrara Aura, the app and the data field each have their own fixed
-  id there.
+  installed, the beta ids included, and opens the 5-minute fetch while a watch has any of them.
 - **The pin.** `tools/release/garmin-key.sha256` (the store key's public SHA-256,
-  `1e34106fdcd521d2f6676bf5b0f3d92691a8535cbe667f44064b886e7cdf111f` on 2026-11-16) is the switch that puts the face
-  in `release.py`. Commit it in the change that makes the first public upload, so that release writes the version into
-  the manifest and builds the `.iq`.
+  `1e34106fdcd521d2f6676bf5b0f3d92691a8535cbe667f44064b886e7cdf111f`) is the switch that puts the Garmin apps and the
+  barrel in `release.py`: committed 2026-11-23 for 0.17.0, the first public release of all three.
 
-### Connect IQ store: the owner's steps (beta first, then public)
+### Connect IQ store: the owner's steps
 
-Marked **[owner]**: only the owner does it. Everything else an agent can do or prepare. Nothing goes up before the
-owner approves the face on the watch.
+Marked **[owner]**: only the owner does it. The developer account is set up (`apps-developer.garmin.com`, developer
+name `mauri.app`, 2026-11-16).
 
-Beta (only the owner's account sees it, no review):
+**Each release** (`release.py`; the gate built the files, `github` put them on the release): the `garmin` step prints,
+per app, what to do at https://apps-developer.garmin.com/developer/dashboard. For an app Garmin hasn't published yet
+(its `store` is `null` in `contracts/watchface/payload/apps.json`), that is the first upload:
 
-1. **[owner]** Sign in at https://apps-developer.garmin.com/developer/dashboard (done 2026-11-16; developer name
-   `mauri.app`).
-2. An agent runs `tools/release/garmin-release.sh aura --beta` on the release Mac and re-renders the images
-   (`node assets/brand/sukrara/connectiq/render.mjs`), both from the approved `next`.
-3. **Upload an App** › *Choose file*: `apps/garmin/bin/dist/SukraraAura-beta.iq`; *App Version*: the manifest's
-   (`0.1.0` today); tick **Beta App** (*This app is for testing purposes only*).
-4. **[owner]** **Continue**. This uploads the file and accepts the Developer License Agreement and Terms of Use.
-5. Step 2, *Enter Details*: the title, the en description, the icon, hero and screenshots and the links from
-   [the listing](#connect-iq-store-the-listing-drafts-en--es); Spanish too if the form has languages. An agent may
-   fill this in; it notes here what the form really asks.
-6. **[owner]** **Submit**.
-7. **[owner]** On the phone: open `https://apps.garmin.com/en-US/apps/<beta store id>` (the dashboard shows it) in
-   the Connect IQ app, install it on the watch, choose it, and check the settings page in the Connect IQ app.
+1. **Upload an App**: *Choose file* `apps/garmin/bin/dist/<Name>-<version>.iq`, *App Version* the release's,
+   **Beta App unticked**. **[owner]** **Continue** (it uploads the file and accepts the Developer License Agreement).
+2. Step 2, the listing, from `apps/garmin/<app>/store/` as printed: title, description (`description-en.txt`, and
+   `description-es.txt` where the form has Spanish), category, icon, hero per language, screenshots in order, privacy
+   and support links, price. An agent may fill it in with the owner watching; note here what the form really asks.
+3. **[owner]** **Submit**. Garmin reviews it (7–14 days lately) and e-mails when it is approved.
+4. After approval: the listing's id (the last part of its `apps.garmin.com/<locale>/apps/<id>` link) goes into
+   `apps.json` `store` (#247): the phone's Garmin page and setup then open the listing, the website shows the badge,
+   and later releases print **Upload a new version** with the What's new (the CHANGELOG entry's Garmin lines). Delete
+   any beta app from the dashboard and a sideloaded copy from the watch (the store copy replaces it: same id, same
+   key).
 
-Public (reviewed, 7–14 days at the moment):
-
-8. Commit `tools/release/garmin-key.sha256` (above), then build `SukraraAura-<version>.iq`: with the next Sukrara
-   release (`release.py`: the gate builds it, the `garmin` step prints the upload) or by hand
-   (`tools/release/garmin-release.sh aura <the manifest's version>`).
-9. **Upload an App** (not *Upload a new version* of the beta, which has the other id): the `.iq`, the version, **Beta
-   App unticked**. **[owner]** **Continue**.
-10. Step 2 as in 5, then **[owner]** **Submit**. Garmin e-mails when it is approved; the face is in the store from
-    then.
-11. After approval: put the store link on the website and the README (the website agent's part) and on the phone's
-    Sukrara Aura row. Delete the beta app from the dashboard, and the sideloaded copy from the watch (the store
-    copy replaces it: same id, same key).
-
-Later versions: `release.py`'s `garmin` step prints the file, version and What's New for **Upload a new version** of
-the public app, and the owner submits it (no upload API).
+A beta (optional, only the owner's account sees it, no review): `tools/release/garmin-release.sh <app> --beta`, then
+**Upload an App** with `<Name>-beta.iq`, **Beta App** ticked; install it from `apps.garmin.com/en-US/apps/<beta id>`
+on the phone.
 
 ## Web and update channels
 
@@ -2124,4 +1877,7 @@ All seen **2026-10-18**. "3rd-party" = not the platform owner.
   [C35] Garmin forum, review delays — https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/445602/in-review-delay-multiple-watch-faces-pending-approval-some-for-7-days-already;
   [C36] Sugar Sense Watch Face (store listing) — https://apps.garmin.com/en-US/apps/5bf02aaf-f9da-40d9-aded-76bb8158fb52;
   [C37] GlucoPulse (store listing) — https://apps.garmin.com/en-US/apps/b309a480-c7f4-4dca-b2ec-ca1f4fd63cc2
+- [C38]–[C40] seen 2026-11-23: [C38] Garmin forum, store translations — https://forums.garmin.com/developer/connect-iq/i/bug-reports/ciq-fitcontribution-and-ciq-store-translations-are-not-displayed-on-gcm-and-gc-web;
+  [C39] Garmin forum, uploads above a certain size — https://forums.garmin.com/developer/connect-iq/i/bug-reports/bug-can-t-upload-app-above-certain-size;
+  [C40] Garmin forum, the 15 MB limit — https://forums.garmin.com/developer/connect-iq/f/discussion/212864/15mb-upload-limit-for-app-iq-file
 - [T1] Abbott trademark notice (via its Play listings and site, 3rd-party summary) — https://play.google.com/store/apps/details?id=com.abbott.adc.freestyle.libre.us

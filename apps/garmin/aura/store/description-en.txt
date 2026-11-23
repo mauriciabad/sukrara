@@ -1,0 +1,35 @@
+Sukrara Aura shows your glucose next to the time: the value in its range colour, the last hours as a sparkline or the trend arrow, and how long ago it was read. The dial, the aura, gathers at your level and spreads the further out of range you are. It is a watch face of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+
+What you need
+• The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone. Sukrara sends each reading to the watch face through Garmin Connect.
+• iPhone is not supported.
+• Without Sukrara on your phone the face shows the time, your watch's own data and "No readings".
+
+On the face
+• Your glucose in your range's colours, with the last hours as a sparkline on a fixed scale, or Sukrara's trend arrow.
+• A glucose rail with your own limits marked, and the last 30 minutes as a fading trail.
+• An old value never looks current: a late reading shows its time, then it is struck through and grey, then "No reading since" and the time; the watch counts it itself, even with the phone out of reach.
+• The state of Sukrara's alerts on your phone (needs you, handled, muted and until when) and of your sensor (warming up, ending, ended).
+• Seven dials: grain, contours, waterline, lasers, glow, a map, or plain black.
+• Always-on and night modes that stay dim, and Private, which hides the number until you touch and hold the screen.
+
+Your fields
+• Two fields on top and two along the bottom: time in range or your last treatment from Sukrara, or any of your watch's data (steps, heart rate, weather and forecast, sunrise and sunset, sleep score, stress, training status, a second time zone and more).
+• The sides: the glucose rail, the watch battery (days, percent or both), the sensor's days left, or nothing.
+
+Settings
+In the Connect IQ app on your phone, or on the watch: dial, halo, trend, seconds sweep, green in range, the four fields, the two sides, battery label, private and second time zone. Units, limits and alerts follow Sukrara on your phone.
+
+Watches
+Round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm.
+
+Permissions and privacy
+The face talks only to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes the face asks Sukrara on the same phone for the latest one. That is the Communications permission, used in the background: nothing goes to the internet. It reads your watch's data for the fields (complications), and your sleep and wake times for night mode (your profile); that data stays on the watch. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy/
+
+Free, with no purchases and no ads, and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
+In English and Spanish. Help and questions: https://sukrara.mauri.app/garmin/ or an issue on GitHub; I answer as time allows.
+
+Important
+Sukrara Aura is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and the watch face sounds no alerts. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
+
+Sukrara is not affiliated with Garmin or with any sensor maker.

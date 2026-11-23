@@ -1,0 +1,15 @@
+{
+  "about": "Sukrara Aura's Connect IQ store listing (docs/20-publishing.md › Connect IQ store: the listings). The texts are description-<lang>.txt (plain text, at most 4000 characters; tools/release/test_release.py counts them in UTF-8 bytes); the images are made by assets/brand/sukrara/connectiq/render.mjs into `images`: icon-500.png, hero-<lang>.png (the title and `tagline`), screen-<id>.png for each of `screenshots`, in this order. release.py's garmin step prints it for the upload.",
+  "title": { "en": "Sukrara Aura", "es": "Sukrara Aura" },
+  "tagline": {
+    "en": ["Your glucose on your wrist", "From Sukrara on your phone"],
+    "es": ["Tu glucosa en la muñeca", "Desde Sukrara en tu móvil"]
+  },
+  "category": "Watch face (the manifest's type; any category the form asks for: Health & Fitness, or the closest it offers)",
+  "images": "docs/img/aura/store/ciq",
+  "screenshots": ["hero", "sparkline", "dial-contours-heading-up", "dial-waterline-heading-up", "dial-lasers-heading-up",
+    "dial-glow-heading-up", "alerts-muted-in-range", "fields-hiking", "always-on", "night"],
+  "privacy": { "en": "https://sukrara.mauri.app/privacy/", "es": "https://sukrara.mauri.app/es/privacy/" },
+  "support": { "en": "https://sukrara.mauri.app/garmin/aura/", "es": "https://sukrara.mauri.app/es/garmin/aura/" },
+  "price": "Free"
+}
