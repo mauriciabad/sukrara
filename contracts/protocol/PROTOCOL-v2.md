@@ -319,7 +319,9 @@ one message whose shape **never changes in any version** (THE VERSION RULE,
 - **A follower** whose wearer's events are of an older `v` sends it once a run as soon as it sees one, then at most
   daily while it lasts (Android `FollowerEngine.tellVersion`, Mac `FollowerRuntime.tellVersion`).
 - **Someone opening an invite** of an older invite `v` (from the link's own identity) sends it from a one-time key:
-  nothing of theirs exists before *Follow* (Android `FollowerEngine.lookUp`, Mac `lookUpInvite`).
+  nothing of theirs exists before *Follow* (Android `FollowerEngine.lookUp`, Mac `lookUpInvite`). The same for a
+  *Pair nearby* offer whose INFO `v` is older, once a search, to its `i` over its `relays` (Android
+  `FollowerEngine.tellNearby`, Mac `FollowerRuntime.tellNearby`).
 - **The wearer** reads it like any gift wrap to `I`: of its own `v` it only ends an earlier mismatch of that sender; of
   another `v` it is a message of another version (Another version, above): a follower's row and, when the sender's is
   newer, the update notice on Settings › Sharing and home's banner; from someone not following, the notice while an
@@ -448,6 +450,10 @@ each side before it learns the other side's, so the two codes it causes match wi
   sent). `declined` and `invite-used` apply as for links.
 - **Wearer** shows the same code in the request (*Allow only if <name>'s phone shows this code*) and Allow sends the key
   as for a link; nearby requests are never allowed from the notification (the code must be compared).
+- **Another version** ([docs/48](../../docs/48-release-versioning.md#when-versions-differ)): INFO's `v`, `i` and `pair`
+  never move (formats.json `info`). A follower lists an offer whose `v` isn't its own by who offers (`i`, and the
+  profile when it still reads it) and says which side updates; it never joins it, and when the INFO's `v` is older it
+  sends the [version notice](#version-notice--frozen-2026-11-23-262).
 - Vectors: [ble/nearby-pairing.json](ble/nearby-pairing.json) (commitment, code, offer expiry, the messages, and a
   follower sequence of real signed events), read by Android `NearbyPairingVectorsTest` and Mac
   `NearbyPairingVectorsTests`.

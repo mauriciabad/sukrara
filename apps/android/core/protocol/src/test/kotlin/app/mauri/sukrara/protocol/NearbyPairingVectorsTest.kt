@@ -271,6 +271,15 @@ class NearbyPairingVectorsTest {
         val nonce = body.str("nonce")
         assertEquals(fx.getValue("info"), Json.parseToJsonElement(BleMessages.info(fx.str("sid"), nonce, offer, now).decodeToString()))
         fx.getValue("info_not_listed").jsonObject.forEach { (why, bad) -> assertNull(why, BleMessages.pairing(bad.jsonObject, now)) }
+        assertNull("this version's offer is no other version's", BleMessages.otherOffer(body))
+        // docs/48: of another version (INFO's frozen `v`) it can't be joined; who offers is read from `i` and `pair`
+        val newer = JsonObject(body + ("v" to JsonPrimitive(Wire.V + 1)))
+        assertNull(BleMessages.pairing(newer, now))
+        val other = BleMessages.otherOffer(newer)!!
+        assertEquals(offer.identity, other.identity)
+        assertEquals(offer.profile, other.profile)
+        assertEquals(Wire.V + 1, BleMessages.version(newer))
+        assertNull("no offer open", BleMessages.otherOffer(JsonObject(newer - "pair")))
     }
 
     @Test fun messages() {

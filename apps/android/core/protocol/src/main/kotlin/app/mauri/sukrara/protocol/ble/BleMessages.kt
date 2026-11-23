@@ -85,10 +85,11 @@ object BleMessages {
     /**
      * The *Pair nearby* offer in an INFO body (B§7.3): the wearer's identity `i`, its `wss://` relays, the invite token
      * and expiry, the wearer's profile and its commitment `c`. null when there is none, it's malformed, has no
-     * commitment, is expired at [now] or claims to last longer than 10 minutes plus clock skew (so a fake offer can't
-     * stay listed).
+     * commitment, is expired at [now], claims to last longer than 10 minutes plus clock skew (so a fake offer can't
+     * stay listed) or is of another version ([otherOffer]).
      */
     fun pairing(info: JsonObject, now: Long): Pairing? {
+        if (version(info) != Wire.V) return null
         val identity = (info["i"] as? JsonPrimitive)?.content?.let(PublicKeyHex::parse) ?: return null
         val pair = info["pair"] as? JsonObject ?: return null
         val token = (pair["t"] as? JsonPrimitive)?.content?.takeIf { TOKEN.matches(it) } ?: return null
@@ -97,6 +98,26 @@ object BleMessages {
         val commit = (pair["c"] as? JsonPrimitive)?.content?.takeIf(NearbyPairing::isHex64) ?: return null
         val relays = (info["relays"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty()
         return Pairing(identity, Wire.validRelays(relays), token, expiry, Profile.of(pair["profile"]), commit)
+    }
+
+    /**
+     * INFO's `v`, frozen like the HELLO's (formats.json `info`: every version reads it). An INFO without one is taken as
+     * this version's.
+     */
+    fun version(info: JsonObject): Int = (info["v"] as? JsonPrimitive)?.content?.toIntOrNull() ?: Wire.V
+
+    /**
+     * A *Pair nearby* offer of another version (docs/48 "When versions differ"): an INFO whose [version] isn't this
+     * app's and that carries the frozen `i` and `pair`. Only who offers is read (the profile when this version still
+     * reads it): nothing of it can be joined. Its token, expiry and commitment are empty.
+     */
+    fun otherOffer(info: JsonObject): Pairing? {
+        if (version(info) == Wire.V) return null
+        val identity = (info["i"] as? JsonPrimitive)?.content?.let(PublicKeyHex::parse) ?: return null
+        val pair = info["pair"] as? JsonObject ?: return null
+        val relays = (info["relays"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty()
+        val profile = runCatching { Profile.of(pair["profile"]) }.getOrNull()
+        return Pairing(identity, Wire.validRelays(relays), token = "", expiry = 0, profile = profile, commit = "")
     }
 
     private val TOKEN = Regex("[A-Za-z0-9_-]{16,64}")

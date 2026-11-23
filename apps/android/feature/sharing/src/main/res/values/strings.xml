@@ -633,6 +633,7 @@
     <string name="sh_find_nearby_looking">Looking for phones with Pair nearby on…</string>
     <string name="sh_find_nearby_found">Tap the person you want to follow. Still looking for more…</string>
     <string name="sh_find_nearby_ask">Ask to follow</string>
+    <string name="sh_find_nearby_update">Until then, this phone can\'t pair with %1$s.</string>
     <string name="sh_find_nearby_stop">Stop looking</string>
     <string name="sh_scan_qr">Scan QR code</string>
     <string name="sh_scan_picture">From a picture</string>

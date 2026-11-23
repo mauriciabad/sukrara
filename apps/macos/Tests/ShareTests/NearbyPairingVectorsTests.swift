@@ -50,6 +50,20 @@ struct NearbyPairingVectorsTests {
             let bad = info(["INFO", body])
             #expect(bad?.offer(now: now) == nil, "\(why)")
         }
+        #expect(parsed.otherOffer() == nil, "this version's offer is no other version's")
+        // docs/48: of another version (INFO's frozen `v`) it can't be joined; who offers is read from `i` and `pair`
+        var body = (fx["info"] as! [Any])[1] as! [String: Any]
+        body["v"] = Wire.version + 1
+        let newer = try #require(info(["INFO", body]))
+        #expect(newer.offer(now: now) == nil)
+        let other = try #require(newer.otherOffer())
+        #expect(other.update == .thisApp)
+        #expect(other.invite.identity == key("I")["pub"])
+        #expect(other.wearerName == "Alex")
+        body["v"] = Wire.version - 1
+        #expect(info(["INFO", body])?.otherOffer()?.update == .wearer)
+        body["pair"] = nil
+        #expect(info(["INFO", body])?.otherOffer() == nil, "no offer open")
     }
 
     @Test func messages() throws {

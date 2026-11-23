@@ -178,7 +178,8 @@ struct MacNameField: View {
 }
 
 /// A phone nearby offers pairing: its avatar, this Mac's name (editable), "Ask to follow" / "Not now". Asking
-/// moves on to `PairingCodeView`.
+/// moves on to `PairingCodeView`. An offer of another version (docs/48) says who updates instead, as the wearer's
+/// followers do: "Has a newer Sukrara" with "Update…", or "Needs to update Sukrara".
 struct NearbyPairingDialog: View {
     @Bindable var follow: FollowModel
     let phone: NearbyPhone
@@ -189,9 +190,25 @@ struct NearbyPairingDialog: View {
                 AvatarView(avatar: phone.avatar, name: phone.wearer, size: 44)
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L10n.t("\(phone.wearer)'s phone is nearby")).font(.headline)
-                    MacNameField(follow: follow)
-                    HStack {
-                        Button(L10n.t("Ask to follow")) { Task { await follow.askNearby() } }
+                    switch phone.update {
+                    case nil:
+                        MacNameField(follow: follow)
+                        HStack {
+                            Button(L10n.t("Ask to follow")) { Task { await follow.askNearby() } }
+                            Button(L10n.t("Not now")) { follow.nearby = nil }
+                        }
+                    case .thisApp?:
+                        Text(L10n.t("Has a newer Sukrara"))
+                        // the update notice, as for an invite of a newer version
+                        Notice(
+                            title: L10n.t("Update Sukrara"),
+                            text: L10n.t("Until then, this Mac can't pair with \(phone.wearer)."), tone: .warning
+                        ) {
+                            Button(L10n.t("Update…")) { follow.updateSukrara() }
+                        }
+                        Button(L10n.t("Not now")) { follow.nearby = nil }
+                    case .wearer?:
+                        Text(L10n.t("Needs to update Sukrara"))
                         Button(L10n.t("Not now")) { follow.nearby = nil }
                     }
                 }

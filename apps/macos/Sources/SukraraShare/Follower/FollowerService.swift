@@ -67,10 +67,13 @@ public enum LinkPath: Sendable, Equatable {
 public struct NearbyOffer: Sendable, Equatable {
     public let invite: Invite
     public let commit: String
+    /// The offer is of another version (docs/48 "When versions differ"): which side updates; it can't be joined.
+    public let update: FollowerSession.FollowUpdate?
 
-    public init(invite: Invite, commit: String) {
+    public init(invite: Invite, commit: String, update: FollowerSession.FollowUpdate? = nil) {
         self.invite = invite
         self.commit = commit
+        self.update = update
     }
 
     public var wearerName: String? { Profile.shownName(invite.profile?.name) }

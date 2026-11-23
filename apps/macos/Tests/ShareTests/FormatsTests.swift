@@ -39,6 +39,16 @@ struct FormatsTests {
             try! JSONSerialization.jsonObject(with: Data(JSONText.encode(FollowerMessages.versionBody()).utf8))
             as! [String: Any]
         #expect(NSDictionary(dictionary: frozen).isEqual(to: sent))
+        // INFO's `v`, `i` and `pair`: a *Pair nearby* offer of another version still says who offers (docs/48)
+        let info = BleInfo(
+            nonce: "00", m: "00", identity: String(repeating: "ab", count: 32), relays: [],
+            pairing: .init(
+                token: String(repeating: "t", count: 16), expiry: 100, profile: nil,
+                commit: String(repeating: "cd", count: 32)))
+        let sentInfo =
+            (try! JSONSerialization.jsonObject(with: BleMessage.info(info).encoded()) as! [Any])[1] as! [String: Any]
+        for key in sharing["info"] as! [String] { #expect(sentInfo[key] != nil, "\(key)") }
+        #expect(sentInfo["v"] as? Int == Wire.version)
         let invite = Self.format("invite")["frozen"] as! [String: Any]
         #expect(invite["link"] as? String == Wire.inviteBase)
         #expect(UInt16(invite["kind"] as! Int) == Wire.kindInvite)

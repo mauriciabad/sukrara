@@ -7,6 +7,7 @@ import app.mauri.sukrara.protocol.KeyPair
 import app.mauri.sukrara.protocol.NostrCrypto
 import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.SignedEvent
+import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.ble.BleFraming
 import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.ble.HelloProof
@@ -37,8 +38,16 @@ class NearbyLink(
 
         data class Event(val event: SignedEvent) : Effect
 
-        /** [pairing] = the phone's *Pair nearby* offer, if open (B§7.3). */
-        data class Info(val owner: BleMessages.Owner, val pairing: BleMessages.Pairing? = null) : Effect
+        /**
+         * [pairing] = the phone's *Pair nearby* offer, if open (B§7.3); [other] = an offer of another version, and
+         * [version] its `v` (docs/48).
+         */
+        data class Info(
+            val owner: BleMessages.Owner,
+            val pairing: BleMessages.Pairing? = null,
+            val other: BleMessages.Pairing? = null,
+            val version: Int = Wire.V,
+        ) : Effect
 
         /** The message sent with [token] reached the phone (true) or can't be sent (false). */
         data class Sent(val token: Int, val ok: Boolean) : Effect
@@ -104,7 +113,9 @@ class NearbyLink(
                 val body = message.body as? JsonObject ?: return emptyList()
                 val owner = BleMessages.owner(body, identity.identity, identity.sid, sentNonces)
                 verified = owner == BleMessages.Owner.Ours
-                listOf(Effect.Info(owner, BleMessages.pairing(body, nowMs() / 1000)))
+                listOf(
+                    Effect.Info(owner, BleMessages.pairing(body, nowMs() / 1000), BleMessages.otherOffer(body), BleMessages.version(body)),
+                )
             }
 
             else -> {

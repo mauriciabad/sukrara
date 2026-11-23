@@ -4,6 +4,7 @@
 package app.mauri.sukrara.share.ble
 
 import app.mauri.sukrara.protocol.SignedEvent
+import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.share.owner.OwnerNearby
 import kotlinx.coroutines.channels.Channel
@@ -84,8 +85,14 @@ class FakeNearbyTransport(var identity: NearbyLink.Identity) : NearbyTransport {
     /** A scan found [phone] and a connection to it begins. */
     fun connecting(phone: String) = channel.trySend(NearbyEvent.Connecting(phone))
 
-    fun info(owner: BleMessages.Owner, phone: String = "wearer", pairing: BleMessages.Pairing? = null) {
+    fun info(
+        owner: BleMessages.Owner,
+        phone: String = "wearer",
+        pairing: BleMessages.Pairing? = null,
+        other: BleMessages.Pairing? = null,
+        version: Int = Wire.V,
+    ) {
         if (owner == BleMessages.Owner.Ours) status.value = NearbyStatus.Connected(1)
-        channel.trySend(NearbyEvent.Info(owner, phone, pairing))
+        channel.trySend(NearbyEvent.Info(owner, phone, pairing, other, version))
     }
 }

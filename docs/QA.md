@@ -987,6 +987,10 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
       An invite link from a wearer on another version (debug: `Wire.INVITE_V` changed on one side): the join step /
       the Mac's Follow says *Update Sukrara* with *Update* (newer invite) or *They need to update Sukrara* (older),
       nothing is saved; the Mac's pictures `follow-error-update` / `follow-error-inviter-update`.
+      *Pair nearby* with one phone's `Wire.V` changed: the other's *Find phones nearby* (and the Mac's Follow, the
+      pictures `follow-nearby-update` / `follow-nearby-wearer-update`) lists the wearer with *Has a newer Sukrara* and
+      the *Update Sukrara* notice, or *Needs to update Sukrara*; tapping it asks nothing. With the wearer older, its
+      *Pair nearby* page shows *Update Sukrara* · "… someone with a newer Sukrara can't follow you." within a minute.
 
 ## Q23 Import history
 

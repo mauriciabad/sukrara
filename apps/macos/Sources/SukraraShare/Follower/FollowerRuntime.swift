@@ -116,6 +116,8 @@ public actor FollowerRuntime: FollowerService {
     private var lastHistoryRequest: Int?
     /// When this follower last sent its `version` notice (once a run, then at most daily).
     private var versionToldAt: Int?
+    /// The older wearers a *Pair nearby* offer of another version told this run (docs/48).
+    private var toldNearby: Set<String> = []
     private var persisted: FollowerState?
     private var persistedAt = Date.distantPast
     private var started = false
@@ -329,6 +331,11 @@ public actor FollowerRuntime: FollowerService {
     public func cancelJoin() { joinTask?.cancel() }
 
     public func joinNearby(_ offer: NearbyOffer) async throws(FollowerJoinError) {
+        switch offer.update {
+        case .thisApp?: throw .updateToJoin
+        case .wearer?: throw .inviterUpdates
+        case nil: break
+        }
         guard canJoin else { throw .alreadyFollowing }
         try await begin(invite: offer.invite, commit: offer.commit)
     }
@@ -687,6 +694,16 @@ public actor FollowerRuntime: FollowerService {
                 if let offer = info.offer(now: now) {
                     nearbyOffer = offer
                     await publishSnapshot()
+                } else if let offer = info.otherOffer() {
+                    // another version (docs/48): listed to say who updates; an older wearer's phone is told
+                    if nearbyOffer != offer {
+                        nearbyOffer = offer
+                        await publishSnapshot()
+                    }
+                    if offer.update == .wearer, toldNearby.insert(offer.invite.identity).inserted {
+                        tellNearby(offer.invite)
+                    }
+                    await nearby?.leave(phone: phone, for: Self.nearbyLeaveNoPairing)
                 } else {
                     // nothing to pair with: keep both radios idle
                     await nearby?.leave(phone: phone, for: Self.nearbyLeaveNoPairing)
@@ -818,6 +835,26 @@ public actor FollowerRuntime: FollowerService {
 
     /// docs/48: the wearer's events are older than this app reads, and the wearer's phone can't read this app's: the
     /// frozen `version` notice (PROTOCOL-v2 "Version notice") tells it, so its own Sharing page says to update.
+    /// docs/48: a *Pair nearby* offer of an older version: the frozen `version` notice tells the wearer's phone (from a
+    /// key of its own, as for an older invite), so its *Pair nearby* says to update.
+    private func tellNearby(_ invite: Invite) {
+        let key = crypto.generateSecret()
+        guard
+            let notice = try? crypto.giftWrap(
+                kind: Wire.kindToOwner, content: JSONText.encode(FollowerMessages.versionBody()), from: key,
+                to: invite.identity, expiration: now + Wire.ttlVersion)
+        else { return }
+        let pool = makeRelays(invite.relays.isEmpty ? Wire.defaultRelays : invite.relays, key)
+        let sleep = sleep
+        // on its own: the search goes on meanwhile
+        Task {
+            await pool.start()
+            await pool.publish(notice)
+            try? await sleep(2)
+            await pool.stop()
+        }
+    }
+
     private func tellVersion() async {
         guard let session, session.update == .wearer, now - (versionToldAt ?? Int.min / 2) >= 86_400,
             let notice = try? session.versionNotice(now: now)

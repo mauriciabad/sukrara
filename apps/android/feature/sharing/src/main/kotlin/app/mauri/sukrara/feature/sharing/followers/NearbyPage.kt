@@ -14,6 +14,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import app.mauri.sukrara.designsystem.banner.BannerSlot
+import app.mauri.sukrara.designsystem.banner.sharingUpdateBanner
 import app.mauri.sukrara.designsystem.rows.MainSwitchRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
@@ -78,6 +80,8 @@ fun NearbyPage(
             actions.setNearby,
             note = nearbySummary(nearby.status, nearby.on, wearer = true, internet = nearby.internet),
         )
+        // docs/48: a phone nearby with a newer Sukrara found the offer and told this one (its version notice)
+        if (nearby.pairingUntil != null) BannerSlot(sharingUpdateBanner(emptyList(), state.newerInvitee, actions.updateSukrara))
         SettingsGroup {
             if (nearby.on) NearbyFixRow(nearby.status, AndroidNearbyServer.PERMISSIONS, actions.refreshNearby)
             PairNearbyRow(nearby.pairingUntil, actions.pairNearby, now, enabled = nearby.on && nearby.status !in BLOCKED)

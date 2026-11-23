@@ -146,8 +146,12 @@ sealed interface InviteLookup {
 /** What the wearer told this follower (a notification on the info channel). */
 enum class FollowerNotice { InviteUsed, Declined, Revoked, Expired }
 
-/** A wearer's phone in Bluetooth range with *Pair nearby* open ([phone] = its current address). */
-data class NearbyOffer(val phone: String, val pairing: BleMessages.Pairing)
+/**
+ * A wearer's phone in Bluetooth range with *Pair nearby* open ([phone] = its current address). [update]: its offer is of
+ * another version (docs/48 "When versions differ"), which side updates; such an offer is listed but can't be joined
+ * (its [pairing] has only who offers).
+ */
+data class NearbyOffer(val phone: String, val pairing: BleMessages.Pairing, val update: FollowUpdate? = null)
 
 /** *Find phones nearby*: what limits the search ([status]) and the phones offering pairing now. */
 data class NearbySearch(val status: NearbyStatus, val offers: List<NearbyOffer>)
@@ -421,6 +425,8 @@ class FollowerEngine(
             // by token (a phone's address rotates): a phone that stopped offering or went out of range leaves the list
             // after a missed check
             val offers = MutableStateFlow<Map<String, Listed>>(emptyMap())
+            // the older wearers this search told (docs/48: once a search)
+            val told = mutableSetOf<String>()
             val ticks =
                 flow {
                     while (true) {
@@ -451,7 +457,25 @@ class FollowerEngine(
                             is NearbyEvent.Info -> {
                                 val p = e.pairing
                                 val others = offers.value.filterValues { it.offer.phone != e.phone }
-                                offers.value = if (p != null) others + (p.token to Listed(NearbyOffer(e.phone, p), now())) else others
+                                val o = e.other
+                                offers.value =
+                                    when {
+                                        p != null -> {
+                                            others + (p.token to Listed(NearbyOffer(e.phone, p), now()))
+                                        }
+
+                                        // another version: listed by who offers, saying who updates (docs/48)
+                                        o != null -> {
+                                            val update = if (e.version > Wire.V) FollowUpdate.ThisApp else FollowUpdate.Wearer
+                                            val listed = o.copy(expiry = now() + NEARBY_OFFER_LOST_S)
+                                            if (update == FollowUpdate.Wearer && told.add(o.identity.hex)) launch { tellNearby(o) }
+                                            others + ("v:${o.identity.hex}" to Listed(NearbyOffer(e.phone, listed, update), now()))
+                                        }
+
+                                        else -> {
+                                            others
+                                        }
+                                    }
                                 // on to the next phone; this one is looked at again soon, offering or not
                                 nb.leave(e.phone, NEARBY_RECHECK_S)
                             }
@@ -476,10 +500,34 @@ class FollowerEngine(
      * carries a fresh pairing nonce made now, after the offer's commitment was read (PROTOCOL-v2 §Nearby pairing).
      */
     suspend fun joinNearby(offer: NearbyOffer, me: Profile?): JoinResult {
+        when (offer.update) {
+            FollowUpdate.ThisApp -> return JoinResult.UpdateToJoin
+            FollowUpdate.Wearer -> return JoinResult.InviterUpdates
+            null -> Unit
+        }
         val p = offer.pairing
         if (p.expiry <= now()) return JoinResult.Expired
         if (!canJoin()) return JoinResult.AlreadyFollowing
         return joinWith(Invite(p.identity, p.token, p.expiry, p.relays, p.profile), me, p.commit)
+    }
+
+    /**
+     * docs/48: a *Pair nearby* offer of an older version: the frozen `version` notice tells the wearer's phone (from a
+     * key of its own, as for an older invite: nothing of this phone's exists before a join), so its *Pair nearby* says
+     * to update.
+     */
+    private suspend fun tellNearby(offer: BleMessages.Pairing) {
+        val key = crypto.generate()
+        val relays = offer.relays.ifEmpty { Wire.DEFAULT_RELAYS }
+        val pool = transports.create(relays) { key }
+        pool.start()
+        try {
+            val now = now()
+            pool.publish(events.gift(key, offer.identity, Rumor.Version, now, now + Wire.TTL_VERSION))
+            delay(VERSION_PUBLISH_MS)
+        } finally {
+            pool.stop()
+        }
     }
 
     /**

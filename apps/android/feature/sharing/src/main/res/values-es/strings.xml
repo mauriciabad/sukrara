@@ -491,6 +491,7 @@
     <string name="sh_find_nearby_looking">Buscando teléfonos con Emparejar cerca activado…</string>
     <string name="sh_find_nearby_found">Toca a la persona que quieres seguir. Sigue buscando más…</string>
     <string name="sh_find_nearby_ask">Pedir seguirle</string>
+    <string name="sh_find_nearby_update">Hasta entonces, este móvil no puede emparejarse con %1$s.</string>
     <string name="sh_find_nearby_stop">Dejar de buscar</string>
     <string name="sh_scan_qr">Escanear código QR</string>
     <string name="sh_scan_picture">Desde una imagen</string>

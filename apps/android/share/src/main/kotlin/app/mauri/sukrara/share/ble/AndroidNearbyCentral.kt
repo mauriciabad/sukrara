@@ -335,7 +335,7 @@ class AndroidNearbyCentral(
                         _status.value = NearbyStatus.Connected(1)
                         failures = 0
                     }
-                    device?.let { channel.trySend(NearbyEvent.Info(e.owner, it, e.pairing)) }
+                    device?.let { channel.trySend(NearbyEvent.Info(e.owner, it, e.pairing, e.other, e.version)) }
                 }
 
                 is NearbyLink.Effect.Sent -> {

@@ -161,6 +161,15 @@
             out.append(("setup-done-skipped", AnyView(SetupView(model: doneModel, close: {}))))
             let nearbyModel = follow(.notFollowing, nearby: true)
             out.append(("follow-nearby", AnyView(FollowStep(follow: nearbyModel).padding().frame(width: 520))))
+            // docs/48: an offer of another version says who updates
+            for (name, update) in [
+                ("follow-nearby-update", FollowerSession.FollowUpdate.thisApp),
+                ("follow-nearby-wearer-update", .wearer),
+            ] {
+                let m = follow(.notFollowing, nearby: true)
+                m.nearby?.update = update
+                out.append((name, AnyView(FollowStep(follow: m).padding().frame(width: 520))))
+            }
             for (name, check) in [
                 ("follow-nearby-waiting", LinkState.PairingCheck(code: nil, confirmed: false)),
                 ("follow-nearby-compare", LinkState.PairingCheck(code: "021472", confirmed: false)),

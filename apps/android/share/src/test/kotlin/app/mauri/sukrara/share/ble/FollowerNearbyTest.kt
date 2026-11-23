@@ -14,6 +14,7 @@ import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.event.Rumor
 import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.protocol.follow.FollowUpdate
 import app.mauri.sukrara.protocol.follow.FollowerState
 import app.mauri.sukrara.protocol.follow.HeldKey
 import app.mauri.sukrara.protocol.follow.NearbyPair
@@ -352,6 +353,40 @@ class FollowerNearbyTest {
             runCurrent()
             assertEquals(FollowState.NotFollowing, e.state.value)
             assertEquals("nothing is sent", sent, nb.sent.size)
+        }
+
+    /**
+     * docs/48: an offer of another version is listed by who offers and says who updates; it can't be joined, and an
+     * older wearer's phone gets the frozen `version` notice once (from a one-time key, over the relays).
+     */
+    @Test fun anOfferOfAnotherVersionSaysWhoUpdates() =
+        runTest {
+            val e = engine()
+            val other = openPairing().second.copy(token = "", expiry = 0, commit = "")
+            var search: NearbySearch? = null
+            backgroundScope.launch { e.findNearby().collect { search = it } }
+            runCurrent()
+            val finder = nearbys.single()
+            finder.info(BleMessages.Owner.Unknown, phone = "ana", other = other, version = Wire.V + 1)
+            runCurrent()
+            val newer = search!!.offers.single()
+            assertEquals(FollowUpdate.ThisApp, newer.update)
+            assertEquals("Ana", newer.pairing.profile?.name)
+            assertTrue("a newer wearer isn't told", lookup.published.isEmpty())
+            assertEquals(JoinResult.UpdateToJoin, e.joinNearby(newer, null))
+
+            finder.info(BleMessages.Owner.Unknown, phone = "ana", other = other, version = Wire.V - 1)
+            finder.info(BleMessages.Owner.Unknown, phone = "ana", other = other, version = Wire.V - 1)
+            runCurrent()
+            advanceTimeBy(3_000)
+            runCurrent()
+            val older = search!!.offers.single()
+            assertEquals(FollowUpdate.Wearer, older.update)
+            assertEquals(JoinResult.InviterUpdates, e.joinNearby(older, null))
+            val notice = lookup.published.single()
+            assertEquals(Wire.KIND_WRAP, notice.kind)
+            assertEquals(other.identity.hex, notice.tag("p"))
+            assertTrue("nothing joined", e.state.value !is FollowState.Following)
         }
 
     @Test fun anExpiredOfferIsNotJoined() =

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.protocol
 
+import app.mauri.sukrara.protocol.ble.BleMessages
 import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.protocol.testing.ContractFiles
@@ -65,6 +66,20 @@ class FormatsTest {
             app.mauri.sukrara.protocol.event.RumorCodec
                 .encode(app.mauri.sukrara.protocol.event.Rumor.Version),
         )
+        // INFO's `v`, `i` and `pair`: a *Pair nearby* offer of another version still says who offers (docs/48)
+        val offer = BleMessages.Pairing(PublicKeyHex("ab".repeat(32)), emptyList(), "t".repeat(16), 100, null, "cd".repeat(32))
+        val info =
+            WireJson
+                .parseToJsonElement(BleMessages.info("00", "00", offer, 0).decodeToString())
+                .jsonArray[1]
+                .jsonObject
+        format("sharing").frozen().getValue("info").jsonArray.forEach {
+            assertTrue(
+                it.jsonPrimitive.content,
+                it.jsonPrimitive.content in info,
+            )
+        }
+        assertEquals(Wire.V, info.getValue("v").jsonPrimitive.int)
         val invite = format("invite").frozen()
         assertEquals(InviteLink.INVITE_BASE, invite.getValue("link").jsonPrimitive.content)
         assertEquals(Wire.KIND_INVITE, invite.getValue("kind").jsonPrimitive.int)

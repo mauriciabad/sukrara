@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -30,6 +31,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
+import app.mauri.sukrara.designsystem.banner.BannerSlot
+import app.mauri.sukrara.designsystem.banner.updateBanner
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.rows.groupCard
 import app.mauri.sukrara.feature.sharing.BLOCKED
@@ -37,14 +40,17 @@ import app.mauri.sukrara.feature.sharing.NearbyFixRow
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.nearbySummary
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.follow.FollowUpdate
 import app.mauri.sukrara.share.ble.AndroidNearbyCentral
 import app.mauri.sukrara.share.follower.NearbyOffer
 import app.mauri.sukrara.share.follower.NearbySearch
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * *Find phones nearby* on the join step: joining without a link when the wearer is next to you and has *Pair nearby*
  * open. Off: one button. Looking: what limits the search (Bluetooth off / permission, each with its fix), the phones
- * offering pairing (the wearer's picture and name; a tap asks to follow with [name]) and *Stop looking*.
+ * offering pairing (the wearer's picture and name; a tap asks to follow with [name]; one of another version says who
+ * updates, *Update* when it is this phone) and *Stop looking*.
  */
 @Composable
 internal fun ColumnScope.FindNearby(
@@ -99,6 +105,29 @@ internal fun ColumnScope.FindNearby(
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
+                // docs/48: an offer of a newer version: the update notice, once (the rows say who updates)
+                val newer = search.offers.firstOrNull { it.update == FollowUpdate.ThisApp }
+                val who =
+                    newer
+                        ?.let {
+                            Profile.shownName(
+                                it.pairing.profile
+                                    ?.name
+                                    .orEmpty(),
+                            )
+                        }.orEmpty()
+                        .ifBlank { stringResource(R.string.sh_join_someone) }
+                BannerSlot(
+                    newer?.let {
+                        updateBanner(
+                            "nearby",
+                            stringResource(DsR.string.ds_update_sukrara),
+                            stringResource(R.string.sh_find_nearby_update, who),
+                            actions.updateSukrara,
+                        )
+                    },
+                    margins = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                )
                 for (offer in search.offers) {
                     OfferRow(offer, enabled) {
                         haptics.confirm()
@@ -134,13 +163,23 @@ private fun OfferRow(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
-                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                // another version can't be joined: the row says who updates (docs/48), as on the wearer's followers
+                .clickable(enabled = enabled && offer.update == null, role = Role.Button, onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         AvatarImage(offer.pairing.profile?.avatar, name, size = 40.dp)
         Column(Modifier.weight(1f)) {
             Text(name, style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.sh_find_nearby_ask), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(
+                    when (offer.update) {
+                        null -> R.string.sh_find_nearby_ask
+                        FollowUpdate.ThisApp -> R.string.sh_followers_newer
+                        FollowUpdate.Wearer -> R.string.sh_followers_older
+                    },
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }

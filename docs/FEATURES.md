@@ -3146,7 +3146,12 @@ each reads only the current version, but every mismatch is detected and **the de
   inviter's own identity) opens nothing and says who updates, in the notice's pattern: *Update Sukrara* · "This invite
   needs a newer Sukrara. Open it again once this one is updated." + **Update**, or *They need to update Sukrara* ·
   "Their Sukrara is older than this one. Open the invite again once they update it." Nothing is saved or sent.
-- Still to come (#262): nearby pairing of another version (docs/48's table).
+- **Nearby pairing** (Android's *Find phones nearby*, the Mac's Follow): a phone offering *Pair nearby* whose Bluetooth
+  INFO is of another version (its frozen `v`) is listed by name and says who updates instead of *Ask to follow*: *Has a
+  newer Sukrara* (then the notice *Update Sukrara* · "Until then, this phone can't pair with Ana." + **Update**) or
+  *Needs to update Sukrara*; it can't be joined. When the wearer's is the older one, the follower sends the version
+  notice (from a one-time key), so the wearer's *Pair nearby* page, Settings › Sharing and home say *Update Sukrara* ·
+  "Until then, someone with a newer Sukrara can't follow you."
 
 **States and exits**: *versions match* → nothing shown. *A follower reads another version* → the no-data reason
 (Android home, the Mac's panel, widgets) names the app to update; *Update* opens this copy's update (this one older),
@@ -3154,7 +3159,9 @@ nothing to tap when the wearer's is older; the stored readings stay, ageing, and
 alarm names the app to update, *Update* among its buttons when it is this one). *The wearer gets a follower's message of
 another version* → that follower's row on Settings › Sharing says who updates, and the page's notice and home's banner
 have *Update* when it is this phone. *An invite of another version* → the join step / Follow says who updates (*Update* when this app);
-nothing saved or sent; Cancel / another link as always. Out: updating
+nothing saved or sent; Cancel / another link as always. *A Pair nearby offer of another version* → its row says who
+updates (the notice with *Update* when this app), nothing to ask; *Stop looking* / *Not now* as always; the older
+wearer's *Pair nearby* page shows the notice while it is open. Out: updating
 either app, which clears it at the first event read (no tap). *The watch reads another version* → the Garmin page's notice,
 the watch's line and the app's row name the app to update, with one button to that update; on the watch the face's
 update line, the watch app's page (*Open on phone* → *Look at your phone* 5 s → the button again; BACK leaves the app),

@@ -91,9 +91,12 @@ public struct NearbyPhone: Equatable, Sendable {
     public var wearer: String
     /// The wearer's generated picture from the offer (nil = the grey initial).
     public var avatar: Avatar?
-    public init(wearer: String, avatar: Avatar? = nil) {
+    /// The offer is of another version (docs/48): which side updates; nothing to ask.
+    public var update: FollowerSession.FollowUpdate?
+    public init(wearer: String, avatar: Avatar? = nil, update: FollowerSession.FollowUpdate? = nil) {
         self.wearer = wearer
         self.avatar = avatar
+        self.update = update
     }
 }
 

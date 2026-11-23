@@ -109,6 +109,39 @@ struct NearbyRuntimeTests {
             to: follower, crypto: crypto, now: v.now)
     }
 
+    /// docs/48: an offer of another version is shown with who updates, can't be joined, and an older wearer's phone
+    /// gets the frozen `version` notice (from a one-time key).
+    @Test func anOfferOfAnotherVersionSaysWhoUpdates() async throws {
+        let h = RuntimeHarness(now: v.now)
+        let nearby = FakeNearby()
+        let runtime = runtime(h, nearby)
+        let offerer = try Offerer(NostrSDKCrypto())
+        await runtime.start()
+        await runtime.searchNearby(true)
+        let this = offerer.info(now: v.now)
+        func info(_ version: Int) -> BleInfo {
+            BleInfo(
+                nonce: this.nonce, m: this.m, identity: this.identity, relays: [], pairing: this.pairing,
+                version: version)
+        }
+        nearby.info(info(Wire.version + 1), .unknown, phone: UUID())
+        var offer: NearbyOffer?
+        for await snapshot in await runtime.snapshots() {
+            offer = snapshot.nearbyOffer
+            if offer?.update == .thisApp { break }
+        }
+        #expect(offer?.wearerName == "Marta")
+        await #expect(throws: FollowerJoinError.updateToJoin) { try await runtime.joinNearby(try #require(offer)) }
+        #expect(await h.hub.published().isEmpty, "a newer wearer isn't told")
+        nearby.info(info(Wire.version - 1), .unknown, phone: UUID())
+        #expect(await eventually { await h.hub.published().contains { $0.tag("p") == offerer.identity } })
+        await #expect(throws: FollowerJoinError.inviterUpdates) {
+            try await runtime.joinNearby(NearbyOffer(invite: offer!.invite, commit: "", update: .wearer))
+        }
+        #expect(await !runtime.isFollowing)
+        await runtime.stop()
+    }
+
     /// #20: a phone posing as the wearer (another identity, any name) answers and approves at once; the Mac shows the
     /// code but follows nobody until the person confirms it, and a different code ends the join with the key removed.
     @Test func aPhonePosingAsTheWearerIsNeverFollowedWithoutTheCode() async throws {

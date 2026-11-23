@@ -292,6 +292,16 @@ A change that must move one of these is a new format beside the old one, not a v
   updated." + *Update*, or *They need to update Sukrara* · "Their Sukrara is older than this one. Open the invite
   again once they update it." (the invite's name is inside what can't be read: *They*).
 
+- **Nearby pairing** (Android's *Find phones nearby*, the Mac's Follow): the follower reads the INFO's `v` (frozen
+  with `i` and `pair`: formats.json `info`); an offer of another version is listed by its name and picture, read only
+  when this version reads the profile (`BleMessages.otherOffer`, `BleInfo.otherOffer`), and its row says *Has a newer
+  Sukrara* or *Needs to update Sukrara*, like the wearer's followers page, instead of the table's "both phones name
+  the older one" on each. *Update* sits in the update notice above the list (*Update Sukrara* · "Until then, this
+  phone can't pair with Ana."). It can't be joined (`JoinResult.UpdateToJoin` / `InviterUpdates` if asked). When the
+  wearer's is older, the follower sends the version notice once a search (one-time key, over the INFO's relays), so the
+  wearer's *Pair nearby* page shows home's notice (`newerInvitee`: the open pairing is an invite). A wearer whose
+  Sukrara is newer learns nothing (the follower says it on its own screen, as with an invite link).
+
 - **The older side learns it is older** (the owner, 2026-11-23: "how does an outdated app [know it] needs to be
   updated so their peers can read the data?"). Watch and phone already tell each other (the fetch's `v=`, a write's
   `r: v`); sharing is one-way, so a follower or someone joining whose Sukrara is newer sends the frozen **version

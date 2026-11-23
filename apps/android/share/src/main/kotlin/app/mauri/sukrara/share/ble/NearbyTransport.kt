@@ -4,6 +4,7 @@
 package app.mauri.sukrara.share.ble
 
 import app.mauri.sukrara.protocol.SignedEvent
+import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.ble.BleMessages
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,9 +15,16 @@ sealed interface NearbyEvent {
 
     /**
      * A phone's INFO: ours, another wearer's, or not known yet (no `sid` before the first key). [phone] names the
-     * connection it came on, so leaving it never hits a phone connected since. [pairing] = its *Pair nearby* offer.
+     * connection it came on, so leaving it never hits a phone connected since. [pairing] = its *Pair nearby* offer;
+     * [other] = one of another version, [version] its `v` (docs/48 "When versions differ").
      */
-    data class Info(val owner: BleMessages.Owner, val phone: String, val pairing: BleMessages.Pairing? = null) : NearbyEvent
+    data class Info(
+        val owner: BleMessages.Owner,
+        val phone: String,
+        val pairing: BleMessages.Pairing? = null,
+        val other: BleMessages.Pairing? = null,
+        val version: Int = Wire.V,
+    ) : NearbyEvent
 
     /**
      * A connection to [phone] begins (a scan found it and it isn't being left): the moment it is really looked at

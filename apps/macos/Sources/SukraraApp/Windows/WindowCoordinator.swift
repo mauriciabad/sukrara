@@ -81,7 +81,7 @@ final class WindowCoordinator {
         follow.bluetoothBlocked = snapshot.link.isFollowing && snapshot.nearby == .unauthorized
         follow.untoldLeave = snapshot.untoldLeave
         follow.nearby = snapshot.nearbyOffer.map {
-            NearbyPhone(wearer: $0.wearerName ?? L10n.t("A phone"), avatar: $0.wearerAvatar)
+            NearbyPhone(wearer: $0.wearerName ?? L10n.t("A phone"), avatar: $0.wearerAvatar, update: $0.update)
         }
         follow.wearer = snapshot.wearer
         // the How You Appear row only while a follow exists (the runtime's own profile is just a default before)

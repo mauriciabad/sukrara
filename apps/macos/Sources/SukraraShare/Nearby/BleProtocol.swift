@@ -129,13 +129,25 @@ public struct BleInfo: Equatable, Sendable {
     public let identity: String?
     public let relays: [String]
     public let pairing: Pairing?
+    /// INFO's `v`, frozen like the HELLO's (formats.json `info`): an INFO without one is taken as this version's.
+    public let version: Int
+    /// INFO carries `pair` (frozen: an offer is open), readable or not; `otherProfile` = its profile when this version
+    /// reads it (docs/48: an offer of another version says who offers, nothing to join).
+    public let offersPair: Bool
+    public let otherProfile: Profile?
 
-    public init(nonce: String?, m: String?, identity: String?, relays: [String], pairing: Pairing?) {
+    public init(
+        nonce: String?, m: String?, identity: String?, relays: [String], pairing: Pairing?,
+        version: Int = Wire.version, offersPair: Bool? = nil, otherProfile: Profile? = nil
+    ) {
         self.nonce = nonce
         self.m = m
         self.identity = identity
         self.relays = relays
         self.pairing = pairing
+        self.version = version
+        self.offersPair = offersPair ?? (pairing != nil)
+        self.otherProfile = otherProfile
     }
 
     /// Whose phone sent this INFO (B§6).
@@ -168,13 +180,23 @@ public struct BleInfo: Equatable, Sendable {
     /// can't be listed at `now`: expired, or claiming to last longer than 10 minutes plus clock skew (a fake offer
     /// can't stay listed). Nothing in it is trusted until both devices show the same pairing code.
     public func offer(now: Int) -> NearbyOffer? {
-        guard let identity, Hex.isKey(identity), let pairing,
+        guard version == Wire.version, let identity, Hex.isKey(identity), let pairing,
             NearbyPairing.offerExpiryOK(pairing.expiry, now: now)
         else { return nil }
         let invite = Invite(
             identity: identity, token: pairing.token, expiry: pairing.expiry, relays: relays,
             profile: pairing.profile)
         return NearbyOffer(invite: invite, commit: pairing.commit)
+    }
+
+    /// A *Pair nearby* offer of another version (docs/48 "When versions differ"): `v` isn't this app's and the frozen
+    /// `i` and `pair` are there. Only who offers is read (the profile when this version still reads it); it can't be
+    /// joined, and `update` says which side updates.
+    public func otherOffer() -> NearbyOffer? {
+        guard version != Wire.version, offersPair, let identity, Hex.isKey(identity) else { return nil }
+        let invite = Invite(
+            identity: identity, token: "", expiry: 0, relays: relays, profile: pairing?.profile ?? otherProfile)
+        return NearbyOffer(invite: invite, commit: "", update: version > Wire.version ? .thisApp : .wearer)
     }
 }
 
@@ -196,7 +218,7 @@ public enum BleMessage: Equatable, Sendable {
         case .event(let event):
             return Data("[\"EVENT\",\(event.json())]".utf8)
         case .info(let info):
-            var body: [String: Any] = ["v": Wire.version]
+            var body: [String: Any] = ["v": info.version]
             if let nonce = info.nonce { body["nonce"] = nonce }
             if let m = info.m { body["m"] = m }
             if let identity = info.identity { body["i"] = identity }
@@ -233,7 +255,9 @@ public enum BleMessage: Equatable, Sendable {
             return .info(
                 BleInfo(
                     nonce: o["nonce"] as? String, m: o["m"] as? String, identity: o["i"] as? String,
-                    relays: Relays.list(o["relays"]), pairing: pairing))
+                    relays: Relays.list(o["relays"]), pairing: pairing,
+                    version: (o["v"] as? NSNumber)?.intValue ?? Wire.version, offersPair: pair != nil,
+                    otherProfile: (pair?["profile"] as? [String: Any]).flatMap(Profile.init(wire:))))
         case "HELLO":
             guard let o = array[1] as? [String: Any], let nonce = o["nonce"] as? String else { return nil }
             return .hello(nonce: nonce, id: o["id"] as? String)
