@@ -30,7 +30,6 @@ class AppGlance extends WatchUi.GlanceView {
             _timer = null;
         }
         AppDraw.release();
-        AppDraw.mdc = null;
     }
 
     function tick() as Void {
@@ -64,8 +63,8 @@ class AppGlance extends WatchUi.GlanceView {
         AppParts.glance(g, d);
         d = null;
         AppDraw.paint(dc, g);
-        // and its atlases after it: kept, the next draw (every 30 s, a new reading) ran out of memory
+        // and its atlases (and the Dc it measured on) after it: kept, the next draw (every 30 s, a new reading) ran
+        // out of memory
         AppDraw.release();
-        AppDraw.mdc = null;
     }
 }

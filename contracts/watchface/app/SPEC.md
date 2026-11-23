@@ -51,9 +51,11 @@ docs/47). No input: selecting it opens the app.
   under the value the places move to the content's top.
 - **Under the value**, only when needed, at the content's bottom: the reading's time when late (≥ 90 s), then Sukrara's
   pill; both in the glance's font (`FONT_GLANCE`, §14.1), the pill 1.5 caps tall. Every word of the glance is in that
-  font: the states below wrap to the content's width.
+  font.
 - **States**: old (≥ 5 min) struck grey with a hollow ring for the arrow; no reading for 20 min → "No reading since" +
-  the time; warming up → the pie + "Warming up" + "Ready at …"; no message from the phone yet → "Waiting for your phone" (§4.3).
+  the time; warming up → the pie + "Warming up" + "Ready at …"; no message from the phone yet → "Waiting for your phone" (§4.3), on one line
+  where it fits the content's width, else on two, the title's halves as the watch's strings give them (*Waiting for* /
+  *your phone*; no wrapping code in the glance: its 64 KB).
 
 ## 4. The app
 
@@ -303,7 +305,7 @@ button angles); `tools/watchface/app-build.mjs` renders every screen of §1 on e
   | glance | `FONT_GLANCE` (`FONT_XTINY` where a watch lacks it) | every word of the glance |
 
   A text that doesn't fit its width takes the next smaller role, down to xtiny and never below (`fitRole`); paragraphs
-  wrap (`wrap`, the watch's `Graphics.fitTextToArea`). **Atkinson** (the `n` atlases, digits and `.:-LOHIug`) stays
+  wrap to the fewest lines, as even as they come (`wrap`; the watch the same, measuring its own fonts). **Atkinson** (the `n` atlases, digits and `.:-LOHIug`) stays
   only for the big numbers: the value, the amount and its unit, the alert / done values, the ring numbers, the
   no-reading time; they snap to the class's atlas set (`ATLAS`, `snapFont`: AMOLED 14, 16 … 32 (every 2), 36, 40 … 64
   (every 4), 72 … 136 (every 8), 148; MIP 12, 14 … 24, 28, 32 … 48, 56 … 88; the 390 keeps its approved sizes).

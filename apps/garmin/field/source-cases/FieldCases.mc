@@ -135,6 +135,7 @@ class FieldCasesView extends WatchUi.DataField {
         }
         // the case's model and its paint (each its own call: the data field's stack is small), its input a frame later
         if (i != built) {
+            FieldDraw.mdc = dc; // the words are measured on the Dc they're drawn on
             build(i);
             painted = -1;
         } else if (painted == built && dumped != built) {

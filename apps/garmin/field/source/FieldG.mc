@@ -14,7 +14,9 @@ import Toybox.WatchUi;
 //   C [1, cx, cy, r, col, op, sw]                  a circle (sw 0 = filled)
 //   L [2, x1, y1, x2, y2, col, op, sw, on, off, round] a line (on > 0: dashed), round caps or butt
 //   P [3, [x, y, x, y, …], col, op]                a filled polygon
-//   T [4, x, baseline, s, key, col, anchor, ls]    a text (anchor -1 start, 0 middle, 1 end; key FieldFontTable's)
+//   T [4, x, baseline, s, font, col, anchor, ls]   a text (anchor -1 start, 0 middle, 1 end): font a Number = a word
+//                                                  in the watch's system font (FieldDraw roles), a String = a big
+//                                                  number's atlas (FieldFontTable's key)
 //   I [5, cx, cy, size, col]                       the bell, tinted
 // Colours as the reference gives them; the painter maps them on MIP as app.js's G.col (the 64 colours, no alpha, a
 // light tint as a dither: SPEC §14.3); strokes to whole px when added.
@@ -40,11 +42,14 @@ class FieldG {
         els.add([3, pts, col, op]);
     }
 
-    // a text at [fs] units, weight [fw] (500 / 600 / 700), [ls] letter spacing (units); the big numbers' atlas for a
-    // value (digits, LO / HI, "---") at weight 700
-    function t(x as Numeric, y as Numeric, s as String, fs as Numeric, fw as Number, col as Number, anchor as Number,
-            ls as Numeric) as Void {
-        els.add([4, x, y, s, FieldDraw.font(fs, fw, s), col, anchor, ls]);
+    // a word in the watch's system font of [role] (FieldDraw.XT … ME; app.js g.t with f), its baseline at y
+    function w(x as Numeric, y as Numeric, s as String, role as Number, col as Number, anchor as Number) as Void {
+        els.add([4, x, y, s, role, col, anchor, 0]);
+    }
+
+    // a big number in Atkinson at [fs] units (the value, LO / HI, "---"; weight 700), [ls] letter spacing (units)
+    function t(x as Numeric, y as Numeric, s as String, fs as Numeric, col as Number, anchor as Number, ls as Numeric) as Void {
+        els.add([4, x, y, s, FieldDraw.font(fs), col, anchor, ls]);
     }
 
     function icon(cx as Numeric, cy as Numeric, size as Numeric, col as Number) as Void {
@@ -122,6 +127,48 @@ module FieldDraw {
         return H / 2.0 / FieldFontTable.S;
     }
 
+    // --- the words: the watch's own fonts, by role (SPEC §14.1, app.js TYPE / fitRole) ---
+    // the roles are Garmin's font ids (FONT_XTINY … FONT_MEDIUM: 0 … 3, a smaller role one less)
+    const XT = Graphics.FONT_XTINY;
+    const TI = Graphics.FONT_TINY;
+    const SM = Graphics.FONT_SMALL;
+    const ME = Graphics.FONT_MEDIUM;
+    // the Dc the words are measured on: the one being drawn (set before the layout), else a 1 × 1 bitmap's (the tests)
+    var mdc as Dc? = null;
+    var mbmp = null;
+
+    function measurer() as Dc {
+        if (mdc == null) {
+            mbmp = Graphics.createBufferedBitmap({:width => 1, :height => 1});
+            mdc = ((mbmp as Graphics.BufferedBitmapReference).get() as Graphics.BufferedBitmap).getDc();
+        }
+        return mdc as Dc;
+    }
+
+    // a word's width in layout units, as the watch draws it
+    function ww(str as String, role as Number) as Float {
+        return measurer().getTextWidthInPixels(str, role as Graphics.FontDefinition) / FieldFontTable.S;
+    }
+
+    // the cap the layout centres on: 0.75 × the font's ascent (app.js capOf), and the line's height, in units
+    function capOf(role as Number) as Float {
+        return Graphics.getFontAscent(role as Graphics.FontDefinition) * 0.75 / FieldFontTable.S;
+    }
+
+    function lh(role as Number) as Float {
+        return Graphics.getFontHeight(role as Graphics.FontDefinition) / FieldFontTable.S;
+    }
+
+    // the largest role from [role] down to xtiny whose width fits [maxW] (never smaller than xtiny)
+    function fitRole(str as String, role as Number, maxW as Numeric) as Number {
+        for (var r = role; r > XT; r--) {
+            if (ww(str, r) <= maxW) {
+                return r;
+            }
+        }
+        return XT;
+    }
+
     // --- app.js's class rules (SPEC §14.1) ---
 
     // a size (units) at the size the class draws it: the nearest of its atlas set (ties: the larger); the 390 keeps
@@ -159,23 +206,9 @@ module FieldDraw {
         return q / FieldFontTable.S;
     }
 
-    // the font key for a text: "n<px>" for a value's characters at weight 700, else "a<px><m|s|b>"
-    function font(fs as Numeric, fw as Number, str as String) as String {
-        var px = Math.round(fe(fs, false) * FieldFontTable.S).toNumber();
-        if (fw >= 700 && big(str)) {
-            return "n" + px;
-        }
-        return "a" + px + (fw >= 700 ? "b" : fw >= 600 ? "s" : "m");
-    }
-
-    function big(str as String) as Boolean {
-        var cs = str.toCharArray();
-        for (var i = 0; i < cs.size(); i++) {
-            if ("0123456789.:LOHI-".find(cs[i].toString()) == null) {
-                return false;
-            }
-        }
-        return true;
+    // the big numbers' atlas key: "n<px>"
+    function font(fs as Numeric) as String {
+        return "n" + Math.round(fe(fs, false) * FieldFontTable.S).toNumber();
     }
 
     // a colour on this class: [colour, opacity, dither %] (MIP: app.js G.col; AMOLED: as given)
@@ -392,10 +425,20 @@ module FieldDraw {
         }
     }
 
-    // a text with its baseline at y, anchored by its drawn width (letter spacing after every glyph, as SVG)
+    // a text with its baseline at y, anchored by its drawn width: a word in the watch's system font; a big number's
+    // atlas glyphs (letter spacing after every glyph, as SVG), or a font resource on the watches without tinted bitmaps
     function text(dc as Dc, e as Array) as Void {
         var s0 = e[3] as String;
-        var a = loadFont(e[4] as String);
+        var f = e[4];
+        if (f instanceof Number) {
+            var an = e[6] as Number;
+            dc.setColor(paintCol(e[5] as Number, 1.0, 2) & 0xFFFFFF, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(Math.round(X(e[1]) + 0.5), Math.round(Y(e[2]) + 0.5) - Graphics.getFontAscent(f as Graphics.FontDefinition),
+                f as Graphics.FontDefinition, s0,
+                an < 0 ? Graphics.TEXT_JUSTIFY_LEFT : an == 0 ? Graphics.TEXT_JUSTIFY_CENTER : Graphics.TEXT_JUSTIFY_RIGHT);
+            return;
+        }
+        var a = loadFont(f as String);
         if (a.size() == 0) {
             return;
         }

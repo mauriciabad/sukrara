@@ -102,30 +102,25 @@ module AppParts {
         var gap = cap * 0.3;
         var two = parts.size() == 2;
         var y0 = cy - (two ? 2 * cap + gap : ms + gap + cap) / 2;
-        var mx = cx;
-        var my = y0 + ms / 2;
-        var x0 = cx;
-        if (two) {
-            x0 = cx - (ms + 3 + AppDraw.ww(parts[0], role)) / 2;
-            mx = x0 + ms / 2;
-            my = y0 + cap / 2;
-        }
+        // the mark's centre: over the time, or left of its first line (the two centred together, 3 apart)
+        var mx = two ? cx - AppDraw.ww(parts[0], role) / 2 - 1.5 : cx;
+        var my = y0 + (two ? cap : ms) / 2;
+        var h = ms / 2;
         if (k.equals("carbs")) {
             g.c(mx, my, ms * 0.4, col, 1.0, 0);
         } else {
-            var tri = [mx - ms / 2, my - ms * 0.42, mx + ms / 2, my - ms * 0.42, mx, my + ms * 0.42];
+            var q = ms * 0.42;
+            var tri = [mx - h, my - q, mx + h, my - q, mx, my + q];
             if (k.equals("long")) {
-                g.l(tri.addAll([tri[0], tri[1]]), col, 1.0, 2, null);
+                g.l(tri.addAll([mx - h, my - q]), col, 1.0, 2, null);
             } else {
                 g.p(tri, col, 1.0);
             }
         }
-        if (!two) {
-            g.w(cx, y0 + ms + gap + cap, parts[0], role, AppMath.INK, MIDDLE);
-            return;
+        g.w(two ? mx + h + 3 : cx, y0 + (two ? 0 : ms + gap) + cap, parts[0], role, AppMath.INK, two ? START : MIDDLE);
+        if (two) {
+            g.w(cx, y0 + 2 * cap + gap, parts[1], role, AppMath.SOFT, MIDDLE);
         }
-        g.w(x0 + ms + 3, y0 + cap, parts[0], role, AppMath.INK, START);
-        g.w(cx, y0 + 2 * cap + gap, parts[1], role, AppMath.SOFT, MIDDLE);
     }
 
     function drawSlot(g as AppG, d as AppData, s as Array, cx as Numeric, cy as Numeric, r as Numeric, sw as Numeric, nfs as Numeric, role as Number) as Void {
@@ -190,9 +185,13 @@ module AppParts {
         var GL = AppDraw.GL;
         var gc = AppDraw.capOf(GL);
         // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page. Every
-        // word in the glance's font, wrapped to the content's width, the lines centred on its middle
+        // word in the glance's font, on one line where it fits the content's width, else the title's two halves; the
+        // lines centred on its middle
         if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
-            var ls = AppDraw.wrap(AppWords.s(d.sent ? Rez.Strings.NoReadings : Rez.Strings.SetupTitle), GL, x1 - x0);
+            var ls = [AppWords.s(d.sent ? Rez.Strings.NoReadings : Rez.Strings.SetupTitle)];
+            if (!d.sent && AppDraw.ww(ls[0], GL) > x1 - x0) {
+                ls = [AppWords.s(Rez.Strings.SetupTitle1), AppWords.s(Rez.Strings.SetupTitle2)];
+            }
             var lh = AppDraw.lh(GL);
             for (var i = 0; i < ls.size(); i++) {
                 g.w(x0, -(ls.size() - 1) * lh / 2 + gc / 2 + i * lh, ls[i], GL, AppMath.SOFT, START);

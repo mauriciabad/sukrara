@@ -23,6 +23,11 @@ Sukrara's releases. 0.x versions are previews.
   again if the phone is locked by then. Swiping the alert away on the phone, muting it or treating it
   takes it off the watch too. Followers' watches follow their own phone. The watch keeps showing your glucose, its
   colour and the pill.
+- **Readable words on Garmin watches** (#252): the Sukrara watch app and data field now write every word in your
+  watch's own fonts, never smaller than its smallest one, which Garmin tuned for reading on that watch. Small texts
+  (the chart's hours and %, the list's details, the pill, the data field's *GLUCOSE*) were about half that size on the
+  AMOLED watches. Your glucose, the amount and the ring numbers keep Sukrara's own figures (Atkinson Hyperlegible). Where a word no
+  longer fits it takes a smaller size, a second line, or is left out where the phone already says it.
 - **Sukrara on Garmin watches, the watch side** (#199, not released yet): the Sukrara app publishes four complications
   for any face (glucose, CGM+ GB's data and graph, and the last treatment as *Log*), turning to "---" on time when the
   reading gets old; a new alert from the phone shows as Garmin's notification with *Treatment*, *Remind less* and

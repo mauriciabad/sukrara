@@ -174,21 +174,17 @@ module AppDraw {
     const ME = Graphics.FONT_MEDIUM;
     const GL = Graphics.FONT_GLANCE;
     // a Dc the words are measured on: the glance's own while it lays out, else a 1 × 1 bitmap's (the app lays out
-    // before it draws)
+    // before it draws: AppDrawApp.measurer)
     var mdc as Dc? = null;
     var mbmp = null;
 
-    function measurer() as Dc {
-        if (mdc == null) {
-            mbmp = Graphics.createBufferedBitmap({:width => 1, :height => 1});
-            mdc = ((mbmp as Graphics.BufferedBitmapReference).get() as Graphics.BufferedBitmap).getDc();
-        }
-        return mdc as Dc;
-    }
-
     // a word's width in layout units, as the watch draws it
     function ww(str as String, role as Number) as Float {
-        return measurer().getTextWidthInPixels(str, role as Graphics.FontDefinition) / s;
+        var dc = mdc;
+        if (dc == null) {
+            dc = AppDrawApp.measurer();
+        }
+        return dc.getTextWidthInPixels(str, role as Graphics.FontDefinition) / s;
     }
 
     // the cap the layout centres on: 0.75 × the font's ascent (app.js capOf), and the line's height, in units
@@ -198,48 +194,6 @@ module AppDraw {
 
     function lh(role as Number) as Float {
         return Graphics.getFontHeight(role as Graphics.FontDefinition) / s;
-    }
-
-    // the largest role from [role] down to xtiny whose width fits [maxW] (never smaller than xtiny)
-    function fitRole(str as String, role as Number, maxW as Numeric) as Number {
-        for (var r = role; r > XT; r--) {
-            if (ww(str, r) <= maxW) {
-                return r;
-            }
-        }
-        return XT;
-    }
-
-    // the words of [str] in lines no wider than [maxW]: the fewest lines, as even as they come (app.js wrap)
-    function wrap(str as String, role as Number, maxW as Numeric) as Array<String> {
-        var n = greedy(str, role, maxW).size();
-        var w = maxW;
-        while (w > 20 && greedy(str, role, w - 4).size() == n) {
-            w -= 4;
-        }
-        return greedy(str, role, w);
-    }
-
-    function greedy(str as String, role as Number, maxW as Numeric) as Array<String> {
-        var out = [] as Array<String>;
-        var cur = "";
-        var rest = str;
-        while (rest.length() > 0) {
-            var i = rest.find(" ");
-            var word = i == null ? rest : rest.substring(0, i) as String;
-            rest = i == null ? "" : rest.substring(i + 1, rest.length()) as String;
-            var t = cur.length() > 0 ? cur + " " + word : word;
-            if (cur.length() > 0 && ww(t, role) > maxW) {
-                out.add(cur);
-                cur = word;
-            } else {
-                cur = t;
-            }
-        }
-        if (cur.length() > 0) {
-            out.add(cur);
-        }
-        return out;
     }
 
     // a font key: a text "a<px><m|s|b>", a big number "n<px>"
@@ -263,6 +217,7 @@ module AppDraw {
     function release() as Void {
         fonts = {};
         sheets = {};
+        mdc = null;
     }
 
     // a font's atlas and glyph table, loaded once a page (AppDraw.release); the glance holds one at a time (its 64 KB:
@@ -701,9 +656,10 @@ module AppDraw {
     // monkey.jungle's screen classes)
     function text(dc as Dc, e as Array) as Void {
         var f = e[4];
+        var tc = (col(e[5] as Number, 1.0, 2)[0] as Number) & 0xFFFFFF;
         if (f instanceof Number) {
             var an = e[6] as Number;
-            dc.setColor((col(e[5] as Number, 1.0, 2)[0] as Number) & 0xFFFFFF, Graphics.COLOR_TRANSPARENT);
+            dc.setColor(tc, Graphics.COLOR_TRANSPARENT);
             dc.drawText(Math.round(X(e[1]) + 0.5), Math.round(Y(e[2]) + 0.5) - Graphics.getFontAscent(f as Graphics.FontDefinition),
                 f as Graphics.FontDefinition, e[3] as String,
                 an < 0 ? Graphics.TEXT_JUSTIFY_LEFT : an == 0 ? Graphics.TEXT_JUSTIFY_CENTER : Graphics.TEXT_JUSTIFY_RIGHT);
@@ -714,39 +670,28 @@ module AppDraw {
             missing(e[4] as String);
             return;
         }
-        var tc = (col(e[5] as Number, 1.0, 2)[0] as Number) & 0xFFFFFF;
-        glyphs(dc, e[3] as String, a, tc, X(e[1]) + 0.5, Y(e[2]) + 0.5, e[6] as Number, 0);
+        glyphs(dc, e[3] as String, a, tc, X(e[1]) + 0.5, Y(e[2]) + 0.5, e[6] as Number);
     }
 
     // a font resource; the system draws bitmap fonts 1 px under the line
     (:plain)
-    function glyphs(dc as Dc, s0 as String, a as Array, tc as Number, x as Float, base as Float, anchor as Number, ls as Numeric) as Void {
+    function glyphs(dc as Dc, s0 as String, a as Array, tc as Number, x as Float, base as Float, anchor as Number) as Void {
         var fr = a[0];
         dc.setColor(tc, Graphics.COLOR_TRANSPARENT);
-        var cs = s0.toCharArray();
         if (anchor >= 0) {
-            var w = dc.getTextWidthInPixels(s0, fr) + ls * cs.size();
+            var w = dc.getTextWidthInPixels(s0, fr);
             x -= anchor == 0 ? w / 2.0 : w;
         }
-        var top = base - (a[1] as Number) - 1;
-        if (ls == 0) {
-            dc.drawText(Math.floor(x + 0.5), top, fr, s0, Graphics.TEXT_JUSTIFY_LEFT);
-            return;
-        }
-        for (var i = 0; i < cs.size(); i++) {
-            var ch = cs[i].toString();
-            dc.drawText(Math.floor(x + 0.5), top, fr, ch, Graphics.TEXT_JUSTIFY_LEFT);
-            x += dc.getTextWidthInPixels(ch, fr) + ls;
-        }
+        dc.drawText(Math.floor(x + 0.5), base - (a[1] as Number) - 1, fr, s0, Graphics.TEXT_JUSTIFY_LEFT);
     }
 
     // atlas glyphs, tinted
     (:atlas)
-    function glyphs(dc as Dc, s0 as String, a as Array, tc as Number, x as Float, base as Float, anchor as Number, ls as Numeric) as Void {
+    function glyphs(dc as Dc, s0 as String, a as Array, tc as Number, x as Float, base as Float, anchor as Number) as Void {
         var chars = a[1] as String;
         var m = a[2] as Array<Number>;
         if (anchor >= 0) {
-            var w = width(a, s0) + ls * s0.length();
+            var w = width(a, s0);
             x -= anchor == 0 ? w / 2.0 : w;
         }
         var top = base - (a[3] as Number);
@@ -771,7 +716,7 @@ module AppDraw {
                     :bitmapX => gx, :bitmapY => gy, :bitmapWidth => gw0, :bitmapHeight => gh, :tintColor => tc,
                 });
             }
-            x += (q >> 16) / 16.0 + ls;
+            x += (q >> 16) / 16.0;
         }
     }
 
@@ -841,6 +786,56 @@ module AppDraw {
 // The app's own drawing, out of the glance's code (its 64 KB): a bitmap resource [size] units wide at its centre, drawn
 // at its own size where the class's resource is made at it (AppDraw.bitmapAt)
 module AppDrawApp {
+    // the app's measuring Dc (AppDraw.ww): a 1 × 1 bitmap's, made at the first word measured after a release
+    function measurer() as Dc {
+        AppDraw.mbmp = Graphics.createBufferedBitmap({:width => 1, :height => 1});
+        var dc = ((AppDraw.mbmp as Graphics.BufferedBitmapReference).get() as Graphics.BufferedBitmap).getDc();
+        AppDraw.mdc = dc;
+        return dc;
+    }
+
+    // the words of [str] in lines no wider than [maxW]: the fewest lines, as even as they come (app.js wrap)
+    function wrap(str as String, role as Number, maxW as Numeric) as Array<String> {
+        var n = greedy(str, role, maxW).size();
+        var w = maxW;
+        while (w > 20 && greedy(str, role, w - 4).size() == n) {
+            w -= 4;
+        }
+        return greedy(str, role, w);
+    }
+
+    function greedy(str as String, role as Number, maxW as Numeric) as Array<String> {
+        var out = [] as Array<String>;
+        var cur = "";
+        var rest = str;
+        while (rest.length() > 0) {
+            var i = rest.find(" ");
+            var word = i == null ? rest : rest.substring(0, i) as String;
+            rest = i == null ? "" : rest.substring(i + 1, rest.length()) as String;
+            var t = cur.length() > 0 ? cur + " " + word : word;
+            if (cur.length() > 0 && AppDraw.ww(t, role) > maxW) {
+                out.add(cur);
+                cur = word;
+            } else {
+                cur = t;
+            }
+        }
+        if (cur.length() > 0) {
+            out.add(cur);
+        }
+        return out;
+    }
+
+    // the largest role from [role] down to xtiny whose width fits [maxW] (never smaller than xtiny)
+    function fitRole(str as String, role as Number, maxW as Numeric) as Number {
+        for (var r = role; r > AppDraw.XT; r--) {
+            if (AppDraw.ww(str, r) <= maxW) {
+                return r;
+            }
+        }
+        return AppDraw.XT;
+    }
+
     function bitmap(dc as Dc, e as Array) as Void {
         var b = WatchUi.loadResource(e[1] as ResourceId) as BitmapResource;
         var bw = b.getWidth();

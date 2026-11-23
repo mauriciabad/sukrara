@@ -106,7 +106,7 @@ module AppLists {
             g.icon(it[2] as String, x0 + 38, y, on ? 26 : 22, it[3] as Number);
             var sub = it[4];
             var sw = sub != null ? AppDraw.ww(sub as String, XT) + 12 : 0;
-            var lf = AppDraw.fitRole(it[1] as String, AppDraw.SM, x1 - 16 - sw - (x0 + 62));
+            var lf = AppDrawApp.fitRole(it[1] as String, AppDraw.SM, x1 - 16 - sw - (x0 + 62));
             g.w(x0 + 62, y + AppDraw.capOf(lf) / 2, it[1] as String, lf, on ? AppMath.INK : AppMath.SOFT, -1);
             if (sub != null) {
                 g.w(x1 - 16, y + AppDraw.capOf(XT) / 2, sub as String, XT, it[5] != null ? it[5] as Number : AppMath.SOFT, 1);

@@ -65,6 +65,8 @@ module MemCases {
     const GLANCE_FONT = 1792;
 
     function glanceDraw(T as Number) as Array<Number> {
+        // the words are measured on a Dc: the glance's own, there before the draw (here a bitmap's, made first)
+        AppDrawApp.measurer();
         var m0 = used();
         Link.use(GlanceCopy.load());
         var d = AppInput.build(T + 60, false);
@@ -81,11 +83,11 @@ module MemCases {
         AppParts.glance(g, d);
         d = null;
         var list = used() - m0;
-        // each text's font, one at a time as the glance holds them
+        // each big number's font, one at a time as the glance holds them (the words are in the watch's own fonts)
         var font = 0;
         for (var i = 0; i < g.els.size(); i++) {
             var e = g.els[i] as Array;
-            if ((e[0] as Number) == 5) {
+            if ((e[0] as Number) == 5 && e[4] instanceof String) {
                 AppDraw.release();
                 var f0 = used();
                 AppDraw.loadFont(e[4] as String);

@@ -7,6 +7,9 @@
     <string id="AppName" scope="background">Sukrara</string>
     <string id="NoReadings" scope="glance">No readings</string>
     <string id="SetupTitle" scope="glance">Waiting for your phone</string>
+    <!-- the title on two lines, where the glance's font doesn't fit it on one -->
+    <string id="SetupTitle1" scope="glance">Waiting for</string>
+    <string id="SetupTitle2" scope="glance">your phone</string>
 
     <!-- the outbox (glance and app) -->
     <string id="SendWait" scope="glance">Waiting for the phone</string>

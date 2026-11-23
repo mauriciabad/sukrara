@@ -207,7 +207,7 @@ module AppScreens {
     function noValue(g as AppG, d as AppData, y as Numeric) as Void {
         if (d.sensorState.equals("warmup")) {
             var ws = AppWords.s(Rez.Strings.WWarming);
-            var wf = AppDraw.fitRole(ws, AppDraw.ME, 170);
+            var wf = AppDrawApp.fitRole(ws, AppDraw.ME, 170);
             var w0 = AppDraw.ww(ws, wf);
             var mx = -(34 + 12 + w0) / 2;
             AppParts.pie(g, mx + 17, y - 12, 17, 2.5, d.warm);
@@ -216,7 +216,7 @@ module AppScreens {
             return;
         }
         var ns = AppWords.s(Rez.Strings.WNoSince);
-        g.w(0, y - 22, ns, AppDraw.fitRole(ns, AppDraw.SM, 210), AppMath.SOFT, MIDDLE);
+        g.w(0, y - 22, ns, AppDrawApp.fitRole(ns, AppDraw.SM, 210), AppMath.SOFT, MIDDLE);
         g.t(0, y + 32, d.readAt, 48, 600, AppMath.INK, MIDDLE);
     }
 
@@ -781,7 +781,7 @@ module AppScreens {
         var c = AppDraw.capOf(role);
         var a = edgeX(y - c);
         var b = edgeX(y + c * 0.3);
-        g.w(0, y, s, AppDraw.fitRole(s, role, 2 * (a < b ? a : b) - 4), col, MIDDLE);
+        g.w(0, y, s, AppDrawApp.fitRole(s, role, 2 * (a < b ? a : b) - 4), col, MIDDLE);
     }
 
     // lines of [role] centred from baseline [y], [pitch] apart, each fitted to the screen (fitW)
@@ -894,7 +894,7 @@ module AppScreens {
             px = px < rx ? px : rx;
             var pw = AppDraw.ww(r[1] as String, pf);
             var lf = rect ? AppDraw.TI : big ? SM : AppDraw.TI;
-            g.w(lx, yy, r[0] as String, AppDraw.fitRole(r[0] as String, lf, rect ? rx - lx - pw - 8 : 150), AppMath.INK, START);
+            g.w(lx, yy, r[0] as String, AppDrawApp.fitRole(r[0] as String, lf, rect ? rx - lx - pw - 8 : 150), AppMath.INK, START);
             g.w(px, yy, r[1] as String, pf, AppMath.INK, END);
             var gy = rect ? yy + 5 + gh / 2 : yy + 18;
             var gw = goal(g, lx, gy, r[2] as String, r[3] as Boolean);
@@ -995,7 +995,7 @@ module AppScreens {
         var bh = bb[1];
         var top = AppFontTable.RECT ? -hh() + 20 : -150;
         var ir = 24;
-        var tl = AppDraw.wrap(AppWords.s(Rez.Strings.SetupTitle), ME, 290);
+        var tl = AppDrawApp.wrap(AppWords.s(Rez.Strings.SetupTitle), ME, 290);
         if (tl.size() > 2) {
             tl = tl.slice(0, 2);
         }
@@ -1006,7 +1006,7 @@ module AppScreens {
         var ls = given;
         for (var k = 0; k < 2; k++) {
             bf = k == 0 ? AppDraw.TI : AppDraw.XT;
-            ls = AppDraw.ww(given[0], bf) <= bw1 && AppDraw.ww(given[1], bf) <= bw1 ? given : AppDraw.wrap(given[0] + " " + given[1], bf, bw1);
+            ls = AppDraw.ww(given[0], bf) <= bw1 && AppDraw.ww(given[1], bf) <= bw1 ? given : AppDrawApp.wrap(given[0] + " " + given[1], bf, bw1);
             if (ls.size() <= 2) {
                 break;
             }
@@ -1025,7 +1025,7 @@ module AppScreens {
         if (opened) {
             var look = AppWords.s(Rez.Strings.LookPhone);
             var e = edgeX(by + bh / 2 + AppDraw.capOf(AppDraw.SM) / 2 + 4);
-            var lf = AppDraw.fitRole(look, AppDraw.SM, (250 < 2 * e - 34 ? 250 : 2 * e - 34));
+            var lf = AppDrawApp.fitRole(look, AppDraw.SM, (250 < 2 * e - 34 ? 250 : 2 * e - 34));
             var lw = AppDraw.ww(look, lf) + 30;
             g.icon("phone", -lw / 2 + 11, by + bh / 2, 22, AppMath.INK);
             g.w(-lw / 2 + 30, by + bh / 2 + AppDraw.capOf(lf) / 2, look, lf, AppMath.INK, START);
@@ -1033,7 +1033,7 @@ module AppScreens {
         }
         var bt = AppWords.s(Rez.Strings.OpenOnPhone);
         var e2 = 2 * edgeX(by + bh) - 70;
-        var bfn = AppDraw.fitRole(bt, AppDraw.SM, 220 < e2 ? 220 : e2);
+        var bfn = AppDrawApp.fitRole(bt, AppDraw.SM, 220 < e2 ? 220 : e2);
         var bw0 = AppDraw.ww(bt, bfn) + 26;
         var w = bw0 + 40;
         g.r(-w / 2, by, w, bh, bh / 2, AppMath.INK, 1.0, 0);

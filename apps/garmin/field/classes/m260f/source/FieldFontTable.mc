@@ -17,14 +17,14 @@ module FieldFontTable {
     const BELL = 16;
     const BELL_BOX = 20;
 
-    // key ("a<px><m|s|b>" a text, "n<px>" a big number) → [atlas bitmap, glyph table] or [font, baseline px];
+    // key ("n<px>" a big number) → [atlas bitmap, glyph table] or [font, baseline px];
     // [] = not on this class
     function atlas(key as String) as Array {
-        var i = ["a12m", "a12s", "a14m", "a14s", "a16b", "a16s", "n12", "n14", "n16", "n18", "n20", "n22", "n24", "n28", "n32", "n36", "n40", "n44", "n48", "n56", "n64", "n72", "n80"].indexOf(key);
+        var i = ["n12", "n14", "n16", "n18", "n20", "n22", "n24", "n28", "n32", "n36", "n40", "n44", "n48", "n56", "n64", "n72", "n80"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Fonts.a12m, Rez.Fonts.a12s, Rez.Fonts.a14m, Rez.Fonts.a14s, Rez.Fonts.a16b, Rez.Fonts.a16s, Rez.Fonts.n12, Rez.Fonts.n14, Rez.Fonts.n16, Rez.Fonts.n18, Rez.Fonts.n20, Rez.Fonts.n22, Rez.Fonts.n24, Rez.Fonts.n28, Rez.Fonts.n32, Rez.Fonts.n36, Rez.Fonts.n40, Rez.Fonts.n44, Rez.Fonts.n48, Rez.Fonts.n56, Rez.Fonts.n64, Rez.Fonts.n72, Rez.Fonts.n80][i], [12, 12, 14, 14, 16, 16, 12, 14, 16, 18, 20, 22, 24, 28, 31, 35, 39, 43, 47, 55, 63, 71, 79][i]];
+        return [[Rez.Fonts.n12, Rez.Fonts.n14, Rez.Fonts.n16, Rez.Fonts.n18, Rez.Fonts.n20, Rez.Fonts.n22, Rez.Fonts.n24, Rez.Fonts.n28, Rez.Fonts.n32, Rez.Fonts.n36, Rez.Fonts.n40, Rez.Fonts.n44, Rez.Fonts.n48, Rez.Fonts.n56, Rez.Fonts.n64, Rez.Fonts.n72, Rez.Fonts.n80][i], [12, 14, 16, 18, 20, 22, 24, 28, 31, 35, 39, 43, 47, 55, 63, 71, 79][i]];
     }
 
     function bell() as ResourceId {

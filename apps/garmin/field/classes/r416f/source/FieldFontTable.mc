@@ -17,14 +17,14 @@ module FieldFontTable {
     const BELL = 26;
     const BELL_BOX = 30;
 
-    // key ("a<px><m|s|b>" a text, "n<px>" a big number) → [atlas bitmap, glyph table] or [font, baseline px];
+    // key ("n<px>" a big number) → [atlas bitmap, glyph table] or [font, baseline px];
     // [] = not on this class
     function atlas(key as String) as Array {
-        var i = ["a16s", "a18m", "a18s", "a22m", "a22s", "a26b", "a26s", "n14", "n16", "n18", "n20", "n22", "n24", "n26", "n28", "n30", "n32", "n36", "n40", "n44", "n48", "n52", "n56", "n60", "n64", "n72", "n80", "n88", "n96", "n104", "n112", "n120"].indexOf(key);
+        var i = ["n14", "n16", "n18", "n20", "n22", "n24", "n26", "n28", "n30", "n32", "n36", "n40", "n44", "n48", "n52", "n56", "n60", "n64", "n72", "n80", "n88", "n96", "n104", "n112", "n120"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Fonts.a16s, Rez.Fonts.a18m, Rez.Fonts.a18s, Rez.Fonts.a22m, Rez.Fonts.a22s, Rez.Fonts.a26b, Rez.Fonts.a26s, Rez.Fonts.n14, Rez.Fonts.n16, Rez.Fonts.n18, Rez.Fonts.n20, Rez.Fonts.n22, Rez.Fonts.n24, Rez.Fonts.n26, Rez.Fonts.n28, Rez.Fonts.n30, Rez.Fonts.n32, Rez.Fonts.n36, Rez.Fonts.n40, Rez.Fonts.n44, Rez.Fonts.n48, Rez.Fonts.n52, Rez.Fonts.n56, Rez.Fonts.n60, Rez.Fonts.n64, Rez.Fonts.n72, Rez.Fonts.n80, Rez.Fonts.n88, Rez.Fonts.n96, Rez.Fonts.n104, Rez.Fonts.n112, Rez.Fonts.n120][i], [16, 18, 18, 22, 22, 26, 26, 14, 16, 18, 20, 22, 24, 26, 28, 30, 31, 35, 39, 43, 47, 51, 55, 59, 63, 71, 79, 87, 94, 102, 110, 118][i]];
+        return [[Rez.Fonts.n14, Rez.Fonts.n16, Rez.Fonts.n18, Rez.Fonts.n20, Rez.Fonts.n22, Rez.Fonts.n24, Rez.Fonts.n26, Rez.Fonts.n28, Rez.Fonts.n30, Rez.Fonts.n32, Rez.Fonts.n36, Rez.Fonts.n40, Rez.Fonts.n44, Rez.Fonts.n48, Rez.Fonts.n52, Rez.Fonts.n56, Rez.Fonts.n60, Rez.Fonts.n64, Rez.Fonts.n72, Rez.Fonts.n80, Rez.Fonts.n88, Rez.Fonts.n96, Rez.Fonts.n104, Rez.Fonts.n112, Rez.Fonts.n120][i], [14, 16, 18, 20, 22, 24, 26, 28, 30, 31, 35, 39, 43, 47, 51, 55, 59, 63, 71, 79, 87, 94, 102, 110, 118][i]];
     }
 
     function bell() as ResourceId {

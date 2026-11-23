@@ -17,14 +17,14 @@ module FieldFontTable {
     const BELL = 15;
     const BELL_BOX = 19;
 
-    // key ("a<px><m|s|b>" a text, "n<px>" a big number) → [atlas bitmap, glyph table] or [font, baseline px];
+    // key ("n<px>" a big number) → [atlas bitmap, glyph table] or [font, baseline px];
     // [] = not on this class
     function atlas(key as String) as Array {
-        var i = ["a12m", "a12s", "a14b", "a14s", "n12", "n14", "n16", "n18", "n20", "n22", "n24", "n28", "n32", "n36", "n40", "n44", "n48", "n56", "n64", "n72"].indexOf(key);
+        var i = ["n12", "n14", "n16", "n18", "n20", "n22", "n24", "n28", "n32", "n36", "n40", "n44", "n48", "n56", "n64", "n72"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Drawables.a12m, Rez.Drawables.a12s, Rez.Drawables.a14b, Rez.Drawables.a14s, Rez.Drawables.n12, Rez.Drawables.n14, Rez.Drawables.n16, Rez.Drawables.n18, Rez.Drawables.n20, Rez.Drawables.n22, Rez.Drawables.n24, Rez.Drawables.n28, Rez.Drawables.n32, Rez.Drawables.n36, Rez.Drawables.n40, Rez.Drawables.n44, Rez.Drawables.n48, Rez.Drawables.n56, Rez.Drawables.n64, Rez.Drawables.n72][i], [Rez.JsonData.a12m_m, Rez.JsonData.a12s_m, Rez.JsonData.a14b_m, Rez.JsonData.a14s_m, Rez.JsonData.n12_m, Rez.JsonData.n14_m, Rez.JsonData.n16_m, Rez.JsonData.n18_m, Rez.JsonData.n20_m, Rez.JsonData.n22_m, Rez.JsonData.n24_m, Rez.JsonData.n28_m, Rez.JsonData.n32_m, Rez.JsonData.n36_m, Rez.JsonData.n40_m, Rez.JsonData.n44_m, Rez.JsonData.n48_m, Rez.JsonData.n56_m, Rez.JsonData.n64_m, Rez.JsonData.n72_m][i]];
+        return [[Rez.Drawables.n12, Rez.Drawables.n14, Rez.Drawables.n16, Rez.Drawables.n18, Rez.Drawables.n20, Rez.Drawables.n22, Rez.Drawables.n24, Rez.Drawables.n28, Rez.Drawables.n32, Rez.Drawables.n36, Rez.Drawables.n40, Rez.Drawables.n44, Rez.Drawables.n48, Rez.Drawables.n56, Rez.Drawables.n64, Rez.Drawables.n72][i], [Rez.JsonData.n12_m, Rez.JsonData.n14_m, Rez.JsonData.n16_m, Rez.JsonData.n18_m, Rez.JsonData.n20_m, Rez.JsonData.n22_m, Rez.JsonData.n24_m, Rez.JsonData.n28_m, Rez.JsonData.n32_m, Rez.JsonData.n36_m, Rez.JsonData.n40_m, Rez.JsonData.n44_m, Rez.JsonData.n48_m, Rez.JsonData.n56_m, Rez.JsonData.n64_m, Rez.JsonData.n72_m][i]];
     }
 
     function bell() as ResourceId {

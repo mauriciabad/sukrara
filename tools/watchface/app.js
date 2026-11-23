@@ -957,8 +957,10 @@ var WL = (function () {
     glanceLoop(g, d, function (B) {
       var X0 = 0, X1 = B.w, R = 23, SW = 5, gapR = 6;
       // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page
-      // words in the glance's font (FONT_GLANCE), wrapped to the content's width
-      if (c.setup) { glanceLines(g, wrap(c.setupText || 'Waiting for your phone', 'glance', X1 - X0), X0, PAL.soft); return; }
+      // words in the glance's font (FONT_GLANCE), on one line where they fit the content's width, else the title's two
+      // halves (the watch's strings SetupTitle1 / 2)
+      var st = 'Waiting for your phone';
+      if (c.setup) { glanceLines(g, ww(st, 'glance') <= X1 - X0 ? [st] : ['Waiting for', 'your phone'], X0, PAL.soft); return; }
       var under = (d.pill && d.age < 5) || d.age >= 1.5 || !!c.sending;
       // the row under the value: the glance's font, the pill 1.5 caps tall, at the content's bottom; the value over it
       var gc = capOf('glance'), rowH = gc * 1.5, cy = B.h / 2 - rowH / 2 - 1;

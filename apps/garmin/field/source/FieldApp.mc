@@ -124,6 +124,7 @@ class FieldView extends WatchUi.DataField {
         var h = dc.getHeight();
         var obs = getObscurityFlags();
         var at = FieldPlace.of(w, h, W, H, obs);
+        FieldDraw.mdc = dc; // the words are measured on the Dc they're drawn on
         var g = FieldLayout.field(new FieldInput().from(Readings.input(now)), new FieldSlot(at[0], at[1], w, h, W, H, obs));
         FieldPlace.paint(dc, g, at[0], at[1], W, H);
     }
@@ -204,6 +205,7 @@ class FieldAlert extends WatchUi.DataFieldAlert {
     function onUpdate(dc as Graphics.Dc) as Void {
         var now = Time.now().value();
         var d = new FieldInput().from(Readings.input(now));
+        FieldDraw.mdc = dc;
         FieldPlace.paint(dc, FieldWords.alert(d, _kind), 0, 0, dc.getWidth(), dc.getHeight());
     }
 }

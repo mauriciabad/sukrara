@@ -3109,6 +3109,15 @@ both drawn from `app.js` on every screen class, SPEC §14). Every watch with API
   readings*. **Not set up** (no message from the phone yet): *GLUCOSE* and *Waiting for phone*, no alert, nothing
   recorded. The field draws its own black ground (the design's) whatever the activity's colours; where the slot sits
   comes from the sides the screen cuts (Connect IQ gives a field its size, not its place).
+- **Words in the watch's own fonts** (#252, SPEC §14.1): every word of the app and the data field is drawn in the
+  watch's system font of its role, never smaller than the watch's smallest (`FONT_XTINY`, about 1.4 – 1.8 mm cap
+  height): fine print (the chart's hours and %, the list's detail, pills, the field's *GLUCOSE* and time) xtiny,
+  sub-lines tiny, list items and buttons small, titles medium, the glance's words Garmin's glance font. Atkinson stays
+  for the big numbers only (the value, the amount, the alert and done values, the ring numbers). The layout follows
+  each watch's fonts (their widths and line heights, measured on the watch): a word that doesn't fit takes the next
+  smaller role (never under xtiny), wraps, or gives way by a rule (the Venu Sq 2's report leaves *very good* out; the
+  glance's *Waiting for your phone* goes on two lines). Before, small texts were Atkinson at 12 – 16 px, 40 – 55 % of
+  the size of Garmin's smallest font on the AMOLED watches.
 - **The watch's last treatment** is the card's: the first step of the phone's `last` chain still ahead, its first
   item (kind and time; long-acting never, as on the card).
 - **Logging and mutes wait in an outbox** (`Outbox`, contracts/watchface/payload "Entries from the watch"): each with
@@ -3129,7 +3138,7 @@ both drawn from `app.js` on every screen class, SPEC §14). Every watch with API
   grey), the bell and the word, the value and its arrow, *Sukrara · now* / *3 min ago*; and vibrates.
 - **The app** (every screen class, SPEC §14: round AMOLED 360 – 466 the 390 scaled, the round 64-colour MIP 218 – 280
   with their palette, outlines and dithers and page 1's drops on the small ones, the Venu Sq 2 and Venu X1 with their
-  own page 1, page 2, list and amount; the texts at the class's atlas sizes; the button hints at each class's buttons,
+  own page 1, page 2, list and amount; the words in the watch's own fonts (below); the button hints at each class's buttons,
   none for UP / DOWN on the two-button watches, which page and change the amount by swipe and tap): the
   glance (the value, the main metric's ring and the last treatment or second metric, the value shrinking to keep both;
   the reading's time when late, the pill, then the outbox's line: *Waiting for the phone*, *Sent*, *The phone has a

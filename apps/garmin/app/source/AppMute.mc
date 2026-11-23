@@ -129,13 +129,13 @@ module AppMute {
             var y = BTN[i] as Number;
             var on = i == sel;
             g.r(-130, y - 26, 260, 52, 26, on ? note : AppMath.CARD2, 1.0, 0);
-            g.w(0, y + AppDraw.capOf(AppDraw.SM) / 2, items[i], AppDraw.fitRole(items[i], AppDraw.SM, 230), on ? AppMath.ON : AppMath.INK, MIDDLE);
+            g.w(0, y + AppDraw.capOf(AppDraw.SM) / 2, items[i], AppDrawApp.fitRole(items[i], AppDraw.SM, 230), on ? AppMath.ON : AppMath.INK, MIDDLE);
         }
         // the foot: xtiny, on two lines where one is wider than the screen there
         if (side.equals("all")) {
             var XT = AppDraw.XT;
             var fy = 98 + AppDraw.capOf(XT);
-            AppScreens.lines(g, fy, AppDraw.wrap(AppWords.s(Rez.Strings.MutedAllSub), XT, 2 * AppScreens.edgeX(fy + AppDraw.lh(XT)) - 8), XT,
+            AppScreens.lines(g, fy, AppDrawApp.wrap(AppWords.s(Rez.Strings.MutedAllSub), XT, 2 * AppScreens.edgeX(fy + AppDraw.lh(XT)) - 8), XT,
                 AppDraw.lh(XT) * 0.85, AppMath.SOFT);
         }
         AppScreens.btnHint(g, 60, AppMath.INK);

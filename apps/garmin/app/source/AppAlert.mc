@@ -79,7 +79,7 @@ module AppAlert {
         var w = word(k);
         // the alert's word: medium, or the largest role that fits the width at its height beside the bell
         var wy = -124;
-        var wf = AppDraw.fitRole(w, AppDraw.ME, 2 * AppScreens.edgeX(wy - AppDraw.capOf(AppDraw.ME)) - 34);
+        var wf = AppDrawApp.fitRole(w, AppDraw.ME, 2 * AppScreens.edgeX(wy - AppDraw.capOf(AppDraw.ME)) - 34);
         var wd = AppDraw.ww(w, wf) + 28;
         g.icon("bell", -wd / 2 + 10, wy - AppDraw.capOf(wf) / 2, 20, ink);
         g.w(-wd / 2 + 28, wy, w, wf, ink, START);
@@ -141,7 +141,7 @@ module AppAlert {
             } else {
                 g.r(-bw / 2, y - 23, bw, 46, 23, fill, on || !v ? 1.0 : 0.28, 0);
             }
-            var bf = AppDraw.fitRole(label, AppDraw.SM, bw - 36 - (icon != null ? 26 : 0));
+            var bf = AppDrawApp.fitRole(label, AppDraw.SM, bw - 36 - (icon != null ? 26 : 0));
             var tw0 = AppDraw.ww(label, bf) + (icon != null ? 26 : 0);
             var tx = -tw0 / 2;
             if (icon != null) {

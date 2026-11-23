@@ -95,7 +95,7 @@ module AppLog {
         var col = AppMath.pal(k);
         var label = kindName(k);
         var SM = AppDraw.SM;
-        var lf = AppDraw.fitRole(label, SM, rect ? 2 * w0 - 60 : 220);
+        var lf = AppDrawApp.fitRole(label, SM, rect ? 2 * w0 - 60 : 220);
         var lw = AppDraw.ww(label, lf) + 30;
         var ly = L[0] as Numeric;
         g.icon(k, -lw / 2 + 10, ly - AppDraw.capOf(lf) / 2, 18, col);
@@ -103,7 +103,7 @@ module AppLog {
         var s = num(k, a);
         var unit = k.equals("carbs") ? "g" : "u";
         var w = AppMath.bw(s, L[2] as Numeric);
-        var uw = AppMath.tw(unit, L[3] as Numeric);
+        var uw = AppMathApp.tw(unit, L[3] as Numeric);
         var x0 = -(w + 8 + uw) / 2;
         g.n(x0, L[1], s, L[2] as Numeric, AppMath.INK, START);
         g.t(x0 + w + 8, L[1], unit, L[3] as Numeric, 600, AppMath.SOFT, START);
@@ -147,7 +147,7 @@ module AppLog {
         AppScreens.rim(g, AppMath.GRID, 8, 1.0);
         AppScreens.rim(g, col, 8, p);
         if (dup != null) {
-            var df = AppDraw.fitRole(dup, TI, 200);
+            var df = AppDrawApp.fitRole(dup, TI, 200);
             var dw = AppDraw.ww(dup, df) + 28;
             g.icon("warn", -dw / 2 + 11, -122 - AppDraw.capOf(df) / 2, 22, AppMath.pal("high"));
             g.w(-dw / 2 + 28, -122, dup, df, AppMath.pal("high"), START);
@@ -157,7 +157,7 @@ module AppLog {
         var s = num(k, a);
         var unit = k.equals("carbs") ? "g" : "u";
         var wN = AppMath.bw(s, 96);
-        var wU = AppMath.tw(unit, 96) * 0.97;
+        var wU = AppMathApp.tw(unit, 96) * 0.97;
         var x0 = -(30 + 12 + wN + wU) / 2;
         g.icon(k, x0 + 15, -40, 30, col);
         g.n(x0 + 42, -8, s, 96, col, START);
@@ -167,7 +167,7 @@ module AppLog {
             AppScreens.fitW(g, 36 + AppDraw.capOf(TI) + 10, q, TI, AppMath.SOFT);
         }
         var ht = AppWords.s(Rez.Strings.HoldTouch);
-        var hf = AppDraw.fitRole(ht, SM, 200);
+        var hf = AppDrawApp.fitRole(ht, SM, 200);
         var hw0 = AppDraw.ww(ht, hf) + 44;
         var hh0 = AppDraw.capOf(SM) + 20;
         g.r(-hw0 / 2, 102, hw0, hh0, hh0 / 2, AppMath.CARD2, 1.0, 0);
@@ -245,7 +245,7 @@ module AppLog {
         for (var i = 0; i < 2; i++) {
             var on = i == sel;
             g.r(-130, ys[i] - 26, 260, 52, 26, on ? AppMath.INK : AppMath.CARD2, 1.0, 0);
-            g.w(0, ys[i] + AppDraw.capOf(AppDraw.SM) / 2, items[i], AppDraw.fitRole(items[i], AppDraw.SM, 230), on ? AppMath.ON : AppMath.INK, MIDDLE);
+            g.w(0, ys[i] + AppDraw.capOf(AppDraw.SM) / 2, items[i], AppDrawApp.fitRole(items[i], AppDraw.SM, 230), on ? AppMath.ON : AppMath.INK, MIDDLE);
         }
         hint(g, 60, null, AppMath.INK);
     }

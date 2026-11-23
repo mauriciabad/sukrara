@@ -17,14 +17,14 @@ module FieldFontTable {
     const BELL = 22;
     const BELL_BOX = 26;
 
-    // key ("a<px><m|s|b>" a text, "n<px>" a big number) → [atlas bitmap, glyph table] or [font, baseline px];
+    // key ("n<px>" a big number) → [atlas bitmap, glyph table] or [font, baseline px];
     // [] = not on this class
     function atlas(key as String) as Array {
-        var i = ["a14s", "a16m", "a16s", "a18m", "a18s", "a22b", "a22s", "n14", "n16", "n18", "n20", "n22", "n24", "n26", "n28", "n30", "n32", "n36", "n40", "n44", "n48", "n52", "n56", "n60", "n64", "n72", "n80", "n88", "n96", "n104"].indexOf(key);
+        var i = ["n14", "n16", "n18", "n20", "n22", "n24", "n26", "n28", "n30", "n32", "n36", "n40", "n44", "n48", "n52", "n56", "n60", "n64", "n72", "n80", "n88", "n96", "n104"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Drawables.a14s, Rez.Drawables.a16m, Rez.Drawables.a16s, Rez.Drawables.a18m, Rez.Drawables.a18s, Rez.Drawables.a22b, Rez.Drawables.a22s, Rez.Drawables.n14, Rez.Drawables.n16, Rez.Drawables.n18, Rez.Drawables.n20, Rez.Drawables.n22, Rez.Drawables.n24, Rez.Drawables.n26, Rez.Drawables.n28, Rez.Drawables.n30, Rez.Drawables.n32, Rez.Drawables.n36, Rez.Drawables.n40, Rez.Drawables.n44, Rez.Drawables.n48, Rez.Drawables.n52, Rez.Drawables.n56, Rez.Drawables.n60, Rez.Drawables.n64, Rez.Drawables.n72, Rez.Drawables.n80, Rez.Drawables.n88, Rez.Drawables.n96, Rez.Drawables.n104][i], [Rez.JsonData.a14s_m, Rez.JsonData.a16m_m, Rez.JsonData.a16s_m, Rez.JsonData.a18m_m, Rez.JsonData.a18s_m, Rez.JsonData.a22b_m, Rez.JsonData.a22s_m, Rez.JsonData.n14_m, Rez.JsonData.n16_m, Rez.JsonData.n18_m, Rez.JsonData.n20_m, Rez.JsonData.n22_m, Rez.JsonData.n24_m, Rez.JsonData.n26_m, Rez.JsonData.n28_m, Rez.JsonData.n30_m, Rez.JsonData.n32_m, Rez.JsonData.n36_m, Rez.JsonData.n40_m, Rez.JsonData.n44_m, Rez.JsonData.n48_m, Rez.JsonData.n52_m, Rez.JsonData.n56_m, Rez.JsonData.n60_m, Rez.JsonData.n64_m, Rez.JsonData.n72_m, Rez.JsonData.n80_m, Rez.JsonData.n88_m, Rez.JsonData.n96_m, Rez.JsonData.n104_m][i]];
+        return [[Rez.Drawables.n14, Rez.Drawables.n16, Rez.Drawables.n18, Rez.Drawables.n20, Rez.Drawables.n22, Rez.Drawables.n24, Rez.Drawables.n26, Rez.Drawables.n28, Rez.Drawables.n30, Rez.Drawables.n32, Rez.Drawables.n36, Rez.Drawables.n40, Rez.Drawables.n44, Rez.Drawables.n48, Rez.Drawables.n52, Rez.Drawables.n56, Rez.Drawables.n60, Rez.Drawables.n64, Rez.Drawables.n72, Rez.Drawables.n80, Rez.Drawables.n88, Rez.Drawables.n96, Rez.Drawables.n104][i], [Rez.JsonData.n14_m, Rez.JsonData.n16_m, Rez.JsonData.n18_m, Rez.JsonData.n20_m, Rez.JsonData.n22_m, Rez.JsonData.n24_m, Rez.JsonData.n26_m, Rez.JsonData.n28_m, Rez.JsonData.n30_m, Rez.JsonData.n32_m, Rez.JsonData.n36_m, Rez.JsonData.n40_m, Rez.JsonData.n44_m, Rez.JsonData.n48_m, Rez.JsonData.n52_m, Rez.JsonData.n56_m, Rez.JsonData.n60_m, Rez.JsonData.n64_m, Rez.JsonData.n72_m, Rez.JsonData.n80_m, Rez.JsonData.n88_m, Rez.JsonData.n96_m, Rez.JsonData.n104_m][i]];
     }
 
     function bell() as ResourceId {

@@ -13,9 +13,9 @@ as the watch app's, apps/garmin/app/tools/fonts.py).
                                                    source: FieldFontTable.mc) and the watches' block of monkey.jungle
   uv run apps/garmin/field/tools/fonts.py --check  fails if the committed output differs from a fresh build
 
-The sizes are the reference's (field_sizes.js: every text app.js's S.dfSlot and S.dfAlert draw on the class, at the px
-the class draws them), and the big numbers at every size of the class's atlas set up to the largest the reference
-draws: the field's value takes the largest that fits its slot, and a watch has more layouts than the
+Only the big numbers (the value, LO / HI, "---"): the words are in the watch's own fonts (SPEC §14.1). Their sizes are
+every size of the class's atlas set up to the largest the reference draws (field_sizes.js: app.js's S.dfSlot and
+S.dfAlert on the class): the field's value takes the largest that fits its slot, and a watch has more layouts than the
 reference's five. Each watch builds only its class's folder (monkey.jungle), so a watch carries its own sizes only.
 """
 import base64
@@ -39,7 +39,6 @@ JUNGLE = os.path.join(FIELD, "monkey.jungle")
 MANIFEST = os.path.join(FIELD, "manifest.xml")
 DEVICES = os.path.expanduser(os.environ.get("CIQ_DEVICES", "~/Library/Application Support/Garmin/ConnectIQ/Devices"))
 NUMS = A.DIGITS + ".:LOHI-"
-WEIGHT = {"m": 500, "s": 600, "b": 700}
 # app.js ICON.bell (24-unit path, stroke 2.2)
 BELL = "M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2zM10 20.5a2 2 0 0 0 4 0"
 # the screen class of each deviceFamily (the reference's CLS)
@@ -58,9 +57,6 @@ def sizes():
 def keys(c):
     """The class's fonts: [(key, px, weight, chars)]."""
     out = []
-    for t in c["text"]:
-        px, w = float(t[:-1]), t[-1]
-        out.append(("a%d%s" % (round(px), w), round(px), WEIGHT[w], A.LATIN))
     top = round(max(c["nums"]))
     nums = sorted(set([p for p in c["atlas"] if p <= top] + [round(p) for p in c["nums"]]))
     for px in nums:
@@ -161,7 +157,7 @@ def class_files(cls, c, plain=False):
         "    const BELL = %d;" % c["bell"],
         "    const BELL_BOX = %d;" % box,
         "",
-        "    // key (\"a<px><m|s|b>\" a text, \"n<px>\" a big number) → [atlas bitmap, glyph table] or [font, baseline px];",
+        "    // key (\"n<px>\" a big number) → [atlas bitmap, glyph table] or [font, baseline px];",
         "    // [] = not on this class",
         "    function atlas(key as String) as Array {",
         "        var i = [%s].indexOf(key);" % ", ".join(A.mc_string(k) for k, _ in table),

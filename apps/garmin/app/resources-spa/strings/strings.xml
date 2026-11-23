@@ -6,6 +6,8 @@
     <string id="AppName" scope="background">Sukrara</string>
     <string id="NoReadings" scope="glance">Sin lecturas</string>
     <string id="SetupTitle" scope="glance">Esperando a tu móvil</string>
+    <string id="SetupTitle1" scope="glance">Esperando</string>
+    <string id="SetupTitle2" scope="glance">a tu móvil</string>
 
     <string id="SendWait" scope="glance">Esperando al móvil</string>
     <string id="SendSent" scope="glance">Enviado</string>

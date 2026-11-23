@@ -54,10 +54,6 @@ module AppMath {
         return [(r * Math.sin(t)).toFloat(), (-r * Math.cos(t)).toFloat()];
     }
 
-    // Atkinson's advances per em (app.js WV, aura.js widths()); an unknown glyph counts 0.6
-    const WK = " 0123456789.:·ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÁÉÍÓÚÑ";
-    // three digits each, the advance × 1000: a string, not an array of 78 kept in memory (the glance's 64 KB, #217)
-    const WV = "280648407548576614588598510615595210210240626613645669569552694694392512631541824693714592724614592558690593856623575607525566485564538314558550252245492262845550548566574349471326540461684481449460525538252548540550626569392714690693";
     // the big numbers: Atkinson's figures at weight 600 (app.js BIG)
     const BK = "0123456789:.LOHI";
     const BV = "656430569592621602617529621578253253548737699415";
@@ -65,17 +61,6 @@ module AppMath {
     // the advance [k] of a WV / BV string
     function adv(v as String, k as Number) as Float {
         return ((v.substring(3 * k, 3 * k + 3) as String).toNumber() as Number) / 1000.0;
-    }
-
-    // a label's width at [fs], measured at the size the class draws it (app.js tw)
-    function tw(s as String, fs as Numeric) as Float {
-        var t = 0.0;
-        var cs = s.toCharArray();
-        for (var i = 0; i < cs.size(); i++) {
-            var k = WK.find(cs[i].toString());
-            t += k != null ? adv(WV, k) : 0.6;
-        }
-        return (t * AppDraw.fe(fs) * 1.03).toFloat();
     }
 
     // a big number's width at [fs] (app.js bw)
@@ -146,5 +131,23 @@ module AppMath {
         var f = a.toFloat();
         var s = f == f.toNumber() ? f.toNumber().toString() : f.format("%.1f");
         return s + (k.equals("carbs") ? "g" : "u");
+    }
+}
+
+// The app's own widths, out of the glance's code (its 64 KB)
+module AppMathApp {
+    // Atkinson's advances per em (app.js WV, aura.js widths()); an unknown glyph counts 0.6
+    const WK = " 0123456789.:·ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÁÉÍÓÚÑ";
+    // three digits each, the advance × 1000: a string, not an array of 78 kept in memory (the glance's 64 KB, #217)
+    const WV = "280648407548576614588598510615595210210240626613645669569552694694392512631541824693714592724614592558690593856623575607525566485564538314558550252245492262845550548566574349471326540461684481449460525538252548540550626569392714690693";
+    // an Atkinson text's width (the amount's unit) at [fs], measured at the size the class draws it (app.js tw)
+    function tw(s as String, fs as Numeric) as Float {
+        var t = 0.0;
+        var cs = s.toCharArray();
+        for (var i = 0; i < cs.size(); i++) {
+            var k = WK.find(cs[i].toString());
+            t += k != null ? AppMath.adv(WV, k) : 0.6;
+        }
+        return (t * AppDraw.fe(fs) * 1.03).toFloat();
     }
 }

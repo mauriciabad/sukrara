@@ -103,13 +103,7 @@ class FieldSlot {
 // The data field's screens: app.js S.dfSlot's field (dfField) and S.dfAlert, on the one seam (input, slot) → model
 // (FieldG). Every number is the reference's (contracts/watchface/app/SPEC.md §9, §14.4).
 module FieldLayout {
-    // Atkinson's widths (app.js tw / bw)
-    const KEYS = " 0123456789.:·ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÁÉÍÓÚÑ";
-    const WV = [0.28, 0.648, 0.407, 0.548, 0.576, 0.614, 0.588, 0.598, 0.51, 0.615, 0.595, 0.21, 0.21, 0.24, 0.626, 0.613,
-        0.645, 0.669, 0.569, 0.552, 0.694, 0.694, 0.392, 0.512, 0.631, 0.541, 0.824, 0.693, 0.714, 0.592, 0.724, 0.614, 0.592,
-        0.558, 0.69, 0.593, 0.856, 0.623, 0.575, 0.607, 0.525, 0.566, 0.485, 0.564, 0.538, 0.314, 0.558, 0.55, 0.252, 0.245,
-        0.492, 0.262, 0.845, 0.55, 0.548, 0.566, 0.574, 0.349, 0.471, 0.326, 0.54, 0.461, 0.684, 0.481, 0.449, 0.46, 0.525,
-        0.538, 0.252, 0.548, 0.54, 0.55, 0.626, 0.569, 0.392, 0.714, 0.69, 0.693];
+    // Atkinson's big-number widths per em (app.js BIG)
     const BIGK = "0123456789:.LOHI";
     const BIGV = [0.656, 0.43, 0.569, 0.592, 0.621, 0.602, 0.617, 0.529, 0.621, 0.578, 0.253, 0.253, 0.548, 0.737, 0.699, 0.415];
     const GREY_LIMIT = 0x5C5C62;
@@ -123,16 +117,6 @@ module FieldLayout {
             ? [0xFFFFFF, 0xAAAAAA, 0x555555, 0x555555, 0xAAAAAA, 0xFF0000, 0xFF5555, 0x00FF55, 0xAAFF00, 0xFFAA00, 0xFF5500, 0xFF55FF]
             : [0xFFFFFF, 0xA3A3A8, 0x6E6E73, 0x3A3A3E, 0x8E8E93, 0xC2413B, 0xF0524F, 0x3DD47A, 0x8CC63F, 0xF5A524, 0xFF7A45, 0xE35BD0];
         return a[i < 0 ? 0 : i] as Number;
-    }
-
-    function tw(s as String, fs as Numeric) as Float {
-        var t = 0.0;
-        var cs = s.toCharArray();
-        for (var k = 0; k < cs.size(); k++) {
-            var i = KEYS.find(cs[k].toString());
-            t += i != null ? WV[i] as Float : 0.6;
-        }
-        return t * FieldDraw.fe(fs, false) * 1.03;
     }
 
     function bw(s as String, fs as Numeric) as Float {
@@ -180,8 +164,9 @@ module FieldLayout {
         return FieldFontTable.MIP ? inkBy(col) : 0xFFFFFF;
     }
 
-    function label(g as FieldG, x as Numeric, y as Numeric, fill as Number, fs as Numeric, anchor as Number) as Void {
-        g.t(x, y, WatchUi.loadResource(Rez.Strings.Glucose) as String, fs, 600, fill, anchor, 1.2);
+    // GLUCOSE, the field's label: the watch's xtiny (app.js dfLabel)
+    function label(g as FieldG, x as Numeric, y as Numeric, fill as Number, anchor as Number) as Void {
+        g.w(x, y, WatchUi.loadResource(Rez.Strings.Glucose) as String, FieldDraw.XT, fill, anchor);
     }
 
     function valColour(d as FieldInput, inverted as Boolean) as Number {
@@ -206,7 +191,7 @@ module FieldLayout {
         var w = vw + (showArrow ? gap + box : 0);
         var x0 = anchor < 0 ? x : x - w / 2.0;
         var c = col != null ? col : valColour(d, inverted);
-        g.t(x0, y, str, fs, 700, c, -1, 0);
+        g.t(x0, y, str, fs, c, -1, 0);
         if (d.age >= 5) {
             g.l(FieldMath.r1(x0 - 4), FieldMath.r1(y - cap / 2), FieldMath.r1(x0 + vw + 4), FieldMath.r1(y - cap / 2), c, 1.0,
                 FieldMath.max(3, fs * 0.05), 0, 0, true);
@@ -271,7 +256,7 @@ module FieldLayout {
                 continue;
             }
             var lab = h >= 64;
-            var fsH = (h - (lab ? 24 : 0) - 6) / 0.668;
+            var fsH = (h - (lab ? FieldDraw.capOf(FieldDraw.XT) + 8 : 0) - 6) / 0.668;
             var fsW = (bx[4] as Float) * 0.9 / e;
             var fs = FieldMath.min(FieldMath.min(fsH, fsW), max);
             if (best == null || fs > (best[1] as Float) + 0.5) {
@@ -284,7 +269,7 @@ module FieldLayout {
         var fs = FieldDraw.fe(best[1] as Float, true);
         var lab = best[2] as Boolean;
         var bb = best[0] as Array;
-        var ch = (lab ? 24 : 0) + FieldDraw.fe(fs, false) * 0.668 + 6;
+        var ch = (lab ? FieldDraw.capOf(FieldDraw.XT) + 8 : 0) + FieldDraw.fe(fs, false) * 0.668 + 6;
         var y0 = b.top && !b.bot ? (bb[3] as Float) - ch : b.bot && !b.top ? bb[2] as Float : ((bb[2] as Float) + (bb[3] as Float)) / 2 - ch / 2;
         return [bb[0], bb[1], y0, y0 + ch, fs, lab];
     }
@@ -316,14 +301,14 @@ module FieldLayout {
     // the whole page: the label, the value (116) over the sparkline (sc 1.4), the reading's time when late; [ink] the
     // low block's ink (null: no block)
     function whole(g as FieldG, d as FieldInput, ink as Number?) as Void {
-        label(g, 0, FieldFontTable.RECT ? -FieldDraw.hh() + 40 : -128, ink != null ? ink : pal("soft"), 17, 0);
+        label(g, 0, FieldFontTable.RECT ? -FieldDraw.hh() + 40 : -128, ink != null ? ink : pal("soft"), 0);
         value(g, d, 0, -8, 116, 0, true, ink != null, ink);
         if (ink == null) {
             var Wd = 100 / Math.ln(7) * 1.4 * Math.ln(19) + 24 * 1.4;
             spark(g, d, -Wd / 2, Wd / 2, 26.0, 110.0, 1.4);
         }
         if (d.age >= 1.5) {
-            g.t(0, 150, d.readAt, 20, 500, ink != null ? ink : pal("soft"), 0, 0);
+            g.w(0, 150, d.readAt, FieldDraw.XT, ink != null ? ink : pal("soft"), 0);
         }
     }
 
@@ -342,9 +327,9 @@ module FieldLayout {
             }
             gw += vw + 14;
             var x0 = ((sb[0] as Float) + (sb[1] as Float)) / 2 - gw / 2;
-            label(g, x0, (sb[2] as Float) + 20, pal("soft"), 17, -1);
+            label(g, x0, (sb[2] as Float) + 20, pal("soft"), -1);
             if (d.age >= 1.5) {
-                g.t(x0 + gw, (sb[2] as Float) + 20, d.readAt, 17, 500, pal("soft"), 1, 0);
+                g.w(x0 + gw, (sb[2] as Float) + 20, d.readAt, FieldDraw.XT, pal("soft"), 1);
             }
             h = (sb[3] as Float) - 16; // the value's baseline
             value(g, d, x0, h, fs, -1, false, false, null);
@@ -362,39 +347,41 @@ module FieldLayout {
         }
         var cx = ((fv[0] as Float) + (fv[1] as Float)) / 2;
         if (fv[5]) {
-            label(g, cx, (fv[2] as Float) + 16, ink != null ? ink : pal("soft"), 15, 0);
+            label(g, cx, (fv[2] as Float) + FieldDraw.capOf(FieldDraw.XT) + 3, ink != null ? ink : pal("soft"), 0);
         }
         value(g, d, cx, (fv[3] as Float) - 4, fv[4] as Float, 0, true, ink != null, ink);
     }
 
     // not set up (SPEC §4.3: no message from the phone yet): GLUCOSE and "Waiting for phone" (soft), on two lines where
-    // one doesn't fit; the label where the slot has room (app.js dfSetup)
+    // one doesn't fit, in tiny, else xtiny (never smaller); the label where the slot has room (app.js dfSetup)
     function setup(g as FieldG, b as FieldSlot) as Void {
         var w1 = WatchUi.loadResource(Rez.Strings.Setup1) as String;
         var w2 = WatchUi.loadResource(Rez.Strings.Setup2) as String;
         var one = w1 + " " + w2;
         if (b.whole) {
-            label(g, 0, FieldFontTable.RECT ? -FieldDraw.hh() + 40 : -128, pal("soft"), 17, 0);
-            g.t(0, 8, one, 24, 600, pal("soft"), 0, 0);
+            label(g, 0, FieldFontTable.RECT ? -FieldDraw.hh() + 40 : -128, pal("soft"), 0);
+            g.w(0, 8, one, FieldDraw.fitRole(one, FieldDraw.SM, 2 * FieldDraw.hw() - 60), pal("soft"), 0);
             return;
         }
-        var wide = FieldMath.max(tw(w1, 20), tw(w2, 20));
-        // the label and one line, the label and two, then without the label
-        for (var k = 0; k < 4; k++) {
-            var lab = k < 2;
+        // the label and one line, the label and two (tiny, then xtiny), then without the label (xtiny)
+        for (var k = 0; k < 6; k++) {
+            var lab = k < 4;
             var two = k % 2 == 1;
-            var bx = fitBox(b, (lab ? 24 : 0) + (two ? 52 : 26), 4);
-            if (bx == null || (two ? wide : tw(one, 20)) > (bx[4] as Float) * 0.92) {
+            var f = k < 2 ? FieldDraw.TI : FieldDraw.XT;
+            var lf = FieldDraw.lh(f);
+            var lr = lab ? FieldDraw.lh(FieldDraw.XT) : 0;
+            var bx = fitBox(b, lr + (two ? 2 : 1) * lf, 4);
+            if (bx == null || (two ? FieldMath.max(FieldDraw.ww(w1, f), FieldDraw.ww(w2, f)) : FieldDraw.ww(one, f)) > (bx[4] as Float) * 0.92) {
                 continue;
             }
             var cx = ((bx[0] as Float) + (bx[1] as Float)) / 2;
-            var y = (bx[2] as Float) + (lab ? 24 : 0);
+            var y = (bx[2] as Float) + lr + (lf + FieldDraw.capOf(f)) / 2;
             if (lab) {
-                label(g, cx, (bx[2] as Float) + 16, pal("soft"), 15, 0);
+                label(g, cx, (bx[2] as Float) + FieldDraw.capOf(FieldDraw.XT) + 3, pal("soft"), 0);
             }
-            g.t(cx, y + 20, two ? w1 : one, 20, 600, pal("soft"), 0, 0);
+            g.w(cx, y, two ? w1 : one, f, pal("soft"), 0);
             if (two) {
-                g.t(cx, y + 46, w2, 20, 600, pal("soft"), 0, 0);
+                g.w(cx, y + lf, w2, f, pal("soft"), 0);
             }
             return;
         }
@@ -405,9 +392,9 @@ module FieldLayout {
         if (b.whole) {
             var why = d.g == null ? WatchUi.loadResource(Rez.Strings.NoReadings) as String
                 : Lang.format(WatchUi.loadResource(Rez.Strings.NoReadingSince) as String, [d.readAt]);
-            label(g, 0, FieldFontTable.RECT ? -FieldDraw.hh() + 40 : -128, pal("soft"), 17, 0);
-            g.t(0, -8, "---", 116, 700, pal("grey"), 0, 0);
-            g.t(0, 60, why, 20, 500, pal("soft"), 0, 0);
+            label(g, 0, FieldFontTable.RECT ? -FieldDraw.hh() + 40 : -128, pal("soft"), 0);
+            g.t(0, -8, "---", 116, pal("grey"), 0, 0);
+            g.w(0, 60, why, FieldDraw.fitRole(why, FieldDraw.TI, 2 * FieldDraw.hw() - 60), pal("soft"), 0);
             return;
         }
         var fv = fitValue(b, em("---"), 116);
@@ -416,9 +403,9 @@ module FieldLayout {
         }
         var cx = ((fv[0] as Float) + (fv[1] as Float)) / 2;
         if (fv[5]) {
-            label(g, cx, (fv[2] as Float) + 16, pal("soft"), 15, 0);
+            label(g, cx, (fv[2] as Float) + FieldDraw.capOf(FieldDraw.XT) + 3, pal("soft"), 0);
         }
-        g.t(cx, (fv[3] as Float) - 4, "---", fv[4] as Float, 700, pal("grey"), 0, 0);
+        g.t(cx, (fv[3] as Float) - 4, "---", fv[4] as Float, pal("grey"), 0, 0);
     }
 
     // --- the field's own alert, the whole page (app.js S.dfAlert) ---
@@ -434,12 +421,15 @@ module FieldLayout {
         var hh = FieldDraw.hh();
         g.r(-hw - 2, -hh - 2, 2 * hw + 4, 2 * hh + 4, col, 1.0);
         var W0 = b.equals("veryLow") || b.equals("low") ? inkOn(col) : inkBy(col);
-        g.icon(12 - tw(word, 24) / 2 - 30, -96, 24, W0);
-        g.t(12, -88, word, 24, 700, W0, 0, 1.5);
+        // the word in medium, else smaller (never under xtiny), the bell before it
+        var wf = FieldDraw.fitRole(word, FieldDraw.ME, 2 * hw - 90);
+        var wd = FieldDraw.ww(word, wf) + 32;
+        g.icon(-wd / 2 + 12, -88 - FieldDraw.capOf(wf) / 2, 24, W0);
+        g.w(-wd / 2 + 32, -88, word, wf, W0, -1);
         if (d.g != null) {
             value(g, d, 0, 30, 116, 0, true, true, W0);
         }
-        g.t(0, 92, line, 20, 600, W0, 0, 0);
+        g.w(0, 92, line, FieldDraw.fitRole(line, FieldDraw.TI, 2 * hw - 80), W0, 0);
         return g;
     }
 }
