@@ -43,42 +43,42 @@
   },
   {
    "id": "no-data-glance",
-   "state": 2,
+   "state": 4,
    "screen": "glance"
   },
   {
    "id": "no-data-appA",
-   "state": 2,
+   "state": 4,
    "screen": "appA"
   },
   {
    "id": "no-data-appNums",
-   "state": 2,
+   "state": 4,
    "screen": "appNums"
   },
   {
    "id": "no-data-actions",
-   "state": 2,
+   "state": 4,
    "screen": "actions"
   },
   {
    "id": "unpaired-glance",
-   "state": 3,
+   "state": 5,
    "screen": "glance"
   },
   {
    "id": "unpaired-appA",
-   "state": 3,
+   "state": 5,
    "screen": "appA"
   },
   {
    "id": "unpaired-appNums",
-   "state": 3,
+   "state": 5,
    "screen": "appNums"
   },
   {
    "id": "unpaired-actions",
-   "state": 3,
+   "state": 5,
    "screen": "actions"
   },
   {
@@ -395,7 +395,7 @@
   },
   {
    "id": "alert-no-data",
-   "state": 2,
+   "state": 4,
    "screen": "alert"
   },
   {
@@ -575,7 +575,7 @@
   },
   {
    "id": "alert-no-data-old",
-   "state": 2,
+   "state": 4,
    "screen": "alert",
    "set": {
     "g": {
