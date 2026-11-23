@@ -2,7 +2,7 @@
 
 Sukrara's releases. 0.x versions are previews.
 
-## Unreleased
+## Unreleased — Sukrara on your Garmin watch: a watch app, a data field and Sukrara Aura in the Connect IQ store
 
 - **Sukrara on your Garmin watch, released** (#199, #246): the Sukrara Aura watch face, the watch app *Sukrara* and
   *Sukrara data field* go to the Connect IQ store with this version; each shows there once Garmin's review approves
@@ -96,7 +96,7 @@ Sukrara's releases. 0.x versions are previews.
   an alert's *Treatment*, a widget, the tile, home's button and pill, the pen's *Add treatment*, the Mac's panel,
   pill and notifications. Before, each decided on its own and some disagreed (the phone's *Treatment* on a
   falling-fast alert opened on Rapid; the widgets and the Mac went by the range's low limit, not the low alert's).
-  Sukrara's watch app will list the kinds in the same order.
+  Sukrara's watch app lists the kinds in the same order.
 
 ## 0.16.0 — glucose from LibreLinkUp and Nightscout, the Mac on its own, a follow that ends cleanly
 
