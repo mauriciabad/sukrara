@@ -14,7 +14,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
@@ -104,6 +113,7 @@ import com.github.takahirom.roborazzi.fontScale
 import com.github.takahirom.roborazzi.size
 import com.github.takahirom.roborazzi.uiMode
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -717,13 +727,59 @@ class SharingScreenshotTest {
                         uiMode(if (dark) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO)
                         fontScale(if (largest) 2f else 1f)
                     }
-                for ((name, content) in scenes()) {
+                // the search spinner never lets Robolectric go idle: SharingSearchingScreenshotTest takes those
+                for ((name, content) in scenes().filter { it.first !in SEARCHING }) {
                     val suffix = (if (dark) "-dark" else "-light") + if (largest) "-largest" else ""
                     captureRoboImage("src/test/snapshots/$name$suffix.png", roborazziComposeOptions = options) {
                         SukraraTheme(dark = dark, dynamic = false) {
                             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) { content() }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+/** The scenes with Find phones nearby's search spinner, which never goes idle. */
+internal val SEARCHING = setOf("setup-join-find-nearby", "setup-join-find-nearby-update", "setup-join-find-nearby-off")
+
+/**
+ * [SharingScreenshotTest]'s scenes with the search spinner ([SEARCHING]): the same pictures, taken with a paused clock
+ * (the spinner never lets Robolectric go idle, so the screenshot test would wait for it forever in record mode). The
+ * theme's dark mode and the font scale are set here instead of through Roborazzi's options.
+ */
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [36], qualifiers = "w411dp-h891dp-xxhdpi")
+class SharingSearchingScreenshotTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun screens() {
+        val test = SharingScreenshotTest().also { it.setUp() }
+        val scenes = test.scenes().filter { it.first in SEARCHING }
+        var scene by mutableStateOf(scenes.first().second)
+        var dark by mutableStateOf(false)
+        var scale by mutableFloatStateOf(1f)
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, scale)) {
+                SukraraTheme(dark = dark, dynamic = false) {
+                    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) { scene() }
+                }
+            }
+        }
+        for (d in listOf(false, true)) {
+            for (largest in listOf(false, true)) {
+                for ((name, content) in scenes) {
+                    dark = d
+                    scale = if (largest) 2f else 1f
+                    scene = content
+                    compose.mainClock.advanceTimeBy(2_000)
+                    val suffix = (if (d) "-dark" else "-light") + if (largest) "-largest" else ""
+                    compose.onRoot().captureRoboImage("src/test/snapshots/$name$suffix.png")
                 }
             }
         }
