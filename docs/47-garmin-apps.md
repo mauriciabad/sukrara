@@ -381,7 +381,7 @@ app but the switch is off, a setup step, store links on the Garmin page and in A
   or *On your watch*, *Continue* / *Skip* (final). An install whose walk went past it isn't sent back for it.
 - **Store ids in the registry**: `apps.json` `store`, read by the phone (`GarminApp.store`, `GarminApp.storeUrl`,
   `GarminAppsTest`) and the website (`CONNECT_IQ_STORE` replaced the placeholder `CONNECT_IQ_APP_ID`). #247 filled them
-  in (2026-11-23, the listings submitted with 0.17.0).
+  in (2026-11-23, the listings submitted with 0.17.0; all three approved and live 2026-11-24).
 - **A debug fake** (`GARMIN_FAKE`, `FakeGarminConnect`): a made-up connected watch with the given apps, for the
   emulator.
 

@@ -1382,6 +1382,11 @@ go to the **Connect IQ Store**, each its own listing:
 - No Garmin marks in the app's marketing without consent [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html). The `Communications` permission (web requests to the
   phone's local server) is shown on the store page.
 - Effort: small once the app exists (screenshots for 2–3 device sizes, description, privacy link).
+- **Approved: live on the store** (the owner, 2026-11-24): all three apps, Sukrara Aura, Sukrara (the watch app)
+  and the Sukrara data field, version 0.17.0, submitted 2026-11-23, so about a day of review. Links in
+  [the listings](#connect-iq-store-the-listings), the README and the website. Left for the owner: step 4 of
+  [the owner's steps](#connect-iq-store-the-owners-steps) (delete the beta apps from the dashboard, remove sideloaded
+  copies from the watch).
 
 ### Connect IQ: CI and publishing (2026-11-16; every app 2026-11-23)
 
@@ -1466,7 +1471,7 @@ Garmin publishes an upload API, that step becomes a call like `play` and `appsto
 | Privacy | A privacy policy when the app collects data; it must say data goes to the developer, not Garmin; don't move its URL without a redirect | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §3c, [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html) Exhibit A |
 | Permissions | Shown on the store page from the manifest: Communications as "Send/receive information to/from the Internet" (a face may use it only in the background, hence *Background*) | [[C32]](https://forums.garmin.com/developer/connect-iq/f/discussion/6588/where-does-the-permission-send-receive-information-to-from-the-internet-come-from), [[C33]](https://forums.garmin.com/developer/connect-iq/f/discussion/6328/how-to-specify-permissions-for-watch-face-deployment) |
 | Brand | No Garmin branding in the icon without permission; IP of others only with permission; other images aren't covered (ask Garmin through its contact form) | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/), [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §3a |
-| Review | Officially up to 3 days; since October 2026 a backlog of 7–14 days, new faces and updates alike | [[C34]](https://the5krunner.com/2026/10/16/connect-iq-store-delays/), [[C35]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/445602/in-review-delay-multiple-watch-faces-pending-approval-some-for-7-days-already) |
+| Review | Officially up to 3 days; since October 2026 a backlog of 7–14 days, new faces and updates alike; Sukrara's first three apps: about a day (submitted 2026-11-23, approved 2026-11-24) | [[C34]](https://the5krunner.com/2026/10/16/connect-iq-store-delays/), [[C35]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/445602/in-review-delay-multiple-watch-faces-pending-approval-some-for-7-days-already) |
 
 **Other CGM faces in the store** say it the same way: Sugar Sense ("It is not a medical device and is not intended to
 diagnose, treat, cure, or prevent any disease", confirm with the CGM app or a meter, never rely on it for alarms)
@@ -1505,7 +1510,7 @@ in the title, each image at its size and weight.
 | | Sukrara Aura | Sukrara (watch app) | Sukrara data field |
 |---|---|---|---|
 | Listing | [`apps/garmin/aura/store/`](../apps/garmin/aura/store/) | [`apps/garmin/app/store/`](../apps/garmin/app/store/) | [`apps/garmin/field/store/`](../apps/garmin/field/store/) |
-| Store page (`apps.json` `store`; submitted 2026-11-23 with 0.17.0, #247) | [`2859fe48-7e9e-4e52-ae2a-a319fa76fcfc`](https://apps.garmin.com/en-US/apps/2859fe48-7e9e-4e52-ae2a-a319fa76fcfc) | [`c8c7b5e9-35e6-4941-b811-3bf7c9238c9a`](https://apps.garmin.com/en-US/apps/c8c7b5e9-35e6-4941-b811-3bf7c9238c9a) | [`bae83264-c160-4498-8a4d-492b4ea7d630`](https://apps.garmin.com/en-US/apps/bae83264-c160-4498-8a4d-492b4ea7d630) |
+| Store page (`apps.json` `store`; submitted 2026-11-23 with 0.17.0, #247; **approved, live** 2026-11-24) | [`2859fe48-7e9e-4e52-ae2a-a319fa76fcfc`](https://apps.garmin.com/en-US/apps/2859fe48-7e9e-4e52-ae2a-a319fa76fcfc) | [`c8c7b5e9-35e6-4941-b811-3bf7c9238c9a`](https://apps.garmin.com/en-US/apps/c8c7b5e9-35e6-4941-b811-3bf7c9238c9a) | [`bae83264-c160-4498-8a4d-492b4ea7d630`](https://apps.garmin.com/en-US/apps/bae83264-c160-4498-8a4d-492b4ea7d630) |
 | Title (en / es, ≤ 50) | Sukrara Aura – CGM Glucose Watch Face / Sukrara Aura – Esfera de glucosa CGM | Sukrara – CGM Glucose Glance & Insulin Log / Sukrara – Glucosa CGM: vistazo e insulina | Sukrara Glucose – CGM Blood Sugar Data Field / Sukrara Glucosa – Campo de datos CGM |
 | Name on the watch and on the hero | Sukrara Aura (`AppName`, `heroTitle`) | Sukrara | Sukrara Glucose / Sukrara Glucosa (the owner, 2026-11-23) |
 | Images | [`docs/img/aura/store/ciq/`](img/aura/store/ciq/) | [`docs/img/app/store/ciq/`](img/app/store/ciq/) | [`docs/img/field/store/ciq/`](img/field/store/ciq/) |
