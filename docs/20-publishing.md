@@ -1385,8 +1385,8 @@ go to the **Connect IQ Store**, each its own listing:
 - **Approved: live on the store** (the owner, 2026-11-24): all three apps, Sukrara Aura, Sukrara (the watch app)
   and the Sukrara data field, version 0.17.0, submitted 2026-11-23, so about a day of review. Links in
   [the listings](#connect-iq-store-the-listings), the README and the website. Left for the owner: step 4 of
-  [the owner's steps](#connect-iq-store-the-owners-steps) (delete the beta apps from the dashboard, remove sideloaded
-  copies from the watch).
+  [the owner's steps](#connect-iq-store-the-owners-steps) (delete a beta app from the dashboard if one was ever
+  uploaded, remove sideloaded copies from the watch).
 
 ### Connect IQ: CI and publishing (2026-11-16; every app 2026-11-23)
 

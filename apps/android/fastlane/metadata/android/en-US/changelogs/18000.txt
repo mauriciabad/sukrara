@@ -1,0 +1,3 @@
+• If you silenced an alert sound on purpose, you can hide the "Alerts may not ring" warning. It comes back if anything else gets silenced; Settings › Alert reliability shows it again.
+• When the phone, a follower or a Garmin app runs a version the other can't read, Sukrara says which app to update, with an Update button.
+• A sharing relay that keeps closing the connection is retried less and less often.

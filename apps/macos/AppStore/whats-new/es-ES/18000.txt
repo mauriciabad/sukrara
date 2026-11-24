@@ -1,0 +1,4 @@
+• Seguir a alguien ya no llena la memoria: un relé que cerraba la conexión una y otra vez se reconectaba cada 2 segundos, y cada conexión se quedaba en memoria (gigas tras uno o dos días). Ahora las conexiones cerradas se liberan, y ese relé se reintenta cada vez menos.
+• Un tratamiento añadido en el Mac mientras Nightscout o LibreLinkUp sincronizaban se podía perder; ahora se guarda.
+• Si apagaste los sonidos o los avisos de las alertas a propósito, puedes ocultar el aviso del panel. Vuelve si se apaga algo más; Ajustes › Alertas lo muestra otra vez.
+• Cuando este Mac y el móvil al que sigue usan versiones que no se pueden leer entre sí, Sukrara dice cuál actualizar.

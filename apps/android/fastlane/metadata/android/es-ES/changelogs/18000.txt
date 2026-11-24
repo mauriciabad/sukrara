@@ -1,0 +1,3 @@
+• Si silenciaste el sonido de una alerta a propósito, puedes ocultar el aviso «Puede que las alertas no suenen». Vuelve si se silencia algo más; Ajustes › Fiabilidad de las alertas lo muestra otra vez.
+• Cuando el móvil, un seguidor o una app de Garmin usan una versión que el otro no puede leer, Sukrara dice qué app actualizar, con un botón Actualizar.
+• Un relé que cierra la conexión una y otra vez se reintenta cada vez menos.

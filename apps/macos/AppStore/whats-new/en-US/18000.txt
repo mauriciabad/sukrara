@@ -1,0 +1,4 @@
+• Following no longer fills the memory: a relay that kept closing the connection was reconnected every 2 seconds, and each connection stayed in memory (gigabytes after a day or two). Closed connections are now freed, and such a relay is retried less and less often.
+• A treatment added on the Mac while Nightscout or LibreLinkUp was syncing could be lost; now it's kept.
+• If you turned alert sounds or banners off on purpose, you can hide the panel's warning. It comes back if anything else is turned off; Settings › Alerts shows it again.
+• When this Mac and the phone it follows run versions that can't read each other, Sukrara says which one to update.
