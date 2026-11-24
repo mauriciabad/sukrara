@@ -18,7 +18,7 @@
             <iq:language>eng</iq:language>
         </iq:languages>
         <iq:barrels>
-            <iq:depends name="SukraraFace" version="5.0.0"/>
+            <iq:depends name="SukraraFace" version="5.1.0"/>
         </iq:barrels>
     </iq:application>
 </iq:manifest>

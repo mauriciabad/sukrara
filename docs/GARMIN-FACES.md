@@ -27,7 +27,7 @@ Add it:
 
    ```sh
    mkdir -p barrels
-   curl -fL -o barrels/SukraraFace.barrel https://github.com/mauriciabad/sukrara/releases/download/v0.17.0/SukraraFace-5.0.0.barrel
+   curl -fL -o barrels/SukraraFace.barrel https://github.com/mauriciabad/sukrara/releases/download/face-sdk-v5.1.0/SukraraFace-5.1.0.barrel
    ```
 
    In your `monkey.jungle`: `base.barrelPath = barrels/SukraraFace.barrel` (in VS Code, *Monkey C: Configure Monkey
@@ -39,7 +39,7 @@ Add it:
    SDK 9.3's `barrelbuild` also needs `--override-devices-json` with your SDK's `Devices` folder, or it stops on a
    NullPointerException.
 2. In your `manifest.xml`: the `Background` and `Communications` permissions, and
-   `<iq:barrels><iq:depends name="SukraraFace" version="5.0.0"/></iq:barrels>`.
+   `<iq:barrels><iq:depends name="SukraraFace" version="5.1.0"/></iq:barrels>`.
 3. Four calls (the sample face below has them in place):
 
 | Where | Call |

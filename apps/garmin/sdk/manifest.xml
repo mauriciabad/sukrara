@@ -5,7 +5,7 @@
 <!-- SukraraFace, the Monkey Barrel that reads Sukrara for a watch face: its major version is the payload's (5). The
      products: every watch Sukrara's own apps run on. -->
 <iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
-    <iq:barrel id="18d71d51-59f0-4c99-9027-9aaf0d3c8200" module="SukraraFace" version="5.0.0">
+    <iq:barrel id="18d71d51-59f0-4c99-9027-9aaf0d3c8200" module="SukraraFace" version="5.1.0">
         <iq:products>
             <iq:product id="approachs50"/>
             <iq:product id="approachs7042mm"/>
