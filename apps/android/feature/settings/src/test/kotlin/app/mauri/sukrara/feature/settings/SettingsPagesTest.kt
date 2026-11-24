@@ -135,6 +135,8 @@ class SettingsPagesTest {
             "sensorCalendar.calendarId",
             // Settings › Alert reliability (and setup): the answer about Vibrate only when unlocked
             "alerts.unlockedSound",
+            // Settings › Alert reliability's Alert sound row: the quiet-alerts warning hidden (Show warning)
+            "alerts.quietHidden",
             // Settings › Settings from (a follower)
             "follower.settingsFrom",
             // the overview's search: its recent queries

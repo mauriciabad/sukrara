@@ -117,6 +117,7 @@ class SchemaSearchTest {
             put("alerts.sounds.shuffle", R.string.st_shuffle to page(SettingsRoute.Alerts))
             put("alerts.separate", R.string.st_alerts_separate to page(SettingsRoute.Alerts))
             put("alerts.unlockedSound", AlertRequirement.SoundWhenUnlocked.nameRes() to page(SettingsRoute.Reliability))
+            put("alerts.quietHidden", AlertRequirement.AlertChannel.nameRes() to page(SettingsRoute.Reliability))
             put("statusbar.show", DsR.string.ds_notif_style_chip to page(SettingsRoute.StatusBar))
             put("statusbar.colorize", R.string.st_statusbar_colorize to page(SettingsRoute.StatusBar))
             put("statusbar.notifIcon", R.string.st_statusbar_icon_value_trend to page(SettingsRoute.StatusBar))
