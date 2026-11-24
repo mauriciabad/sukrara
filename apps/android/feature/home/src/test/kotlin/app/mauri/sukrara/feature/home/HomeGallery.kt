@@ -358,6 +358,38 @@ class HomeGallery {
         check("Alert steps failed: Notify:level" in copied && "AlertDelivery" in copied) { copied }
     }
 
+    /**
+     * A silenced alert category (schema `alerts.quietHidden`): the safety banner offers *Hide warning* beside *Fix*;
+     * hiding confirms with a snackbar whose *Undo* shows it again.
+     */
+    @Test fun aSilencedAlertCategoryCanBeHiddenWithUndo() {
+        val readiness = AlertReadiness(setOf(AlertRequirement.AlertChannel))
+        val hides = mutableListOf<Boolean>()
+        var dark by mutableStateOf(false)
+        compose.setContent {
+            SukraraTheme(dark = dark, dynamic = false) {
+                HomeContent(
+                    ui(Samples.wearer(), banner = BannerKind.AlertsUnreliable)
+                        .copy(firstProblem = readiness.firstProblem, readiness = readiness),
+                    HomeCallbacks(onHideQuietWarning = { hides += it }),
+                )
+            }
+        }
+        compose.onNodeWithText("An alert category is silenced in Android's settings.").assertExists()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-alert-channel-light-font1x.png")
+        dark = true
+        compose.waitForIdle()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-alert-channel-dark-font1x.png")
+        compose.onNodeWithText("Hide warning").performClick()
+        compose.waitForIdle()
+        check(hides == listOf(true)) { hides }
+        compose.onNodeWithText("Warning hidden. Settings › Alert reliability shows it again.").assertExists()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-alert-channel-hidden-dark-font1x.png")
+        compose.onNodeWithText("Undo").performClick()
+        compose.waitForIdle()
+        check(hides == listOf(true, false)) { hides }
+    }
+
     /** An alert whose own notification couldn't be shown (it went out plain) is the banner's first line, with Copy report. */
     @Test fun anAlertThatCouldntBeShownShowsTheBannerWithCopyReport() {
         val readiness = AlertReadiness(setOf(AlertRequirement.AlertShown), failedSteps = setOf("Show:level NotFoundException"))

@@ -183,6 +183,8 @@
     <string name="st_reliability_test_none">No alert is on: turn one on in Alerts to test it</string>
     <string name="st_req_ok">On</string>
     <string name="st_req_missing">Missing</string>
+    <string name="st_req_hidden">Silenced, warning hidden</string>
+    <string name="st_quiet_show">Show warning</string>
     <string name="st_req_failed">Failed</string>
     <string name="st_fix">Fix</string>
     <string name="st_fix_item">Fix %1$s</string>

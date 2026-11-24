@@ -88,7 +88,7 @@ class AlertPlainNotificationTest {
             exactAlarmAllowed = true,
             batteryExempt = true,
             backgroundRestricted = false,
-            alertChannelSilenced = false,
+            silencedChannels = emptySet(),
             needsBluetooth = false,
             bluetoothOn = true,
             bluetoothPermitted = true,

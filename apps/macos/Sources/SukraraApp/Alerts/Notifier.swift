@@ -412,16 +412,35 @@ final class SystemNotificationCenter: NotificationPosting {
 /// What the user allows, for the panel's warning row.
 enum NotificationPermission: Equatable {
     case notAsked, allowed, denied
-    /// Allowed, but without banners or sound: alerts may go unnoticed.
-    case quiet
+    /// Allowed, but with `down` off (`banners`, `sound`): alerts may go unnoticed (`QuietWarning`).
+    case quiet(Set<String>)
+
+    static let banners = "banners"
+    static let sound = "sound"
 
     init(_ s: UNNotificationSettings) {
         switch s.authorizationStatus {
         case .notDetermined: self = .notAsked
         case .denied: self = .denied
-        default: self = s.alertSetting == .enabled && s.soundSetting == .enabled ? .allowed : .quiet
+        default:
+            self = Self.of(banners: s.alertSetting == .enabled, sound: s.soundSetting == .enabled)
         }
     }
 
-    var needsAttention: Bool { self == .denied || self == .quiet }
+    /// Allowed, with banners and sound on or not.
+    static func of(banners: Bool, sound: Bool) -> NotificationPermission {
+        let down = Set([banners ? nil : Self.banners, sound ? nil : Self.sound].compactMap { $0 })
+        return down.isEmpty ? .allowed : .quiet(down)
+    }
+
+    /// What macOS turned down for Sukrara (empty unless `.quiet`).
+    var down: Set<String> {
+        if case .quiet(let down) = self { return down }
+        return []
+    }
+
+    /// The panel's warning shows: notifications off (never hidden), or something down the person didn't hide.
+    func needsAttention(hidden: Set<String>) -> Bool {
+        self == .denied || QuietWarning.shown(down: down, hidden: hidden)
+    }
 }

@@ -65,7 +65,7 @@ struct PanelView: View {
                     let linkAction = reason?.action == .follow || reason?.action == .following
                     SetupRows(links: links, needsFollow: model.needsFollow && !linkAction)
                 }
-                if model.notificationPermission.needsAttention { notificationsWarning }
+                if model.showsNotificationsWarning { notificationsWarning }
                 if let blocked = model.blocked.first { blockedWarning(blocked) }
                 if let failed = model.alerts?.failedSteps, !failed.isEmpty { alertNotShownWarning(failed) }
                 if let alerts = model.alerts {
@@ -151,13 +151,34 @@ struct PanelView: View {
         }
     }
 
+    /// Notifications off (only the fix), or banners / sound turned down: the fix, or *Hide Warning* for someone who
+    /// chose it (another device beside them rings); Settings › Alerts shows it hidden, with *Show Warning*.
     private var notificationsWarning: some View {
-        Notice(
-            model.notificationPermission == .denied
-                ? L10n.t("Notifications are off: alerts can't reach you.")
-                : L10n.t("Alert banners or sounds are off: alerts may go unnoticed.")
-        ) {
-            Button(L10n.t("Open Notification Settings")) { AlertsRangesPane.openNotificationSettings() }
+        let down = model.notificationPermission.down
+        return Notice(Self.notificationsTitle(model.notificationPermission)) {
+            HStack {
+                Button(L10n.t("Open Notification Settings")) { AlertsRangesPane.openNotificationSettings() }
+                if !down.isEmpty {
+                    Button(L10n.t("Hide Warning")) {
+                        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                        withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35)) {
+                            model.hideQuietWarning(true)
+                        }
+                    }
+                }
+            }
+        }
+        .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top)))
+    }
+
+    /// What is off, in the warning's words.
+    static func notificationsTitle(_ permission: NotificationPermission) -> String {
+        if permission == .denied { return L10n.t("Notifications are off: alerts can't reach you.") }
+        let down = permission.down
+        return switch (down.contains(NotificationPermission.banners), down.contains(NotificationPermission.sound)) {
+        case (true, true): L10n.t("Alert banners and sounds are off: alerts may go unnoticed.")
+        case (true, false): L10n.t("Alert banners are off: alerts may go unnoticed.")
+        default: L10n.t("Alert sounds are off: alerts may go unnoticed.")
         }
     }
 }

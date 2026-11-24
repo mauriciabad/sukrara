@@ -59,7 +59,7 @@ import Testing
             t("sensor.manualStart", MacSettings.manualStart),
             t("report.days", MacSettings.reportDays),
             t("general.readAloudShortcut", MacSettings.readAloudShortcut), t(json, MacSettings.alerts),
-            t("alerts.throughFocus", MacSettings.throughFocus),
+            t("alerts.throughFocus", MacSettings.throughFocus), t("alerts.quietHidden", MacSettings.quietHidden),
         ]
 
     /// The schema's rows as JSON (the defaults and values the generated spec doesn't carry), by id.

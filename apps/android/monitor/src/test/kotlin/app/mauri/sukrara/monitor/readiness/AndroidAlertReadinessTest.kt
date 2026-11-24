@@ -22,6 +22,7 @@ import app.mauri.sukrara.monitor.alerts.AlertChannels
 import app.mauri.sukrara.monitor.alerts.AlertMirror
 import app.mauri.sukrara.monitor.notify.Channels
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -50,6 +51,9 @@ class AndroidAlertReadinessTest {
     private val tests = mutableListOf<AlertKind>()
     private val scope = TestScope()
 
+    /** Schema `alerts.quietHidden` as stored. */
+    private val hidden = MutableStateFlow(emptySet<String>())
+
     private fun readiness(
         failed: Set<String> = emptySet(),
         settings: Flow<AlertSettings> = flowOf(AlertSettings()),
@@ -63,6 +67,8 @@ class AndroidAlertReadinessTest {
         flowOf(UnlockedSound.Unchecked),
         { answers += it },
         { kind, _ -> tests += kind },
+        hidden,
+        { hidden.value = it },
     )
 
     @Before fun soundUp() {
@@ -267,6 +273,35 @@ class AndroidAlertReadinessTest {
         val wearersRules = readiness(settings = AlertMirror.inUse(flowOf(own), flowOf(AlertSettings())))
         settled(wearersRules)
         assertEquals(SoundTest.Ready, wearersRules.readiness.value.soundTest)
+    }
+
+    /**
+     * A category silenced on purpose (schema `alerts.quietHidden`): *Hide warning* stores what is silenced now and the
+     * item leaves; un-silencing it forgets the hide, so silencing it again warns again.
+     */
+    @Test fun aHiddenQuietWarningLastsWhileThatCategoryStaysSilenced() {
+        val low = AlertChannels.id(app, AlertKind.LOW, AlertSettings().rule(AlertKind.LOW).alarm)
+        nm.createNotificationChannel(NotificationChannel(low, "Low", NotificationManager.IMPORTANCE_LOW))
+        val r = readiness()
+        assertTrue(AlertRequirement.AlertChannel in settled(r))
+        r.hideQuietWarning(true)
+        scope.testScheduler.advanceUntilIdle()
+        assertEquals(setOf(low), hidden.value)
+        assertTrue(AlertRequirement.AlertChannel !in settled(r))
+        assertTrue(r.readiness.value.quietHidden)
+
+        // back up in Android's settings: the hide is forgotten
+        // (the person's change in Android's settings: Robolectric keeps the channel object it hands out)
+        nm.getNotificationChannel(low).importance = NotificationManager.IMPORTANCE_HIGH
+        r.refresh()
+        settled(r)
+        assertEquals(emptySet<String>(), hidden.value)
+
+        // Show warning
+        hidden.value = setOf(low)
+        r.hideQuietWarning(false)
+        scope.testScheduler.advanceUntilIdle()
+        assertEquals(emptySet<String>(), hidden.value)
     }
 
     /** What the checklist says once a screen collects it and every input has answered. */

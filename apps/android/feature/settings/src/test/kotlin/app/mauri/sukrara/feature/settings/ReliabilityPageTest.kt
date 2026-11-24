@@ -68,6 +68,22 @@ class ReliabilityPageTest {
             .label
 
     @Test
+    fun `a hidden quiet warning - said on its row, Show warning brings it back, Fix opens the channel`() {
+        readiness = AlertReadiness(emptySet(), unlockedSound = UnlockedSound.Heard, quietHidden = true)
+        var shown = 0
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                ReliabilityContent(readiness, { fixed += it }, onShowQuietWarning = { shown++ }) {}
+            }
+        }
+        compose.onNodeWithText(context.getString(R.string.st_req_hidden) + " · ", substring = true).performScrollTo()
+        compose.onNodeWithText(context.getString(R.string.st_quiet_show)).performScrollTo().performClick()
+        assertEquals(1, shown)
+        compose.onNodeWithText(context.getString(R.string.st_fix)).performScrollTo().performClick()
+        assertEquals(listOf(AlertRequirement.AlertChannel), fixed)
+    }
+
+    @Test
     fun `ready - every setup item on, nothing to fix, no failed step`() {
         readiness = AlertReadiness(emptySet(), unlockedSound = UnlockedSound.Heard)
         show()

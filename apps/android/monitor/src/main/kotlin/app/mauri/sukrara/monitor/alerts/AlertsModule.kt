@@ -18,6 +18,7 @@ import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NotificationStyle
+import app.mauri.sukrara.core.model.QuietWarning
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceStatus
@@ -200,6 +201,13 @@ class AlertsModule(
             { alertSettings.set(UNLOCKED_SOUND, it.wire) },
             // the unlocked test: Android's behaviour alone, without Sukrara's own unlocked sound (#183)
             { kind, settings -> notifier.showTest(kind, settings, ownUnlockedSound = false) },
+            // the quiet-alerts warning hidden on purpose (schema `alerts.quietHidden`)
+            alertSettings
+                .flow(QUIET_HIDDEN)
+                .map(QuietWarning::decode)
+                .distinctUntilChanged()
+                .catch { emit(emptySet()) },
+            { alertSettings.set(QUIET_HIDDEN, QuietWarning.encode(it)) },
         )
 
     private val sensorEndSettings: Flow<SensorEndSettings> =
@@ -308,6 +316,9 @@ internal fun alertsLog(diag: (String) -> Unit): (String) -> Unit =
         Log.w(AlertsModule.TAG, line)
         diag(line)
     }
+
+/** Schema `alerts.quietHidden`: free text, the hidden parts comma-separated ([QuietWarning]). */
+private val QUIET_HIDDEN = SchemaSettings.text("alerts.quietHidden", "")
 
 /** Schema `alerts.unlockedSound`. */
 private val UNLOCKED_SOUND =

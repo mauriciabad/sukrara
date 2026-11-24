@@ -175,6 +175,7 @@ fun HomeScreen(
                 onDismiss = viewModel::dismiss,
                 onRestore = viewModel::restore,
                 onFix = viewModel::fix,
+                onHideQuietWarning = viewModel::hideQuietWarning,
                 onAllowFeature = allowFeature,
                 onTurnOffFeature = viewModel::turnOff,
                 onAlert = viewModel::alert,
@@ -207,6 +208,8 @@ data class HomeCallbacks(
     /** Undo on the "Tip closed" snackbar. */
     val onRestore: (BannerKind) -> Unit = {},
     val onFix: (AlertRequirement) -> Unit = {},
+    /** *Hide warning* on a silenced alert channel's banner (true), and its snackbar's *Undo* (false). */
+    val onHideQuietWarning: (Boolean) -> Unit = {},
     /** A blocked feature's *Allow* (the permission dialog, then Android's screen) and *Turn off* (docs/40). */
     val onAllowFeature: (BlockedFeature) -> Unit = {},
     val onTurnOffFeature: (BlockedFeature) -> Unit = {},
@@ -260,6 +263,7 @@ fun HomeContent(
     val atTop by remember { derivedStateOf { scroll.value == 0 } }
     val scope = rememberCoroutineScope()
     val closedText = stringResource(R.string.home_tip_closed)
+    val quietHiddenText = stringResource(R.string.home_quiet_hidden)
     val updatesOnText = stringResource(R.string.banner_updates_on)
     val garminOnText = stringResource(R.string.banner_garmin_on)
     val shownBanner =
@@ -273,6 +277,17 @@ fun HomeContent(
                     if (snackbar.showUndo(closedText, undoText)) {
                         haptics.confirm()
                         callbacks.onRestore(kind)
+                    }
+                }
+            },
+            onHideQuietWarning = {
+                haptics.confirm()
+                callbacks.onHideQuietWarning(true)
+                // undone here, or later on Settings › Alert reliability (Show warning)
+                scope.launch {
+                    if (snackbar.showUndo(quietHiddenText, undoText)) {
+                        haptics.confirm()
+                        callbacks.onHideQuietWarning(false)
                     }
                 }
             },
@@ -1203,6 +1218,8 @@ private fun banner(
     state: HomeUiState,
     callbacks: HomeCallbacks,
     onDismiss: (BannerKind) -> Unit,
+    /** *Hide warning* on a silenced alert channel (the screen confirms it: haptic and snackbar with Undo). */
+    onHideQuietWarning: () -> Unit = {},
     /** *Turn on* on the updates suggestion (the screen confirms it: haptic and snackbar). */
     onTurnOnUpdates: () -> Unit = {},
     /** *Turn on* on the Garmin tip (the screen confirms it the same way). */
@@ -1269,6 +1286,13 @@ private fun banner(
                 },
                 null,
                 severity,
+                // a silenced category may be on purpose (another device beside the person rings): hide it for that
+                secondary =
+                    if (problem == AlertRequirement.AlertChannel) {
+                        stringResource(R.string.banner_alerts_hide) to onHideQuietWarning
+                    } else {
+                        null
+                    },
             )
         }
 

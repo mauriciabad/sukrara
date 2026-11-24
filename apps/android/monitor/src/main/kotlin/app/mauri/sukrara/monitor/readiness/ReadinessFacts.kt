@@ -6,6 +6,7 @@ package app.mauri.sukrara.monitor.readiness
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.DndStatus
+import app.mauri.sukrara.core.model.QuietWarning
 import app.mauri.sukrara.core.model.SoundTest
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.monitor.alerts.AlertRuntime
@@ -26,8 +27,13 @@ data class ReadinessFacts(
     val batteryExempt: Boolean,
     /** Settings → Apps → Battery "Restricted": Android stops the service in the background. */
     val backgroundRestricted: Boolean,
-    /** An alert channel the settings use (or its group) is blocked or lowered below sound. */
-    val alertChannelSilenced: Boolean,
+    /**
+     * The alert channels the settings use that are blocked or lowered below sound, by id, and `group:<id>` for a
+     * blocked alert group (empty = none).
+     */
+    val silencedChannels: Set<String>,
+    /** What the person hid the quiet-alerts warning for (schema `alerts.quietHidden`, [QuietWarning]). */
+    val quietHidden: Set<String> = emptySet(),
     /**
      * Where Sukrara stands with Do Not Disturb: the person's choice (an exception or not) and what a mode on now holds
      * back. Shown, never a fault (#184).
@@ -55,7 +61,7 @@ data class ReadinessFacts(
                 if (anyAlarmKind && !fullScreenAllowed) add(AlertRequirement.FullScreenIntent)
                 if (!exactAlarmAllowed) add(AlertRequirement.ExactAlarm)
                 if (!batteryExempt || backgroundRestricted) add(AlertRequirement.BatteryExemption)
-                if (alertChannelSilenced) add(AlertRequirement.AlertChannel)
+                if (QuietWarning.shown(silencedChannels, quietHidden)) add(AlertRequirement.AlertChannel)
                 // AlertRequirement.DoNotDisturb is never missing: it's the person's choice, shown as a status
                 if (NotificationCooldown.unanswered(vibrateOnlyUnlocked, unlockedSound)) add(AlertRequirement.SoundWhenUnlocked)
                 if (needsBluetooth && !(bluetoothOn && bluetoothPermitted)) add(AlertRequirement.Bluetooth)
@@ -64,6 +70,7 @@ data class ReadinessFacts(
             unlockedSound,
             dnd,
             soundTest,
+            quietHidden = silencedChannels.isNotEmpty() && !QuietWarning.shown(silencedChannels, quietHidden),
         )
 
     private companion object {

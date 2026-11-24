@@ -310,6 +310,10 @@
                         setup: SetupFlow(states: [.welcome: .done, .follow: .skipped, .alerts: .done]))
                 ),
                 ("panel-notifications-off", scene(readings: ending(105, rate: 0), permission: .denied)),
+                (
+                    "panel-notifications-quiet",
+                    scene(readings: ending(105, rate: 0), permission: .quiet([NotificationPermission.sound]))
+                ),
                 // how the readings come, at the end of the mute row: Bluetooth from the phone nearby, no connection,
                 // and Nearby beside Mute all's Unmute / Change Time
                 (

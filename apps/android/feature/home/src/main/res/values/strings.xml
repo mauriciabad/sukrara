@@ -91,6 +91,8 @@
     <string name="req_exact_alarm">Sukrara can\'t schedule exact alarms.</string>
     <string name="req_battery">Battery optimisation may stop Sukrara in the background.</string>
     <string name="req_channel">An alert category is silenced in Android\'s settings.</string>
+    <string name="banner_alerts_hide">Hide warning</string>
+    <string name="home_quiet_hidden">Warning hidden. Settings › Alert reliability shows it again.</string>
     <string name="req_unlocked">Check once that alerts make a sound while the phone is unlocked: send a test alert.</string>
     <string name="req_bluetooth">Bluetooth or the nearby devices permission is off.</string>
     <string name="banner_data_title">Some saved data was damaged</string>

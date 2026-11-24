@@ -198,6 +198,7 @@ object SettingsSpec {
         SettingInfo("alerts.thresholdsConfirmedAt", "state", null, false, null, "alerts:thresholdsConfirmedAt", "", null, "android", "The wearer confirms the alert thresholds during the phone's first-run setup; the Mac follower takes the wearer's alerts", listOf()),
         SettingInfo("alerts.unlockedSound", "enum", null, false, null, "alerts:unlockedSound", "", null, "android", "An Android 15+ system setting that drops every notification sound while the phone is unlocked; the Mac has no such setting", listOf()),
         SettingInfo("alerts.separate", "bool", null, false, null, "alerts:separateAlerts", "", null, "android", "Android rings alerts through its ongoing glucose notification, which Wear OS doesn't bridge; the Mac's alerts are already notifications of their own", listOf()),
+        SettingInfo("alerts.quietHidden", "string", null, false, null, "alerts:quietHidden", "defaults:quietHidden", null, null, null, listOf()),
         SettingInfo("alerts.throughFocus", "bool", null, false, null, "", "defaults:throughFocus", null, "mac", "On Android the choice is the alarm channels' own Do Not Disturb override, which Android keeps and Sukrara reads (Do Not Disturb access); macOS has no per-app override an app can set, so the Mac remembers whether to post Time Sensitive", listOf()),
         SettingInfo("general.unit", "enum", null, false, null, "settings:unit", "defaults:unit", null, null, null, listOf()),
         SettingInfo("setup.steps", "setup", null, false, null, "", "defaults:setupSteps", null, "mac", "The Mac's first-run walk (welcome, follow, alerts, notifications, open at login); Android's first run is its own role / permission flow with its own state", listOf()),
@@ -312,6 +313,7 @@ object SettingsSpec {
         const val THRESHOLDS_CONFIRMED_AT = "thresholdsConfirmedAt"
         const val UNLOCKED_SOUND = "unlockedSound"
         const val SEPARATE_ALERTS = "separateAlerts"
+        const val QUIET_HIDDEN = "quietHidden"
         const val UNIT = "unit"
         const val PERSON = "person"
         const val KIND = "kind"

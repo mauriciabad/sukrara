@@ -260,6 +260,8 @@ class HomeModule(
         readinessSource.fix(requirement)
     }
 
+    override fun hideQuietWarning(hide: Boolean) = readinessSource.hideQuietWarning(hide)
+
     override suspend fun deleteTreatment(id: String): Treatment? = treatmentLog().delete(id)
 
     override suspend fun editNote(

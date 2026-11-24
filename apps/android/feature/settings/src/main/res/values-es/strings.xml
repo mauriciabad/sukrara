@@ -182,6 +182,8 @@
     <string name="st_reliability_test_none">No hay ninguna alerta activada: activa una en Alertas para probarla</string>
     <string name="st_req_ok">Activado</string>
     <string name="st_req_missing">Falta</string>
+    <string name="st_req_hidden">Silenciado, advertencia oculta</string>
+    <string name="st_quiet_show">Mostrar advertencia</string>
     <string name="st_req_failed">Falló</string>
     <string name="st_fix">Arreglar</string>
     <string name="st_fix_item">Arreglar %1$s</string>

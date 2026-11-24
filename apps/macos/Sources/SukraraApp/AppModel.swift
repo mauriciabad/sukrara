@@ -246,6 +246,20 @@ public final class AppModel {
     /// "Now" for the card: moved by the freshness ticker at each freshness step, so a value greys and strikes on time.
     private(set) var now: Date
     var notificationPermission: NotificationPermission = .allowed
+    /// What macOS had turned down when the person hid the quiet-alerts warning (schema `alerts.quietHidden`,
+    /// `QuietWarning`): the panel doesn't warn about it while only that stays down.
+    var quietHidden: Set<String> = []
+    /// Stores a new `quietHidden` (the app's settings store; Settings › Alerts shows it).
+    @ObservationIgnored var onQuietHidden: ((Set<String>) -> Void)?
+
+    /// The panel's notifications warning: notifications off, or turned down in a way the person didn't hide.
+    var showsNotificationsWarning: Bool { notificationPermission.needsAttention(hidden: quietHidden) }
+
+    /// *Hide Warning* (for what is down now) / *Show Warning* (Settings › Alerts).
+    func hideQuietWarning(_ hide: Bool) {
+        quietHidden = hide ? notificationPermission.down : []
+        onQuietHidden?(quietHidden)
+    }
 
     /// The features macOS blocks now (docs/40), without those put off with Not Now: the panel names the first. The
     /// follow's (Bluetooth) only while it is the source.

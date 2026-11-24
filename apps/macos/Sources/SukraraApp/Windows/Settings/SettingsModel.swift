@@ -39,6 +39,14 @@ public final class SettingsModel {
     /// Whether macOS lets Sukrara post Time Sensitive (Settings › Alerts, the setup's notification step); nil: this run
     /// posts no notifications.
     var timeSensitive: TimeSensitive?
+    /// What macOS turns down for Sukrara now (`NotificationPermission.down`: banners, sound).
+    var quietDown: Set<String> = []
+    /// The panel's quiet-alerts warning hidden for these (schema `alerts.quietHidden`; the app keeps it in step).
+    var quietHidden: Set<String> = []
+    /// *Show Warning*: the app forgets the hidden warning (`AppModel.hideQuietWarning`).
+    @ObservationIgnored var showQuietWarning: () -> Void = {}
+    /// Banners or sound are down and the person hid the panel's warning: Settings › Alerts says so, with *Show Warning*.
+    var quietWarningHidden: Bool { !quietDown.isEmpty && !QuietWarning.shown(down: quietDown, hidden: quietHidden) }
     /// Where Sukrara stands with a Focus (#184); nil: this run posts no notifications.
     var focusStatus: FocusStatus? { timeSensitive.map { FocusStatus(through: throughFocus, timeSensitive: $0) } }
     /// The pane shown; the window reopens on it.

@@ -6,6 +6,7 @@ package app.mauri.sukrara.monitor.readiness
 import android.app.NotificationManager
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.DndStatus
+import app.mauri.sukrara.core.model.QuietWarning
 import app.mauri.sukrara.core.model.SoundTest
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.monitor.alerts.AlertCategory
@@ -24,13 +25,42 @@ class ReadinessFactsTest {
             exactAlarmAllowed = true,
             batteryExempt = true,
             backgroundRestricted = false,
-            alertChannelSilenced = false,
+            silencedChannels = emptySet(),
             needsBluetooth = true,
             bluetoothOn = true,
             bluetoothPermitted = true,
         )
 
     @Test fun everythingGrantedIsReady() = assertTrue(allGood.readiness().ready)
+
+    /**
+     * The quiet-alerts warning hidden on purpose (schema `alerts.quietHidden`): not missing for what was down then,
+     * missing again when another channel goes down; never hides another item.
+     */
+    @Test fun aHiddenQuietWarningCoversOnlyWhatWasDown() {
+        val hidden = allGood.copy(silencedChannels = setOf("alert_low"), quietHidden = setOf("alert_low")).readiness()
+        assertTrue(hidden.ready)
+        assertTrue(hidden.quietHidden)
+        val more = allGood.copy(silencedChannels = setOf("alert_low", "alert_high"), quietHidden = setOf("alert_low")).readiness()
+        assertEquals(setOf(AlertRequirement.AlertChannel), more.missing)
+        assertFalse(more.quietHidden)
+        val other = allGood.copy(silencedChannels = setOf("alert_low"), quietHidden = setOf("alert_low"), notificationsEnabled = false)
+        assertEquals(setOf(AlertRequirement.Notifications), other.readiness().missing)
+        // nothing silenced: nothing to say, hidden or not
+        assertFalse(allGood.copy(quietHidden = setOf("alert_low")).readiness().quietHidden)
+    }
+
+    @Test fun theQuietWarningRule() {
+        assertFalse(QuietWarning.shown(emptySet(), emptySet()))
+        assertTrue(QuietWarning.shown(setOf("a"), emptySet()))
+        assertFalse(QuietWarning.shown(setOf("a"), setOf("a", "b")))
+        // what came back up leaves the hidden list
+        assertEquals(setOf("a"), QuietWarning.kept(setOf("a"), setOf("a", "b")))
+        assertEquals(emptySet<String>(), QuietWarning.kept(emptySet(), setOf("a")))
+        assertEquals("a,group:x", QuietWarning.encode(setOf("group:x", "a")))
+        assertEquals(setOf("a", "group:x"), QuietWarning.decode("a,group:x"))
+        assertEquals(emptySet<String>(), QuietWarning.decode(""))
+    }
 
     @Test fun eachAnswerMapsToItsItem() {
         val cases =
@@ -40,7 +70,7 @@ class ReadinessFactsTest {
                 allGood.copy(exactAlarmAllowed = false) to AlertRequirement.ExactAlarm,
                 allGood.copy(batteryExempt = false) to AlertRequirement.BatteryExemption,
                 allGood.copy(backgroundRestricted = true) to AlertRequirement.BatteryExemption,
-                allGood.copy(alertChannelSilenced = true) to AlertRequirement.AlertChannel,
+                allGood.copy(silencedChannels = setOf("alert_low")) to AlertRequirement.AlertChannel,
                 allGood.copy(bluetoothOn = false) to AlertRequirement.Bluetooth,
                 allGood.copy(bluetoothPermitted = false) to AlertRequirement.Bluetooth,
             )

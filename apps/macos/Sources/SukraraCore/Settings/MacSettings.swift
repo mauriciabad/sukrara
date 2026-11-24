@@ -60,6 +60,8 @@ public enum MacSettings {
     public static let readAloudShortcut = SettingSpec(key: SettingsSpec.Keys.readAloudShortcut, defaultValue: true)
     /// Let Sukrara through a Focus: alarm-level alerts post Time Sensitive (off by default; #184).
     public static let throughFocus = SettingSpec(key: SettingsSpec.Keys.throughFocus, defaultValue: false)
+    /// The quiet-alerts warning hidden for what was off then (`QuietWarning`, comma-separated); empty = not hidden.
+    public static let quietHidden = SettingSpec(key: SettingsSpec.Keys.quietHidden, defaultValue: "")
     /// Where it comes from (`SourceKind`: another Sukrara, or Juggluco on the home network); empty = not answered yet.
     public static let sourceKind = SettingSpec(key: SettingsSpec.Keys.sourceKind, defaultValue: "")
     /// Juggluco's address ("192.168.1.23" or with ":port"); blank = find it on this Mac's networks.

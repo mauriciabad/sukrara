@@ -581,6 +581,7 @@ private fun SettingsPages(
                 deps.readiness::answerUnlockedSound,
                 deps.readiness::testUnlockedSound,
                 deps.readiness::letThroughDnd,
+                onShowQuietWarning = { deps.readiness.hideQuietWarning(false) },
                 alerts = alerts,
                 playback = deps.alertPlayback,
                 openAlerts = { navigate(SettingsRoute.Alerts) },

@@ -33,7 +33,10 @@ enum class AlertRequirement(
     ExactAlarm,
     BatteryExemption,
 
-    /** The alert channels in use are not blocked or lowered below sound in Android's settings. */
+    /**
+     * The alert channels in use are not blocked or lowered below sound in Android's settings. Not missing while the
+     * person hid its warning for what is down now ([AlertReadiness.quietHidden], [QuietWarning]).
+     */
     AlertChannel,
 
     /**
@@ -106,6 +109,11 @@ data class AlertReadiness(
     val unlockedSound: UnlockedSound = UnlockedSound.Unchecked,
     val dnd: DndStatus = DndStatus(),
     val soundTest: SoundTest = SoundTest.Ready,
+    /**
+     * An alert channel in use is silenced and the person hid the warning on purpose (*Hide warning*): not in [missing];
+     * Settings › Alert reliability says so, with *Show warning*.
+     */
+    val quietHidden: Boolean = false,
 ) {
     val ready: Boolean get() = missing.isEmpty()
 
@@ -158,4 +166,10 @@ interface AlertReadinessSource {
 
     /** Stores what the person heard from that test ([AlertRequirement.SoundWhenUnlocked]). */
     fun answerUnlockedSound(answer: UnlockedSound)
+
+    /**
+     * *Hide warning* ([hide]: for the alert channels silenced now) or *Show warning* ([AlertRequirement.AlertChannel],
+     * [QuietWarning]).
+     */
+    fun hideQuietWarning(hide: Boolean) {}
 }

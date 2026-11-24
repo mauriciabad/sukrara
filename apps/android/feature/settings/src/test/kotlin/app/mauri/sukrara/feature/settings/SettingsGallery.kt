@@ -419,6 +419,10 @@ class SettingsGallery {
                     {},
                 ) {}
             },
+            // an alert category silenced on purpose, its warning hidden on home: said so, Show warning and Fix
+            "reliability-quiet-hidden" to {
+                ReliabilityContent(AlertReadiness(unlockedSound = UnlockedSound.Heard, quietHidden = true), {}, alerts = AlertSettings()) {}
+            },
             // an alert that couldn't be shown (it went out plain; Copy report), first in the list
             "reliability-alert-not-shown" to {
                 ReliabilityContent(

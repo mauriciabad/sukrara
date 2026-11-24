@@ -395,6 +395,14 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       Sukrara's page) and *Don't Let Sukrara Through*. A build without the profile (`--no-profile`): *This build of
       Sukrara can't send Time Sensitive alerts…* with *Open Focus Settings*. The panel says nothing about a Focus.
       VoiceOver reads statement, meaning, button. In Spanish too.
+- [ ] Quiet alerts on purpose (`alerts.quietHidden`). Mac: System Settings › Notifications › Sukrara › *Play sound*
+      off → the panel says *Alert sounds are off…* with *Hide Warning*; Hide → the row goes (spring; a fade with Reduce
+      Motion), Settings › Alerts › Sounds shows the line with *Show Warning*; relaunch: still hidden. Alert style *None*
+      too → the panel warns again (*banners and sounds*). Sound back on, then off again → it warns again. *Show
+      Warning* → back in the panel. Android (emulator): long-press a Sukrara alert → *Silent* → home's banner *An alert
+      category is silenced…* with *Hide warning* and *Fix*; Hide → snackbar *Undo* (brings it back); hide again →
+      Settings › Alert reliability › *Alert sound* says *Silenced, warning hidden* with *Show warning*; raise the
+      channel again, then silence it again → the banner is back. TalkBack / VoiceOver read each button by name.
 - [ ] Never on the user's phone with real alarms unless the user asked.
 
 ### Before the first unlock (emulator; docs/30, #160)

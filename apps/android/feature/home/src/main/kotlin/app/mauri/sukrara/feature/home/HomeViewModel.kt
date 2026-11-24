@@ -103,6 +103,9 @@ interface HomeDeps {
     /** Opens the system screen that fixes [requirement]. */
     fun fix(requirement: AlertRequirement)
 
+    /** *Hide warning* / its Undo for a silenced alert channel ([app.mauri.sukrara.core.model.QuietWarning]). */
+    fun hideQuietWarning(hide: Boolean) {}
+
     /** The features Android blocks (the banner after the taps one) and their ways out (docs/40). */
     val featureChecks: FeatureChecksSource get() = FeatureChecksSource.None
 
@@ -449,6 +452,8 @@ class HomeViewModel(
     fun acknowledge(problem: DataProblem) = deps.acknowledge(problem)
 
     fun fix(requirement: AlertRequirement) = deps.fix(requirement)
+
+    fun hideQuietWarning(hide: Boolean) = deps.hideQuietWarning(hide)
 
     /** The blocked features' checklist (*Allow* asks through it). */
     val featureChecks: FeatureChecksSource get() = deps.featureChecks

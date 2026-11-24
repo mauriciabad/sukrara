@@ -29,6 +29,7 @@ import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.DndStatus
+import app.mauri.sukrara.core.model.QuietWarning
 import app.mauri.sukrara.core.model.SoundTest
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.monitor.alerts.AlertCategory
@@ -42,6 +43,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -72,6 +74,9 @@ class AndroidAlertReadiness(
     private val saveUnlockedSound: suspend (UnlockedSound) -> Unit,
     /** Posts [AlertKind]'s test alert without Sukrara's own unlocked sound ([AlertReadinessSource.testUnlockedSound]). */
     private val sendUnlockedTest: (AlertKind, AlertSettings) -> Unit = { _, _ -> },
+    /** What the person hid the quiet-alerts warning for (schema `alerts.quietHidden`, [QuietWarning]) and how to store it. */
+    private val quietHidden: Flow<Set<String>> = flowOf(emptySet()),
+    private val saveQuietHidden: suspend (Set<String>) -> Unit = {},
 ) : AlertReadinessSource {
     private val ctx = context.applicationContext
     private val nm = ctx.getSystemService(NotificationManager::class.java)
@@ -86,15 +91,21 @@ class AndroidAlertReadiness(
     // until the stored answer is read (a moment), no claim either way about it
     @Volatile private var last = Inputs(AlertSettings(), needsBluetooth = false, failedSteps = emptySet(), unlocked = UnlockedSound.Heard)
 
+    /** The alert channels in use silenced at the last read: what *Hide warning* hides. */
+    @Volatile private var lastSilenced: Set<String> = emptySet()
+
     override val readiness: StateFlow<AlertReadiness> by lazy {
         combine(
-            combine(alertSettings, unlockedSound, ::Pair),
+            combine(alertSettings, unlockedSound, quietHidden, ::Triple),
             needsBluetooth,
             failedSteps,
             refreshes,
             systemChanges(),
-        ) { (settings, unlocked), bluetooth, failed, _, _ ->
-            last = Inputs(settings, bluetooth, failed, unlocked)
+        ) { (settings, unlocked, hidden), bluetooth, failed, _, _ ->
+            last = Inputs(settings, bluetooth, failed, unlocked, hidden)
+            // what came back up leaves the hidden warning, so silencing it again later warns again
+            val kept = QuietWarning.kept(silencedAnywhere(), hidden)
+            if (kept != hidden) scope.launch { saveQuietHidden(kept) }
             facts(last).readiness()
         }.flowOn(dispatchers.default)
             .stateIn(scope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), facts(last).readiness())
@@ -106,6 +117,11 @@ class AndroidAlertReadiness(
 
     override fun answerUnlockedSound(answer: UnlockedSound) {
         scope.launch { saveUnlockedSound(answer) }
+    }
+
+    override fun hideQuietWarning(hide: Boolean) {
+        val parts = if (hide) lastSilenced else emptySet()
+        scope.launch { saveQuietHidden(parts) }
     }
 
     override fun testUnlockedSound(): Boolean {
@@ -202,13 +218,14 @@ class AndroidAlertReadiness(
         val needsBluetooth: Boolean,
         val failedSteps: Set<String>,
         val unlocked: UnlockedSound,
+        val hidden: Set<String> = emptySet(),
     )
 
     private fun facts(inputs: Inputs): ReadinessFacts {
         syncDndBypass()
         val channels = channelsInUse(inputs.settings)
-        val alertGroupBlocked =
-            listOf(Channels.Group.ALERTS, Channels.Group.ALERTS_ALARM).any { nm.getNotificationChannelGroup(it.id)?.isBlocked == true }
+        val silenced = blockedGroups() + channels.filter { it.silenced() }.map { it.id }
+        lastSilenced = silenced
         val bluetooth = ctx.getSystemService(BluetoothManager::class.java)?.adapter
         val dnd = AlertCategory.Dnd.of(nm)
         return ReadinessFacts(
@@ -220,7 +237,8 @@ class AndroidAlertReadiness(
             exactAlarmAllowed = ctx.getSystemService(AlarmManager::class.java).canScheduleExactAlarms(),
             batteryExempt = ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName),
             backgroundRestricted = ctx.getSystemService(ActivityManager::class.java).isBackgroundRestricted,
-            alertChannelSilenced = alertGroupBlocked || channels.any { it.silenced() },
+            silencedChannels = silenced,
+            quietHidden = inputs.hidden,
             dnd =
                 DndStatus(
                     through = DndHold.through(relevantAlarmKinds(inputs.settings).mapNotNull { alarmChannel(it)?.canBypassDnd() }),
@@ -312,6 +330,20 @@ class AndroidAlertReadiness(
         }
 
     private fun NotificationChannel.silenced() = importance < NotificationManager.IMPORTANCE_DEFAULT
+
+    /** The blocked alert groups, as `group:<id>` (every alert in them is silenced). */
+    private fun blockedGroups(): Set<String> =
+        listOf(Channels.Group.ALERTS, Channels.Group.ALERTS_ALARM)
+            .filter { nm.getNotificationChannelGroup(it.id)?.isBlocked == true }
+            .map { "group:${it.id}" }
+            .toSet()
+
+    /** Every alert channel silenced now, in use or not (an alert turned off for a while keeps its hidden warning). */
+    private fun silencedAnywhere(): Set<String> {
+        val alarmIds = AlertChannels.alarmIds(ctx)
+        val ids = AlertKind.entries.flatMap { listOf(alarmIds.getValue(it), Channels.alert(it.wire)) }
+        return blockedGroups() + ids.filter { nm.getNotificationChannel(it)?.silenced() == true }
+    }
 
     /** Nearby devices: connecting and scanning (the families found by a scan need it; the new-sensor flow asks for both). */
     private fun bluetoothPermitted() =

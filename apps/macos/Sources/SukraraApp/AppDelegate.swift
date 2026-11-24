@@ -181,6 +181,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         model.alerts?.openAddTreatment = { [weak self] side in
             self?.fromPanel { $0.openAddTreatment(answering: side.mainKind) }
         }
+        // the quiet-alerts warning hidden on purpose: the panel's Hide Warning and Settings › Alerts' Show Warning
+        let hidden = QuietWarning.decode(store.value(MacSettings.quietHidden))
+        model.quietHidden = hidden
+        windows.settings.quietHidden = hidden
+        model.onQuietHidden = { [weak self] in self?.storeQuietHidden($0) }
+        windows.settings.showQuietWarning = { [weak model] in model?.hideQuietWarning(false) }
         services.permissionChanged = { [weak self] in self?.refreshNotificationPermission() }
         observeSystemTime()
         observeClockStyle()
@@ -378,6 +384,19 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             let permission = await center.refresh()
             model.notificationPermission = permission
             windows?.settings.timeSensitive = center.timeSensitive
+            windows?.settings.quietDown = permission.down
+            // what came back up leaves the hidden warning, so turning it down again later warns again
+            let kept = QuietWarning.kept(down: permission.down, hidden: model.quietHidden)
+            if kept != model.quietHidden {
+                model.quietHidden = kept
+                storeQuietHidden(kept)
+            }
         }
+    }
+
+    /// The hidden quiet-alerts warning (schema `alerts.quietHidden`), stored and shown in Settings › Alerts.
+    private func storeQuietHidden(_ parts: Set<String>) {
+        store.set(QuietWarning.encode(parts), for: MacSettings.quietHidden)
+        windows?.settings.quietHidden = parts
     }
 }

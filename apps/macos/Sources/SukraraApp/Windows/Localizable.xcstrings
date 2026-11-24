@@ -1,6 +1,102 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Alert sounds are off: alerts may go unnoticed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert sounds are off: alerts may go unnoticed."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los sonidos de las alertas están desactivados: puede que no las notes."
+          }
+        }
+      }
+    },
+    "Alert banners are off: alerts may go unnoticed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert banners are off: alerts may go unnoticed."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los avisos de las alertas están desactivados: puede que no las notes."
+          }
+        }
+      }
+    },
+    "Alert banners and sounds are off: alerts may go unnoticed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert banners and sounds are off: alerts may go unnoticed."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los avisos y los sonidos de las alertas están desactivados: puede que no las notes."
+          }
+        }
+      }
+    },
+    "Hide Warning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide Warning"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar advertencia"
+          }
+        }
+      }
+    },
+    "Show Warning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Warning"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar advertencia"
+          }
+        }
+      }
+    },
+    "Alert banners or sounds are off in System Settings. The panel doesn't warn about it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert banners or sounds are off in System Settings. The panel doesn't warn about it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los avisos o los sonidos de las alertas están desactivados en Ajustes del Sistema. El panel no lo advierte."
+          }
+        }
+      }
+    },
     "Until then, this Mac can't pair with %@." : {
       "localizations" : {
         "en" : {
@@ -527,22 +623,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Niveles de alerta…"
-          }
-        }
-      }
-    },
-    "Alert banners or sounds are off: alerts may go unnoticed." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alert banners or sounds are off: alerts may go unnoticed."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los avisos o los sonidos de las alertas están desactivados: puede que no las notes."
           }
         }
       }

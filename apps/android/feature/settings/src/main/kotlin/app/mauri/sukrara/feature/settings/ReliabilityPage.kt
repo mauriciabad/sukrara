@@ -3,10 +3,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -14,10 +19,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.UnlockedSound
+import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.CardRow
 import app.mauri.sukrara.designsystem.rows.DndChoice
@@ -53,6 +60,8 @@ internal fun ReliabilityContent(
     onAnswerUnlockedSound: (UnlockedSound) -> Unit = {},
     onTestUnlockedSound: () -> Boolean = { false },
     onLetThroughDnd: (Boolean) -> Unit = {},
+    /** *Show warning* on a silenced alert channel whose warning the person hid (home's *Hide warning*). */
+    onShowQuietWarning: () -> Unit = {},
     alerts: AlertSettings? = null,
     playback: AlertPlayback = AlertPlayback.None,
     /** *See also* Alerts (docs/35 §7: Alerts ↔ Alert reliability). */
@@ -85,6 +94,13 @@ internal fun ReliabilityContent(
                                 { onFix(requirement) },
                                 onAnswerUnlockedSound,
                             )
+                        }
+                    }
+
+                    // silenced on purpose (home's Hide warning): said so, with the way back and Android's page
+                    requirement == AlertRequirement.AlertChannel && readiness.quietHidden -> {
+                        ControlRow(title, stringResource(R.string.st_req_hidden) + " · " + why) {
+                            QuietHiddenButtons(onShow = onShowQuietWarning, onFix = { onFix(requirement) })
                         }
                     }
 
@@ -122,6 +138,25 @@ internal fun ReliabilityContent(
         }
         FooterText(stringResource(R.string.st_reliability_footer))
         SeeAlso(listOf(SeeAlsoLink(stringResource(R.string.st_alerts_title), null, Section.Alerts, openAlerts)))
+    }
+}
+
+/** *Show warning* (the way back from home's *Hide warning*) and *Fix* (Android's page for the channel). */
+@Composable
+private fun QuietHiddenButtons(
+    onShow: () -> Unit,
+    onFix: () -> Unit,
+) {
+    val haptics = rememberHaptics()
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(
+            onClick = {
+                haptics.confirm()
+                onShow()
+            },
+            modifier = Modifier.heightIn(min = 48.dp).testTag("quiet-show"),
+        ) { Text(stringResource(R.string.st_quiet_show)) }
+        TextButton(onClick = onFix, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.st_fix)) }
     }
 }
 

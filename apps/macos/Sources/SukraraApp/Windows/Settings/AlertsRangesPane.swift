@@ -84,6 +84,26 @@ struct AlertsRangesPane: View {
                     Spacer()
                     Button(L10n.t("Notification Settings…")) { Self.openNotificationSettings() }
                 }
+                // the panel's warning, hidden on purpose: said here, with the way back
+                if model.quietWarningHidden {
+                    HStack {
+                        Label {
+                            Text(
+                                L10n.t(
+                                    "Alert banners or sounds are off in System Settings. The panel doesn't warn about it."
+                                ))
+                        } icon: {
+                            Image(systemName: "bell.slash")
+                        }
+                        .font(.callout).foregroundStyle(.secondary)
+                        Spacer()
+                        Button(L10n.t("Show Warning")) {
+                            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                            withAnimation { model.showQuietWarning() }
+                        }
+                    }
+                    .transition(.opacity)
+                }
                 if let status = model.focusStatus { FocusChoice(status: status) { model.throughFocus = $0 } }
             }
             Section {

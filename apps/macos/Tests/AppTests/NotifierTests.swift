@@ -382,7 +382,9 @@ final class FakeCenter: NotificationPosting {
 @Suite struct TimeSensitiveTests {
     @Test func aBuildWithoutTheEntitlementSaysAFocusCanHoldTheAlarms() {
         for setting in [UNNotificationSetting.notSupported, .disabled] {
-            for permission in [NotificationPermission.notAsked, .allowed, .denied, .quiet] {
+            for permission in [
+                NotificationPermission.notAsked, .allowed, .denied, .quiet([NotificationPermission.sound]),
+            ] {
                 #expect(TimeSensitive(setting: setting, entitled: false, permission: permission) == .unavailable)
             }
         }

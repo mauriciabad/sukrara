@@ -333,6 +333,20 @@
                             model: alerts, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
                         ).settingsWindow(alerts, width: 560, height: 2300))
                 ))
+            // alert sounds off in System Settings and the panel's warning hidden: the line with Show Warning
+            let quiet = SettingsModel(store: store, follow: following, version: "0.12.0")
+            quiet.pane = .alerts
+            quiet.timeSensitive = .on
+            quiet.quietDown = [NotificationPermission.sound]
+            quiet.quietHidden = [NotificationPermission.sound]
+            out.append(
+                (
+                    "settings-alerts-quiet-hidden",
+                    AnyView(
+                        SettingsView(
+                            model: quiet, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                        ).settingsWindow(quiet, width: 560, height: 2300))
+                ))
             let mirrored = SettingsModel(
                 store: store, follow: following,
                 wearer: WearerSettings(
