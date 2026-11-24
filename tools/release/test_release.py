@@ -896,7 +896,9 @@ class WorktreeGitTest(GitRepo):
                       wt("apps/garmin/sample/manifest.xml"))
         self.assertEqual(versions.parse_change(wt("changes/quiet.md"))["apps"], ["mac"])  # waits for the Mac's release
         self.assertEqual(versions.parse_change(wt("changes/barrel.md"))["apps"], ["aura"])
-        r = release.Release({"mac": "0.18.0", "aura": "0.18.0"}, False, today=datetime.date(2026, 11, 24), apps=APPS)
+        mac, aura = (versions.read_version(BY_ID[i], read(BY_ID[i]["version"])) for i in ("mac", "aura"))
+        r = release.Release({"mac": versions.bump(mac, "feature"), "aura": versions.bump(aura, "feature")}, False,
+                            today=datetime.date(2026, 11, 24), apps=APPS)
         r.version()  # every app that named them released: the files are gone
         self.assertEqual(os.listdir(os.path.join(self.wt, "changes")), [])
 
