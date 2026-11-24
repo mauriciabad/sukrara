@@ -39,9 +39,11 @@ import kotlin.math.pow
 
 /**
  * Reconnect delays: 2 s doubling to 5 min, each scaled by a random 50–100 % so many phones don't reconnect in the same
- * instant (Mac `Backoff`, same numbers). Reset once a relay sends anything, or by [RelayTransport.reconnectNow].
+ * instant (Mac `Backoff`, same numbers). Reset only by a connection that stayed open [resetAfterSeconds] after the
+ * relay's first message, or by [RelayTransport.reconnectNow]: a relay that answers and then closes (#263: nostr.mom,
+ * every 2 s on the Mac) waits longer each time.
  */
-data class Backoff(val baseSeconds: Double = 2.0, val capSeconds: Double = 300.0) {
+data class Backoff(val baseSeconds: Double = 2.0, val capSeconds: Double = 300.0, val resetAfterSeconds: Long = 60) {
     fun delayMs(attempt: Int, jitter: Double): Long = (min(capSeconds, baseSeconds * 2.0.pow(min(attempt, 20))) * jitter * 1000).toLong()
 }
 
@@ -201,7 +203,6 @@ class RelayPool(
     private suspend fun run(url: String, connection: Connection) {
         var attempt = 0
         while (true) {
-            val attemptBefore = attempt
             // Bounded: a relay that floods faster than we handle loses its socket instead of filling memory.
             val events = Channel<SocketEvent>(INBOUND_QUEUE)
             val flooded = AtomicBoolean(false)
@@ -221,6 +222,7 @@ class RelayPool(
             connection.budgetAt = nowSeconds()
             resend(socket)
             var reason: String? = null
+            var openedAt: Long? = null
             for (e in events) {
                 if (flooded.get()) break
                 when (e) {
@@ -231,7 +233,7 @@ class RelayPool(
                         }
                         if (!connection.open) {
                             connection.open = true
-                            attempt = 0
+                            openedAt = nowSeconds()
                             setStatus(url, RelayStatus(connected = true))
                         }
                         if (!handle(e.text, url, connection, socket)) {
@@ -249,8 +251,10 @@ class RelayPool(
             // the first of the relay's close, a too-big message or the flood wins (a late flood callback never
             // overwrites an earlier reason)
             val why = reason ?: if (flooded.get()) FLOODED else "closed"
-            // a relay that answers and then floods / oversends doesn't win back the 2 s backoff each time
-            if (why == TOO_BIG || why == FLOODED || why == TOO_MANY_EVENTS) attempt = attemptBefore
+            // a connection that held starts the delays over; one that answers and then closes, floods or oversends
+            // doesn't
+            val held = openedAt?.let { nowSeconds() - it >= backoff.resetAfterSeconds } == true
+            if (held && why != TOO_BIG && why != FLOODED && why != TOO_MANY_EVENTS) attempt = 0
             events.close()
             socket.cancel()
             connection.socket = null

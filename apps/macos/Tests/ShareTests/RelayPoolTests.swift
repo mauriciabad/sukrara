@@ -219,6 +219,57 @@ struct RelayPoolTests {
         await pool.stop()
     }
 
+    /// A pool whose reconnect delays are recorded and pass at once (jitter 1: the delays are exact).
+    func recordingPool(_ factory: FakeWebSocketFactory, delays: TestDelays, clock: TestClock) -> RelayPool {
+        RelayPool(
+            relays: [relay], authKey: nil, crypto: crypto, factory: factory,
+            sleep: { seconds in
+                if seconds == 60 {  // the watchdog's minute: waits until the test ends (cancelled by stop)
+                    try await Task.sleep(for: .seconds(3600))
+                } else {
+                    delays.append(seconds)
+                    await Task.yield()
+                }
+            }, now: { clock.now }, jitter: { 1 })
+    }
+
+    /// #263: nostr.mom answered every connection and closed it; the Mac reconnected every 2 s for days (and kept every
+    /// socket: 4.7 GB). A relay that answers and then closes waits longer each time.
+    @Test func aRelayThatAnswersThenClosesWaitsLongerEachTime() async throws {
+        let factory = FakeWebSocketFactory()
+        let delays = TestDelays()
+        let pool = recordingPool(factory, delays: delays, clock: TestClock(1_792_087_200))
+        await pool.start()
+        for n in 1...6 {
+            #expect(await factory.waitForConnections(n))
+            factory.sockets[n - 1].push("[\"NOTICE\",\"bye\"]")
+            factory.sockets[n - 1].fail()
+        }
+        #expect(await factory.waitForConnections(7))
+        #expect(delays.all == [2, 4, 8, 16, 32, 64])
+        await pool.stop()
+    }
+
+    /// A connection that stayed open a minute after the relay's first message starts the delays over.
+    @Test func aConnectionThatHeldStartsTheDelaysOver() async throws {
+        let factory = FakeWebSocketFactory()
+        let delays = TestDelays()
+        let clock = TestClock(1_792_087_200)
+        let pool = recordingPool(factory, delays: delays, clock: clock)
+        await pool.start()
+        for n in 1...3 {
+            #expect(await factory.waitForConnections(n))
+            let socket = factory.sockets[n - 1]
+            socket.push("[\"NOTICE\",\"hi\"]")
+            #expect(await eventually { await pool.connectedCount == 1 })
+            if n == 3 { clock.now += Backoff().resetAfter }
+            socket.fail()
+        }
+        #expect(await factory.waitForConnections(4))
+        #expect(delays.all == [2, 4, 2])
+        await pool.stop()
+    }
+
     @Test func stopIsTerminalAndClosesTheSockets() async throws {
         let factory = FakeWebSocketFactory()
         let pool = pool(factory)
@@ -239,8 +290,18 @@ struct RelayPoolTests {
     }
 }
 
+/// The reconnect delays a pool asked for, in order.
+final class TestDelays: @unchecked Sendable {
+    // Guarded by `lock`.
+    private let lock = NSLock()
+    private var seconds: [Double] = []
+
+    func append(_ delay: Double) { lock.withLock { seconds.append(delay) } }
+    var all: [Double] { lock.withLock { seconds } }
+}
+
 /// A wall clock the test moves by hand.
-private final class TestClock: @unchecked Sendable {
+final class TestClock: @unchecked Sendable {
     // Guarded by `lock`.
     private let lock = NSLock()
     private var seconds: Int

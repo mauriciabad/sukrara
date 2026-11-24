@@ -38,13 +38,14 @@ class RelayPoolTest {
     private fun TestScope.pool(
         relays: List<String> = listOf("wss://a.example"),
         access: RelayAccess = RelayAccess.Public,
+        now: () -> Long = { 1_000L },
     ) = RelayPool(
         relays,
         { identity },
         crypto,
         factory,
         StandardTestDispatcher(testScheduler),
-        { 1_000L },
+        now,
         jitter = { 1.0 },
         access = access,
     )
@@ -115,6 +116,47 @@ class RelayPoolTest {
             assertEquals(2, sockets.size)
             advanceTimeBy(2)
             assertEquals(3, sockets.size)
+            p.close()
+        }
+
+    /**
+     * #263: nostr.mom answered every connection and closed it, and the Mac reconnected every 2 s for days. A relay that
+     * answers and then closes waits longer each time.
+     */
+    @Test fun aRelayThatAnswersThenClosesWaitsLongerEachTime() =
+        runTest {
+            val p = pool()
+            p.start()
+            runCurrent()
+            listOf(2_000L, 4_000L, 8_000L, 16_000L, 32_000L).forEachIndexed { i, wait ->
+                sockets[i].onEvent(SocketEvent.Message("[\"NOTICE\",\"bye\"]"))
+                sockets[i].onEvent(SocketEvent.Closed("going away"))
+                runCurrent()
+                advanceTimeBy(wait - 1)
+                assertEquals("no reconnect before ${wait / 1000} s", i + 1, sockets.size)
+                advanceTimeBy(2)
+                assertEquals(i + 2, sockets.size)
+            }
+            p.close()
+        }
+
+    /** A connection that stayed open a minute after the relay's first message starts the delays over. */
+    @Test fun aConnectionThatHeldStartsTheDelaysOver() =
+        runTest {
+            val p = pool(now = { testScheduler.currentTime / 1000 })
+            p.start()
+            runCurrent()
+            listOf(2_000L, 4_000L, 2_000L).forEachIndexed { i, wait ->
+                sockets[i].onEvent(SocketEvent.Message("[\"NOTICE\",\"hi\"]"))
+                runCurrent()
+                if (i == 2) advanceTimeBy(Backoff().resetAfterSeconds * 1000)
+                sockets[i].onEvent(SocketEvent.Closed("going away"))
+                runCurrent()
+                advanceTimeBy(wait - 1)
+                assertEquals("no reconnect before ${wait / 1000} s", i + 1, sockets.size)
+                advanceTimeBy(2)
+                assertEquals(i + 2, sockets.size)
+            }
             p.close()
         }
 

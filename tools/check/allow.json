@@ -213,7 +213,7 @@
     },
     {
       "path": "apps/macos/Sources/SukraraShare/Relay/WebSocket.swift",
-      "reason": "Mac relay WebSockets: RelayPool passes the protocol's wss:// relay list only"
+      "reason": "Mac relay WebSockets (RelayWebSocket: one NWConnection per relay, TLS for wss://): RelayPool passes the protocol's wss:// relay list only"
     },
     {
       "path": "apps/macos/Sources/SukraraUpdater/SparkleUpdater.swift",

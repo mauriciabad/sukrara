@@ -308,9 +308,10 @@ NostrCrypto (protocol) ◄── NostrSDKCrypto     RelayTransport (protocol) �
   and recent alert keys: everything trust depends on, so a restart can't be used to slip a forged entry in. It is
   stored in the Keychain (service `app.mauri.sukrara`, account `follower`). Readings/treatments go out as
   deltas to 15's stores. Unfollow = discard the state.
-- **Relay/** — `RelayPool` actor: socket per `wss://` relay, jittered backoff 2 s→5 min, subscriptions (deduped by
-  filter) and a 1 h outbox re-sent on reconnect, NIP-42 AUTH as the pool's key (F, or the invite key for an invite
-  lookup pool), EOSE/OK/CLOSED/connection status on a single-consumer `inbound` stream, ping at 150 s silence,
+- **Relay/** — `RelayPool` actor: socket per `wss://` relay (`RelayWebSocket`: an `NWConnection`; URLSession's
+  WebSocket tasks are never freed, #263), jittered backoff 2 s→5 min (reset only by a connection that held a
+  minute), subscriptions (deduped by filter) and a 1 h outbox re-sent on reconnect, NIP-42 AUTH as the pool's key
+  (F, or the invite key for an invite lookup pool), EOSE/OK/CLOSED/connection status on a single-consumer `inbound` stream, ping at 150 s silence,
   reconnect at 270 s. It does not dedupe events (the session does; an unknown-epoch event must be re-processable).
 - **Tests** (`ShareTests`): OGS vectors (derivations, every event verifies/opens, 27-step acceptance scenario,
   invite checks, treatment payloads), identity vectors, profile fixture, `contracts/protocol/sync/*.json` (made by the
@@ -518,8 +519,8 @@ TTLs, JSON field names and number forms, invite link `https://sukrara.mauri.app/
   R8 keeps in `consumer-rules.pro`). Host tests run it on `nostr-sdk-jvm` and subclass `NostrCryptoContractTest`.
 - `transport/` — `RelayTransport` (inbound flow, per-relay status, subscribe / publish / fetch, `reconnectNow`) and
   `RelayPool`, the Kotlin twin of the Mac `RelayPool`: one OkHttp WebSocket per relay (`OkHttpWebSockets`, wss only,
-  pings every 60 s), backoff 2 s → 5 min × jitter, subscriptions + a 1-hour outbox re-sent after reconnects (a newer
-  live / addressable event replaces the older), NIP-42 AUTH as the identity. nostr-sdk's Client isn't used: one relay
+  pings every 60 s), backoff 2 s → 5 min × jitter (reset only by a connection that held a minute), subscriptions +
+  a 1-hour outbox re-sent after reconnects (a newer live / addressable event replaces the older), NIP-42 AUTH as the identity. nostr-sdk's Client isn't used: one relay
   behaviour on both platforms, and the pool is unit-tested against fake sockets. Tests use `FakeRelayTransport`.
   `NetworkWatch` (Android: `AndroidNetworkWatch`, the default-network callback) makes the relays reconnect when a new
   network comes up; each engine opens it while it runs (the owner's sharing, the follower's connection) and closes it

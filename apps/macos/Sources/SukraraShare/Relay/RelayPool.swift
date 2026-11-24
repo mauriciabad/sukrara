@@ -5,14 +5,17 @@ import Foundation
 import os
 
 /// Reconnect delays: 2 s doubling to 5 min, each scaled by a random 50–100 % so many clients don't reconnect in the
-/// same instant. Reset once a relay sends anything.
+/// same instant. Reset only by a connection that stayed open `resetAfter` seconds after the relay's first message: a
+/// relay that answers and then closes (#263: nostr.mom, every 2 s for days) waits longer each time.
 public struct Backoff: Sendable {
     public var base: Double = 2
     public var cap: Double = 300
+    public var resetAfter: Int = 60
 
-    public init(base: Double = 2, cap: Double = 300) {
+    public init(base: Double = 2, cap: Double = 300, resetAfter: Int = 60) {
         self.base = base
         self.cap = cap
+        self.resetAfter = resetAfter
     }
 
     /// Seconds to wait before reconnect attempt `attempt` (0 = the first retry); `jitter` in 0.5…1.
@@ -21,7 +24,7 @@ public struct Backoff: Sendable {
     }
 }
 
-/// The relay connection: one WebSocket per relay, reconnect with backoff, subscriptions and an outbox re-sent after
+/// The relay connection: one WebSocket per relay, reconnect with `Backoff`, subscriptions and an outbox re-sent after
 /// every reconnect (gift wraps must reach relays that were down), NIP-42 AUTH as `authKey` when a relay closes a REQ
 /// or answers an EVENT with `auth-required` (once per connection; REQs and the outbox re-sent after the relay accepts
 /// it: PROTOCOL-v2 "Relay answers"), a watchdog that pings a relay
@@ -40,6 +43,7 @@ public actor RelayPool: RelayTransport {
     private let backoff: Backoff
     private let sleep: @Sendable (Double) async throws -> Void
     private let now: @Sendable () -> Int
+    private let jitter: @Sendable () -> Double
     private static let log = Logger(subsystem: "app.mauri.sukrara", category: "relays")
     private static let outboxSeconds = 3600
     /// Events a relay may send at once (a full start: chunks, 30 days of treatments, wraps) …
@@ -75,9 +79,10 @@ public actor RelayPool: RelayTransport {
     /// the invite key for an invite lookup).
     public init(
         relays: [String], authKey: SecretKeyHex?, crypto: any NostrCrypto,
-        factory: any WebSocketFactory = URLSessionWebSocketFactory(), backoff: Backoff = Backoff(),
+        factory: any WebSocketFactory = RelayWebSocketFactory(), backoff: Backoff = Backoff(),
         sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) },
-        now: @escaping @Sendable () -> Int = { Int(Date().timeIntervalSince1970) }
+        now: @escaping @Sendable () -> Int = { Int(Date().timeIntervalSince1970) },
+        jitter: @escaping @Sendable () -> Double = { Double.random(in: 0.5...1) }
     ) {
         urls = Relays.valid(relays).compactMap(URL.init(string:))
         self.authKey = authKey
@@ -86,6 +91,7 @@ public actor RelayPool: RelayTransport {
         self.backoff = backoff
         self.sleep = sleep
         self.now = now
+        self.jitter = jitter
         // Never drop: an alert is ephemeral and can't be fetched again.
         (inbound, continuation) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
     }
@@ -149,33 +155,31 @@ public actor RelayPool: RelayTransport {
             connections[url]?.lastReceived = now()
             connections[url]?.budget = Double(Self.eventBurst)
             connections[url]?.budgetAt = now()
-            let attemptBefore = attempt
             for (id, filter) in subscriptions { try? await socket.send(Self.req(id, filter)) }
             for item in outbox { try? await socket.send("[\"EVENT\",\(item.event.json())]") }
-            var announced = false
+            var openedAt: Int?
             do {
                 while true {
                     let text = try await socket.receive()
-                    if !announced {
-                        announced = true
+                    if openedAt == nil {
+                        openedAt = now()
                         connections[url]?.open = true
                         continuation.yield(.connection(.connected, relay: Self.host(url)))
                     }
-                    attempt = 0
                     connections[url]?.lastReceived = now()
                     guard await handle(text, from: url, socket: socket) else { throw TooManyEvents() }
                 }
             } catch {
-                // a relay that answers and then floods doesn't win back the shortest backoff each time
-                if error is TooManyEvents { attempt = attemptBefore }
                 socket.cancel()
                 guard !Task.isCancelled else { return }
+                // a connection that held starts the delays over; one that answers and then closes or floods doesn't
+                if let openedAt, now() - openedAt >= backoff.resetAfter, !(error is TooManyEvents) { attempt = 0 }
                 connections[url]?.socket = nil
                 connections[url]?.open = false
                 continuation.yield(.connection(.disconnected, relay: Self.host(url)))
                 Self.log.info("relay \(Self.host(url), privacy: .public) disconnected, attempt \(attempt)")
             }
-            try? await sleep(backoff.delay(attempt: attempt, jitter: Double.random(in: 0.5...1)))
+            try? await sleep(backoff.delay(attempt: attempt, jitter: jitter()))
             attempt += 1
         }
     }

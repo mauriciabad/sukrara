@@ -610,7 +610,7 @@ def check_debug_docs(ch, rep):
 
 CLEARTEXT = re.compile(r"""["'](?:http|ws)(?:["':])""", re.I)
 NETWORK = re.compile(r"openConnection\(|newWebSocket\(|Request\.Builder\(|\.toURL\(")
-MAC_NETWORK = re.compile(r"URLSession\(|URLSession\.shared|webSocketTask\(")
+MAC_NETWORK = re.compile(r"URLSession\(|URLSession\.shared|webSocketTask\(|NWConnection\(")
 
 
 def check_cleartext(ch, rep):
@@ -622,7 +622,7 @@ def check_cleartext(ch, rep):
     where = ["--cached"] if not ch.rev else []
     out = git("grep", "-n", "-I", "-E", "-i", *where, "-e", r"(\"|')(http|ws)(\"|'|:)|openConnection\(|newWebSocket\(|Request\.Builder\(|\.toURL\(",
               *([ch.rev] if ch.rev else []), "--", ANDROID + "*.kt", ok=True)
-    mac = git("grep", "-n", "-I", "-E", "-i", *where, "-e", r"(\"|')(http|ws)(\"|'|:)|URLSession\(|URLSession\.shared|webSocketTask\(",
+    mac = git("grep", "-n", "-I", "-E", "-i", *where, "-e", r"(\"|')(http|ws)(\"|'|:)|URLSession\(|URLSession\.shared|webSocketTask\(|NWConnection\(",
               *([ch.rev] if ch.rev else []), "--", MAC_SOURCES + "*.swift", ok=True)
     files = set(tree_files(ch))
     for e in clear_ok + net_ok:
