@@ -176,13 +176,15 @@ class RelayPool(
             }
         // a relay that fails also settles the query (its status changes, not inbound)
         val failures = scope.launch { status.collect { if (settled(answered)) done.trySend(Unit) } }
-        withTimeoutOrNull(timeoutMs) { done.receive() }
-        return withContext(serial) {
+        try {
+            withTimeoutOrNull(timeoutMs) { done.receive() }
+        } finally {
+            // also when the caller goes: the listeners live in the pool's scope, the query in every resend (#263)
             collector.cancel()
             failures.cancel()
             close(id)
-            FetchResult(events.values.toList(), answered.size)
         }
+        return withContext(serial) { FetchResult(events.values.toList(), answered.size) }
     }
 
     /**

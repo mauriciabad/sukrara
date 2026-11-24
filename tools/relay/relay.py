@@ -183,7 +183,8 @@ class Relay:
             found = self.store.query(filters)
             self.log("  %s REQ %s %s -> %d stored" % (peer, sid[:12], json.dumps(filters)[:120], len(found)))
             for ev in found:
-                await send(writer, ["EVENT", sid, ev])
+                if not await send(writer, ["EVENT", sid, ev]):
+                    return  # the client went: the rest of the answer would go into a dead socket
             await send(writer, ["EOSE", sid])
         elif verb == "CLOSE" and len(msg) > 1:
             subs.pop(msg[1], None)
@@ -252,11 +253,15 @@ async def frame(writer, opcode: int, data: bytes):
     await writer.drain()
 
 
-async def send(writer, msg):
+async def send(writer, msg) -> bool:
+    """False once the client is gone: nothing is written into a closed connection (#263)."""
+    if writer.is_closing():
+        return False
     try:
         await frame(writer, 1, json.dumps(msg, separators=(",", ":"), ensure_ascii=False).encode())
+        return True
     except ConnectionError:
-        pass
+        return False
 
 
 async def main(argv=None):

@@ -225,6 +225,29 @@ class RelayPoolTest {
             p.close()
         }
 
+    /**
+     * #263: a fetch whose caller goes (a restore or retry the person left) closes its query: no listener stays in the
+     * long-lived owner pool and no REQ is sent again at every reconnect.
+     */
+    @Test fun aCancelledFetchClosesItsQuery() =
+        runTest {
+            val p = pool()
+            p.start()
+            runCurrent()
+            val fetch = launch { p.fetch(listOf(RelayFilter(kinds = listOf(1))), 10_000) }
+            runCurrent()
+            val sub = Regex("\\[\"REQ\",\"([^\"]+)\"").find(sockets[0].sent.last())!!.groupValues[1]
+            fetch.cancel()
+            runCurrent()
+            assertTrue("the query is closed", sockets[0].sent.contains("[\"CLOSE\",\"$sub\"]"))
+            sockets[0].onEvent(SocketEvent.Closed("going away"))
+            runCurrent()
+            advanceTimeBy(2_001)
+            assertEquals(2, sockets.size)
+            assertFalse("not asked again after a reconnect", sockets[1].sent.any { it.contains(sub) })
+            p.close()
+        }
+
     @Test fun aNewerLiveEventReplacesTheOlderInTheOutbox() =
         runTest {
             val p = pool()

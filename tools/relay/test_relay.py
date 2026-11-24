@@ -6,7 +6,9 @@
 import asyncio
 import base64
 import json
+import logging
 import os
+import socket
 import struct
 import sys
 import unittest
@@ -88,6 +90,49 @@ class WireTest(unittest.TestCase):
         for c in (sub, pub):
             c.writer.close()
             await c.writer.wait_closed()
+        server.close()
+        await asyncio.wait_for(server.wait_closed(), 5)
+
+    def test_a_client_gone_mid_answer_gets_nothing_more(self):
+        """#263: an app that drops its socket while the relay answers a REQ (a restart, a wake) ends that answer:
+        nothing more is written into the dead connection (each write was a 'socket.send() raised exception.' line)."""
+        warnings = []
+
+        class Count(logging.Handler):
+            def emit(self, record):
+                warnings.append(record.getMessage())
+
+        log = logging.getLogger("asyncio")
+        handler = Count(logging.WARNING)
+        log.addHandler(handler)
+        try:
+            asyncio.run(self.drop_mid_answer())
+        finally:
+            log.removeHandler(handler)
+        self.assertEqual(sum("raised exception" in w for w in warnings), 0, "writes into the gone connection")
+
+    async def drop_mid_answer(self):
+        store = relay.Store(now=lambda: 1000)
+        for i in range(2000):  # about 2 MB: more than the socket buffers, so the answer is still going out
+            store.add(ev(1, 900, content="%d %s" % (i, "x" * 1000)))
+        r = relay.Relay(store, lambda _: None)
+        server = await asyncio.start_server(r.serve, "127.0.0.1", 0)
+        port = server.sockets[0].getsockname()[1]
+        c = await Client.open(port)
+        await c.send(["REQ", "s", {"kinds": [1]}])
+        for _ in range(50):
+            if r.clients:
+                break
+            await asyncio.sleep(0.01)
+        await asyncio.sleep(0.2)
+        # gone without a close frame, with a reset (nothing read): what a killed app or a cancelled socket does
+        c.writer.get_extra_info("socket").setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+        c.writer.close()
+        for _ in range(500):
+            if not r.clients:
+                break
+            await asyncio.sleep(0.01)
+        self.assertEqual(r.clients, {})
         server.close()
         await asyncio.wait_for(server.wait_closed(), 5)
 
