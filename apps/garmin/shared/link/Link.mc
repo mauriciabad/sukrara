@@ -125,8 +125,6 @@ module Link {
     const REPORT = "linkReport";
     const RUNS = 10;
     const SCREEN = 12;
-    var _runs as Array<String>? = null;
-    var _screen as Array<String>? = null;
     var _drawn as String = "";
 
     function stored(key as String) as Array<String> {
@@ -144,17 +142,16 @@ module Link {
         return list;
     }
 
+    // (the lists are read from storage for each entry, never kept: the face's heap, #217)
     function note(kind as String, at as Number, sent, gt) as Void {
-        _runs = keep(_runs != null ? _runs : stored("Runs"), kind + "." + at + "." + sent + "." + gt, RUNS, "Runs");
-        saveReport();
+        saveReport(keep(stored("Runs"), kind + "." + at + "." + sent + "." + gt, RUNS, "Runs"), stored("Screen"));
     }
 
     // A screen event (the app's foreground): [event] is the callback or the mode drawn (docs/43 "The screen"), [mode]
     // what System.getDisplayMode() said then (0 high power, 1 low power, 2 off, 9 not on this watch).
     function screen(event as String, at as Number, mode as Number) as Void {
         var e = event + "." + at + "." + mode + ".0";
-        _screen = keep(_screen != null ? _screen : stored("Screen"), e, SCREEN, "Screen");
-        saveReport();
+        saveReport(stored("Runs"), keep(stored("Screen"), e, SCREEN, "Screen"));
     }
 
     // The reading the app draws now (its time on the watch clock) and since when: written when it changes.
@@ -164,18 +161,12 @@ module Link {
             return;
         }
         _drawn = key + "." + now;
-        saveReport();
+        saveReport(stored("Runs"), stored("Screen"));
     }
 
-    function saveReport() as Void {
-        if (_runs == null) {
-            _runs = stored("Runs");
-        }
-        if (_screen == null) {
-            _screen = stored("Screen");
-        }
+    function saveReport(runs as Array<String>, events as Array<String>) as Void {
         var r = "";
-        var lists = [_runs, _screen];
+        var lists = [runs, events];
         for (var l = 0; l < 2; l++) {
             var list = lists[l] as Array<String>;
             for (var i = 0; i < list.size(); i++) {
@@ -242,8 +233,6 @@ module Link {
         skew = 0;
         _fetchedAt = null;
         _loaded = true;
-        _runs = null;
-        _screen = null;
         _drawn = "";
         _taken = null;
         _pickedAt = 0;

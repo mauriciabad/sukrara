@@ -163,13 +163,14 @@ module FieldPlace {
 // Record glucose (the field's setting, SettingsSpec): on by default
 module FieldRecord {
     function on() as Boolean {
+        var spec = SettingsSpec.RECORD();
         var v = null;
         try {
-            v = Application.Properties.getValue(SettingsSpec.RECORD[0] as String);
+            v = Application.Properties.getValue(spec[0] as String);
         } catch (e) {
             v = null;
         }
-        return v instanceof Boolean ? v : SettingsSpec.RECORD[2] as Boolean;
+        return v instanceof Boolean ? v : spec[2] as Boolean;
     }
 
     // what the file gets at the phone's time [t]: the reading in the person's unit while it is fresh (5 min), else

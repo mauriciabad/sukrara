@@ -14,14 +14,14 @@ module AuraDraw {
     // at cx + 0.5
     var cx as Float = 194.5;
     var cy as Float = 194.5;
+    // the fonts of the part being drawn: dropped after each part (drop()), so the heap holds one part's glyph tables,
+    // never the whole face's (the face's 128 KB ran out at the last part on the watch, #217)
     var atlases as Dictionary = {};
-    var used as Dictionary = {}; // the fonts the frame being drawn uses
     var icons as Graphics.BitmapReference or Graphics.BitmapType or Null = null;
 
     // a font: its atlas (8-bit alpha, white), glyphs, boxes and baseline (AuraFontTable, tools/fonts.py); or, for the
     // small straight texts, [the Connect IQ font, baseline]
     function atlas(key as String) as Array {
-        used[key] = true;
         var a = atlases[key];
         if (a == null) {
             var t = AuraFontTable.atlas(key);
@@ -48,15 +48,18 @@ module AuraDraw {
         return icons;
     }
 
-    // drop the loaded fonts (the graphics pool may purge them; they reload on the next draw)
+    // the face hidden: drop the icons and the dial's cache (the graphics pool may purge them; they reload on the next draw)
     function release() as Void {
-        releaseFonts();
+        drop();
+        icons = null;
         AuraDials.release();
     }
 
-    function releaseFonts() as Void {
-        atlases = {};
-        icons = null;
+    // a part is drawn: its fonts go (they load again when a part needs them)
+    function drop() as Void {
+        if (atlases.size() > 0) {
+            atlases = {};
+        }
     }
 
     function argb(col as Number, alpha as Float) as Number {
@@ -249,27 +252,28 @@ module AuraDraw {
         // the dial (cached), cut by the halo, then the sweep (not cut), then the content (SPEC.md §4 z-order)
         if (AuraDials.draw(dc, m)) {
             new AuraHalo(m).paint(dc, m);
+            drop();
         }
         AuraDials.sweep(dc, m);
         date(dc, m);
+        drop();
         topField(dc, m);
+        drop();
         time(dc, m);
+        drop();
         sides(dc, m);
+        drop();
         value(dc, m);
+        drop();
         sparkline(dc, m);
         chipRow(dc, m);
+        drop();
         message(dc, m);
+        drop();
         bottomFields(dc, m);
+        drop();
         stroke(dc, 0x121214, 1.0, 1);
         dc.drawCircle(cx, cy, 194.5);
-        // keep only the fonts this frame used (the sizes change with the rows: the others would pile up in the heap)
-        var ks = atlases.keys();
-        for (var i = 0; i < ks.size(); i++) {
-            if (used[ks[i]] == null) {
-                atlases.remove(ks[i]);
-            }
-        }
-        used = {};
     }
 
     function date(dc as Dc, m as AuraModel) as Void {

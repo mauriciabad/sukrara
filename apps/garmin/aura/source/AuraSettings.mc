@@ -43,6 +43,7 @@ module AuraSettings {
 
     function set(spec as Array, value as Number or Boolean) as Void {
         Properties.setValue(spec[0] as String, value);
+        AuraWatch.changed();
     }
 
     // the label of a setting's current value
@@ -58,7 +59,7 @@ module AuraSettings {
 class AuraSettingsMenu extends WatchUi.Menu2 {
     function initialize() {
         Menu2.initialize({:title => Rez.Strings.AppName});
-        var all = SettingsSpec.ALL;
+        var all = SettingsSpec.ALL();
         for (var i = 0; i < all.size(); i++) {
             var spec = all[i] as Array;
             if (spec[1] == null) {
@@ -80,7 +81,7 @@ class AuraSettingsDelegate extends WatchUi.Menu2InputDelegate {
 
     function onSelect(item as WatchUi.MenuItem) as Void {
         var i = item.getId() as Number;
-        var spec = SettingsSpec.ALL[i] as Array;
+        var spec = SettingsSpec.ALL()[i] as Array;
         if (spec[1] == null) {
             AuraSettings.set(spec, (item as WatchUi.ToggleMenuItem).isEnabled());
             WatchUi.requestUpdate();

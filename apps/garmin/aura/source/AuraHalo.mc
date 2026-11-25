@@ -132,12 +132,14 @@ class AuraHalo {
         for (var i = 0; i < cs.size(); i++) {
             AuraDraw.text(dc, tk, AuraMath.r1(t0 + m.txs[i]), AuraMath.r1(m.tBase), cs[i].toString(), black, Graphics.TEXT_JUSTIFY_CENTER);
         }
+        AuraDraw.drop(); // one font's glyph table in the heap at a time (#217)
         if (m.valueOn) {
             var vk = "v" + m.V.toString() + "h";
             cs = m.vStr.toCharArray();
             for (var i = 0; i < cs.size(); i++) {
                 AuraDraw.text(dc, vk, AuraMath.r1(m.x0 + m.vxs[i]), AuraMath.r1(m.vBase), cs[i].toString(), black, Graphics.TEXT_JUSTIFY_CENTER);
             }
+            AuraDraw.drop();
         }
         if (m.arrowD) {
             // the arrow's polygons grown 6.5 px: filled, every edge a 13 px line with round ends
@@ -187,6 +189,7 @@ class AuraHalo {
         // the date along its arc (r 160, over the top, glyph tops outward: capitals, accents above)
         var da = (AuraDraw.arcWidth("d26", m.dateWd, 2) + AuraDraw.arcWidth("d26b", m.dateDay, 2) +
             AuraDraw.arcWidth("d26", m.dateMo, 2)) / 2 + 5.5;
+        AuraDraw.drop();
         da = da / 160 * 180 / Math.PI;
         band(dc, 160 + 9.5, 19 + 11, -da, da);
         // the bottom fields along theirs (r 172, counter-clockwise from 232°, tops inward); icons centred on r 164

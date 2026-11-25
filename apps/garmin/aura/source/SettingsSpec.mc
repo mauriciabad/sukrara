@@ -6,39 +6,73 @@ import Toybox.Lang;
 
 module SettingsSpec {
     // the options more than one setting offers
-    const OPTIONS_0 = ["tir", "treatment", "steps", "floors", "calories", "intensity", "pushes", "heart", "bodyBattery", "stress", "spo2", "respiration", "sleep", "recovery", "weather", "temperature", "highLow", "forecast1", "forecast2", "forecast3", "sunrise", "sunset", "pressure", "altitude", "date", "weekday", "tz2", "events", "battery", "solar", "notifications", "training", "vo2Run", "vo2Bike", "runWeek", "bikeWeek", "race5k", "race10k", "raceHalf", "raceMarathon", "pace5k", "pace10k", "paceHalf", "paceMarathon", "golf", "none"];
+    function OPTIONS_0() as Array {
+        return ["tir", "treatment", "steps", "floors", "calories", "intensity", "pushes", "heart", "bodyBattery", "stress", "spo2", "respiration", "sleep", "recovery", "weather", "temperature", "highLow", "forecast1", "forecast2", "forecast3", "sunrise", "sunset", "pressure", "altitude", "date", "weekday", "tz2", "events", "battery", "solar", "notifications", "training", "vo2Run", "vo2Bike", "runWeek", "bikeWeek", "race5k", "race10k", "raceHalf", "raceMarathon", "pace5k", "pace10k", "paceHalf", "paceMarathon", "golf", "none"];
+    }
     // the options more than one setting offers
-    const OPTIONS_1 = ["battery", "sensor", "level", "none"];
+    function OPTIONS_1() as Array {
+        return ["battery", "sensor", "level", "none"];
+    }
     // Sukrara Aura: the dial, the aura of your glucose (SPEC.md §6.12)
-    const DIAL = ["dial", ["grain", "black", "map", "contours", "waterline", "lasers", "glow"], "grain"];
+    function DIAL() as Array {
+        return ["dial", ["grain", "black", "map", "contours", "waterline", "lasers", "glow"], "grain"];
+    }
     // Sukrara Aura: where the dial stops short of the texts (§6.13)
-    const HALO = ["halo", ["outline", "box", "none"], "outline"];
+    function HALO() as Array {
+        return ["halo", ["outline", "box", "none"], "outline"];
+    }
     // Sukrara Aura: the trend beside the value, Sukrara's arrow or the last hours (§6.5)
-    const TREND = ["trend", ["arrow", "spark"], "spark"];
+    function TREND() as Array {
+        return ["trend", ["arrow", "spark"], "spark"];
+    }
     // Sukrara Aura: the seconds sweep at the rim (§6.11)
-    const SECONDS = ["seconds", null, true];
+    function SECONDS() as Array {
+        return ["seconds", null, true];
+    }
     // Sukrara Aura: green in range (value, bead, dial)
-    const RANGE_COLOUR = ["rangeColour", null, true];
+    function RANGE_COLOUR() as Array {
+        return ["rangeColour", null, true];
+    }
     // Sukrara Aura: the first field under the date (§6.2)
-    const TOP_FIELD = ["topField", OPTIONS_0, "steps"];
+    function TOP_FIELD() as Array {
+        return ["topField", OPTIONS_0(), "steps"];
+    }
     // Sukrara Aura: the second field under the date, beside the first (§6.2)
-    const TOP_FIELD2 = ["topField2", OPTIONS_0, "none"];
+    function TOP_FIELD2() as Array {
+        return ["topField2", OPTIONS_0(), "none"];
+    }
     // Sukrara Aura: the first bottom field (§6.10)
-    const FIELD1 = ["field1", OPTIONS_0, "tir"];
+    function FIELD1() as Array {
+        return ["field1", OPTIONS_0(), "tir"];
+    }
     // Sukrara Aura: the second bottom field (§6.10)
-    const FIELD2 = ["field2", OPTIONS_0, "treatment"];
+    function FIELD2() as Array {
+        return ["field2", OPTIONS_0(), "treatment"];
+    }
     // Sukrara Aura: the left side element, the watch battery, the sensor's days, the glucose rail or nothing (§6.8-6.9b)
-    const SIDE_L = ["sideL", OPTIONS_1, "battery"];
+    function SIDE_L() as Array {
+        return ["sideL", OPTIONS_1(), "battery"];
+    }
     // Sukrara Aura: the right side element, the same choices (§6.8-6.9b)
-    const SIDE_R = ["sideR", OPTIONS_1, "level"];
+    function SIDE_R() as Array {
+        return ["sideR", OPTIONS_1(), "level"];
+    }
     // Sukrara Aura: the battery label, days, percent or both (§6.9)
-    const BATT_LABEL = ["battLabel", ["days", "percent", "both"], "days"];
+    function BATT_LABEL() as Array {
+        return ["battLabel", ["days", "percent", "both"], "days"];
+    }
     // Sukrara Aura: private, the value hidden until you touch and hold the face (§8)
-    const PRIVATE = ["private", null, false];
+    function PRIVATE() as Array {
+        return ["private", null, false];
+    }
     // Sukrara Aura: the second time zone's city (the field tz2)
-    const TZ2 = ["tz2", ["UTC", "LON", "LIS", "MAD", "PAR", "BER", "ATH", "CAI", "IST", "MOW", "DXB", "DEL", "BKK", "SIN", "HKG", "SHA", "TYO", "SEL", "SYD", "AKL", "HNL", "ANC", "LAX", "DEN", "MEX", "CHI", "NYC", "BOG", "SCL", "BUE", "SAO", "LOS", "JNB"], "NYC"];
+    function TZ2() as Array {
+        return ["tz2", ["UTC", "LON", "LIS", "MAD", "PAR", "BER", "ATH", "CAI", "IST", "MOW", "DXB", "DEL", "BKK", "SIN", "HKG", "SHA", "TYO", "SEL", "SYD", "AKL", "HNL", "ANC", "LAX", "DEN", "MEX", "CHI", "NYC", "BOG", "SCL", "BUE", "SAO", "LOS", "JNB"], "NYC"];
+    }
 
-    const ALL = [DIAL, HALO, TREND, SECONDS, RANGE_COLOUR, TOP_FIELD, TOP_FIELD2, FIELD1, FIELD2, SIDE_L, SIDE_R, BATT_LABEL, PRIVATE, TZ2];
+    function ALL() as Array {
+        return [DIAL(), HALO(), TREND(), SECONDS(), RANGE_COLOUR(), TOP_FIELD(), TOP_FIELD2(), FIELD1(), FIELD2(), SIDE_L(), SIDE_R(), BATT_LABEL(), PRIVATE(), TZ2()];
+    }
 
     // the setting's title (resource string set_<key>)
     function title(key as String) as ResourceId {

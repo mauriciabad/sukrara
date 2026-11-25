@@ -7,11 +7,17 @@ import Toybox.Lang;
 (:background :glance)
 module SettingsSpec {
     // Sukrara (watch app): Sparkline on alerts, the app's alert screen draws Aura's sparkline beside the value (off: the value and arrow, bigger; SPEC §7)
-    const ALERT_SPARK = ["alertSpark", null, true];
+    function ALERT_SPARK() as Array {
+        return ["alertSpark", null, true];
+    }
     // Sukrara (watch app): Log complication shows, the time since the watch's last treatment, its amount or both (SPEC §10)
-    const LOG_SLOT = ["logSlot", ["since", "amount", "both"], "since"];
+    function LOG_SLOT() as Array {
+        return ["logSlot", ["since", "amount", "both"], "since"];
+    }
 
-    const ALL = [ALERT_SPARK, LOG_SLOT];
+    function ALL() as Array {
+        return [ALERT_SPARK(), LOG_SLOT()];
+    }
 
     // the setting's title (resource string set_<key>)
     function title(key as String) as ResourceId {

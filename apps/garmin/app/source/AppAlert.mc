@@ -371,7 +371,7 @@ class AlertView extends WatchUi.View {
             return;
         }
         var g = new AppG();
-        var sp = Application.Properties.getValue(SettingsSpec.ALERT_SPARK[0] as String);
+        var sp = Application.Properties.getValue(SettingsSpec.ALERT_SPARK()[0] as String);
         AppAlert.draw(g, AppInput.build(now, true), item as Dictionary, sp != false, sel);
         _g = g;
     }

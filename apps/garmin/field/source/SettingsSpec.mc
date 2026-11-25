@@ -6,9 +6,13 @@ import Toybox.Lang;
 
 module SettingsSpec {
     // Sukrara data field: Record glucose, the value written into the activity's file every minute so Garmin Connect charts it (SPEC §13.5: on by default)
-    const RECORD = ["record", null, true];
+    function RECORD() as Array {
+        return ["record", null, true];
+    }
 
-    const ALL = [RECORD];
+    function ALL() as Array {
+        return [RECORD()];
+    }
 
     // the setting's title (resource string set_<key>)
     function title(key as String) as ResourceId {

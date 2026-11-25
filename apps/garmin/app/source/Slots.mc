@@ -116,14 +116,15 @@ module Slots {
 
     // what the Log complication shows (the watch setting Log complication shows: since / amount / both)
     function logShows() as String {
+        var spec = SettingsSpec.LOG_SLOT();
         var i = null;
         try {
-            i = Application.Properties.getValue(SettingsSpec.LOG_SLOT[0] as String);
+            i = Application.Properties.getValue(spec[0] as String);
         } catch (e) {
             i = null;
         }
-        var values = SettingsSpec.LOG_SLOT[1] as Array<String>;
-        return i instanceof Number && i >= 0 && i < values.size() ? values[i] : SettingsSpec.LOG_SLOT[2] as String;
+        var values = spec[1] as Array<String>;
+        return i instanceof Number && i >= 0 && i < values.size() ? values[i] : spec[2] as String;
     }
 
     // THE WATCH'S LAST TREATMENT (SPEC §8, the card's own rule: payload `last`): the first step of the chain still

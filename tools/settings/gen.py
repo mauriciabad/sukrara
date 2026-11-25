@@ -160,15 +160,17 @@ def const_mc(key):
 
 
 def monkeyc(schema, app="aura"):
-    """SettingsSpec.mc: each Garmin setting of [app] as [stored key, option values (null for a bool), default]. The
-    watch app's is read by its background and glance too."""
+    """SettingsSpec.mc: each Garmin setting of [app] as a function returning [stored key, option values (null for a
+    bool), default]. Functions, not consts: a module's consts are built on its first use and kept for the app's life
+    (the face's ~4 KB of them filled its 128 KB, #217); a function's array goes as soon as it's read. The watch app's
+    is read by its background and glance too."""
     L = ["// " + l for l in HEADER.splitlines()]
     L += ["// " + NOTE, "import Toybox.Lang;", ""]
     if app == "app":
         L.append("(:background :glance)")
     L.append("module SettingsSpec {")
     rows = garmin_rows(schema, app)
-    # an option list several settings share is one array (the face's heap, #217): the fields' 46 options in four slots
+    # an option list several settings share is written once (code size): the fields' 46 options in four settings
     lists = [s["values"] for s in rows if s["type"] != "bool"]
     shared = []
     for v in lists:
@@ -176,15 +178,21 @@ def monkeyc(schema, app="aura"):
             shared.append(v)
     for n, v in enumerate(shared):
         L.append("    // the options more than one setting offers")
-        L.append("    const OPTIONS_%d = [%s];" % (n, ", ".join(sstr(x) for x in v)))
+        L.append("    function OPTIONS_%d() as Array {" % n)
+        L.append("        return [%s];" % ", ".join(sstr(x) for x in v))
+        L.append("    }")
     for s in rows:
         g = s["garmin"]
-        vals = "null" if s["type"] == "bool" else "OPTIONS_%d" % shared.index(s["values"]) if s["values"] in shared else "[%s]" % ", ".join(sstr(v) for v in s["values"])
+        vals = "null" if s["type"] == "bool" else "OPTIONS_%d()" % shared.index(s["values"]) if s["values"] in shared else "[%s]" % ", ".join(sstr(v) for v in s["values"])
         d = ("true" if s["default"] else "false") if s["type"] == "bool" else sstr(s["default"])
         L.append("    // %s" % s["label"])
-        L.append("    const %s = [%s, %s, %s];" % (const_mc(g["key"]), sstr(g["key"]), vals, d))
+        L.append("    function %s() as Array {" % const_mc(g["key"]))
+        L.append("        return [%s, %s, %s];" % (sstr(g["key"]), vals, d))
+        L.append("    }")
     L.append("")
-    L.append("    const ALL = [%s];" % ", ".join(const_mc(s["garmin"]["key"]) for s in rows))
+    L.append("    function ALL() as Array {")
+    L.append("        return [%s];" % ", ".join(const_mc(s["garmin"]["key"]) + "()" for s in rows))
+    L.append("    }")
     L.append("")
     L.append("    // the setting's title (resource string set_<key>)")
     L.append("    function title(key as String) as ResourceId {")

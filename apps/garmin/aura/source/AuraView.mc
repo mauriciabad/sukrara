@@ -175,7 +175,7 @@ class AuraDelegate extends WatchUi.WatchFaceDelegate {
     }
 
     function onPress(e as WatchUi.ClickEvent) as Boolean {
-        if (!AuraSettings.flag(SettingsSpec.PRIVATE)) {
+        if (!AuraSettings.flag(SettingsSpec.PRIVATE())) {
             return false; // not ours: the watch keeps its own hold
         }
         AuraWatch.revealUntil = System.getTimer() + AuraWatch.REVEAL_MS;

@@ -48,6 +48,7 @@ class AuraApp extends Application.AppBase {
     // the Connect IQ app changed a setting
     function onSettingsChanged() as Void {
         if (face) {
+            AuraWatch.changed();
             WatchUi.requestUpdate();
         }
     }

@@ -247,7 +247,7 @@ lose the simulator, and the harness restarts it. So the `garmin` job, which `gat
 fixed set of 21 (`AURA_CASES` in checks.yml; 2026-11-17: 3.5 min in the simulator, 5 min for the job): the safety states (LO, HI, no readings, old, very low, extremely high,
 muted, sensor ended, phone lost), one case per dial, always-on, private and Spanish. It checks their numbers against
 `expect.json`, the battery label against every row, and each case's picture; it also builds the store package, which
-compiles every watch of the manifest. `garmin-all` runs only on `gh workflow run checks.yml --ref next -f full=true`,
+compiles every watch of the manifest, and holds the face's peak memory to its budget (`face_memory.py`, ~2 min). `garmin-all` runs only on `gh workflow run checks.yml --ref next -f full=true`,
 after `garmin` and outside `gate` (180-minute timeout): a matrix with one job per watch of `apps/garmin/aura/manifest.xml`
 (`garmin-sdk.sh plan`'s `devices-json`), every case on the Descent, the fixed set (`AURA_GATE_CASES`) on the others
 (artifacts `garmin-test-all-<watch>`). Both jobs start from `.github/actions/garmin` (packages, SDK, device files, cache).
@@ -410,6 +410,7 @@ face signed with the same key, and the store app is tied to it. `CIQ_KEY` points
 | Store packages (`.iq`, signed with the store key, verified) and sideload zips | `tools/release/garmin-release.sh <aura\|app\|field> <version>` (public) or `<app> --beta` (the beta app id); `garmin-release.sh sdk` the SukraraFace barrel → `apps/garmin/bin/dist/`; the listings: `apps/garmin/<app>/store`, images `node assets/brand/sukrara/connectiq/render.mjs`; uploading: [docs/20 › the owner's steps](20-publishing.md#connect-iq-store-the-owners-steps) |
 | The face's words against `words.json` | `python3 apps/garmin/aura/tools/garmin_test.py words` |
 | The phone link's tests (simulator) | `apps/garmin/tools/link-test.sh aura` |
+| The face's peak memory against its budget (simulator, its 128 KB) | `python3 apps/garmin/aura/tools/face_memory.py` ([apps/garmin/aura/README.md › Memory](../apps/garmin/aura/README.md#memory)) |
 | Numbers and pictures of every case (simulator) | `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/aura/tools/garmin_test.py run <dir> [<core refs>]` |
 | References without the dial, halo, sweep | `node apps/garmin/aura/tools/core_refs.mjs <dir>` (Chrome, like `tools/watchface/build.mjs`) |
 | Fonts and icons | `uv run apps/garmin/aura/tools/fonts.py` (`--check`) |

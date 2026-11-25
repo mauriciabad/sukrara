@@ -114,19 +114,40 @@ module AuraWatch {
         return v == true ? 1 : v == false ? 0 : 9;
     }
 
+    // The settings as the face uses them, read again only when one changes (changed(): the Connect IQ app, the watch's
+    // Customize menu): reading builds every option list (SettingsSpec), too much for every frame.
+    var _set as Array? = null;
+
+    function changed() as Void {
+        _set = null;
+    }
+
     function settings(i as AuraInput) as Void {
-        i.dial = AuraSettings.option(SettingsSpec.DIAL);
-        i.halo = AuraSettings.option(SettingsSpec.HALO);
-        i.trendStyle = AuraSettings.option(SettingsSpec.TREND);
-        i.seconds = AuraSettings.flag(SettingsSpec.SECONDS);
-        i.rangeColour = AuraSettings.flag(SettingsSpec.RANGE_COLOUR);
-        i.topField = AuraSettings.option(SettingsSpec.TOP_FIELD);
-        i.topField2 = AuraSettings.option(SettingsSpec.TOP_FIELD2);
-        i.fields = [AuraSettings.option(SettingsSpec.FIELD1), AuraSettings.option(SettingsSpec.FIELD2)];
-        i.battLabel = AuraSettings.option(SettingsSpec.BATT_LABEL);
-        i.sideL = AuraSettings.option(SettingsSpec.SIDE_L);
-        i.sideR = AuraSettings.option(SettingsSpec.SIDE_R);
-        i.privacy = AuraSettings.flag(SettingsSpec.PRIVATE) ? "private" : "open";
+        if (_set == null) {
+            _set = [
+                AuraSettings.option(SettingsSpec.DIAL()), AuraSettings.option(SettingsSpec.HALO()),
+                AuraSettings.option(SettingsSpec.TREND()), AuraSettings.flag(SettingsSpec.SECONDS()),
+                AuraSettings.flag(SettingsSpec.RANGE_COLOUR()), AuraSettings.option(SettingsSpec.TOP_FIELD()),
+                AuraSettings.option(SettingsSpec.TOP_FIELD2()),
+                [AuraSettings.option(SettingsSpec.FIELD1()), AuraSettings.option(SettingsSpec.FIELD2())],
+                AuraSettings.option(SettingsSpec.BATT_LABEL()), AuraSettings.option(SettingsSpec.SIDE_L()),
+                AuraSettings.option(SettingsSpec.SIDE_R()), AuraSettings.flag(SettingsSpec.PRIVATE()) ? "private" : "open",
+                AuraZones.city(AuraSettings.number(SettingsSpec.TZ2())),
+            ];
+        }
+        var s = _set as Array;
+        i.dial = s[0] as String;
+        i.halo = s[1] as String;
+        i.trendStyle = s[2] as String;
+        i.seconds = s[3] as Boolean;
+        i.rangeColour = s[4] as Boolean;
+        i.topField = s[5] as String;
+        i.topField2 = s[6] as String;
+        i.fields = s[7] as Array;
+        i.battLabel = s[8] as String;
+        i.sideL = s[9] as String;
+        i.sideR = s[10] as String;
+        i.privacy = s[11] as String;
     }
 
     // THE SEAM: Sukrara's reading, aged by the watch clock
@@ -195,7 +216,7 @@ module AuraWatch {
                 var fc = days != null && days.size() > d ? days[d] : null;
                 i.vals[k] = fc == null ? null : {"hi" => temp(fc.highTemperature, hotF), "lo" => temp(fc.lowTemperature, hotF), "sky" => sky(fc.condition)};
             } else if (k.equals("tz2")) {
-                var z = AuraZones.city(AuraSettings.number(SettingsSpec.TZ2));
+                var z = (_set as Array)[12] as Array; // settings() ran
                 i.tz2Label = z[0] as String;
                 i.vals[k] = null;
                 try {
@@ -251,19 +272,19 @@ module AuraWatch {
 }
 
 // The second time zone's cities (SPEC.md §11): code, latitude, longitude. Gregorian.localMoment takes the zone and its
-// daylight saving from the place (the watch's own Alternate Time Zones aren't open to Connect IQ).
+// daylight saving from the place (the watch's own Alternate Time Zones aren't open to Connect IQ). Built per call, not a
+// const: a module's consts stay in the heap from their first use (2.4 KB, #217); the face reads it when its settings do.
 module AuraZones {
-    const CITIES = [
-        ["UTC", 51.48, 0.0], ["LON", 51.51, -0.13], ["LIS", 38.72, -9.14], ["MAD", 40.42, -3.70], ["PAR", 48.86, 2.35],
-        ["BER", 52.52, 13.40], ["ATH", 37.98, 23.73], ["CAI", 30.04, 31.24], ["IST", 41.01, 28.98], ["MOW", 55.76, 37.62],
-        ["DXB", 25.20, 55.27], ["DEL", 28.61, 77.21], ["BKK", 13.76, 100.50], ["SIN", 1.35, 103.82], ["HKG", 22.32, 114.17],
-        ["SHA", 31.23, 121.47], ["TYO", 35.68, 139.69], ["SEL", 37.57, 126.98], ["SYD", -33.87, 151.21], ["AKL", -36.85, 174.76],
-        ["HNL", 21.31, -157.86], ["ANC", 61.22, -149.90], ["LAX", 34.05, -118.24], ["DEN", 39.74, -104.99],
-        ["MEX", 19.43, -99.13], ["CHI", 41.88, -87.63], ["NYC", 40.71, -74.01], ["BOG", 4.71, -74.07],
-        ["SCL", -33.45, -70.67], ["BUE", -34.60, -58.38], ["SAO", -23.55, -46.63], ["LOS", 6.52, 3.38], ["JNB", -26.20, 28.05],
-    ];
-
     function city(i as Number) as Array {
-        return CITIES[i >= 0 && i < CITIES.size() ? i : 26] as Array;
+        var all = [
+            ["UTC", 51.48, 0.0], ["LON", 51.51, -0.13], ["LIS", 38.72, -9.14], ["MAD", 40.42, -3.70], ["PAR", 48.86, 2.35],
+            ["BER", 52.52, 13.40], ["ATH", 37.98, 23.73], ["CAI", 30.04, 31.24], ["IST", 41.01, 28.98], ["MOW", 55.76, 37.62],
+            ["DXB", 25.20, 55.27], ["DEL", 28.61, 77.21], ["BKK", 13.76, 100.50], ["SIN", 1.35, 103.82], ["HKG", 22.32, 114.17],
+            ["SHA", 31.23, 121.47], ["TYO", 35.68, 139.69], ["SEL", 37.57, 126.98], ["SYD", -33.87, 151.21], ["AKL", -36.85, 174.76],
+            ["HNL", 21.31, -157.86], ["ANC", 61.22, -149.90], ["LAX", 34.05, -118.24], ["DEN", 39.74, -104.99],
+            ["MEX", 19.43, -99.13], ["CHI", 41.88, -87.63], ["NYC", 40.71, -74.01], ["BOG", 4.71, -74.07],
+            ["SCL", -33.45, -70.67], ["BUE", -34.60, -58.38], ["SAO", -23.55, -46.63], ["LOS", 6.52, 3.38], ["JNB", -26.20, 28.05],
+        ];
+        return all[i >= 0 && i < all.size() ? i : 26] as Array;
     }
 }
