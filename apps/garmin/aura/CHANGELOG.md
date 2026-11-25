@@ -4,6 +4,12 @@ Each release of Sukrara Aura (GitHub tag `aura-v<version>`), newest first: `tool
 from the [change files](../../../changes/README.md) that name it. Up to 0.17.1 every Sukrara app shared one version and one
 [changelog](../../../CHANGELOG.md).
 
+## 0.18.1 — 2026-11-25
+
+- **Sukrara Aura stays on the watch**: it could run out of memory, and the watch then put its own face back (a few
+  times a day on a Descent Mk3 43, more with weather, the second time zone or the sensor rail shown). It now leaves
+  about a tenth of a watch face's memory free, and a test keeps it so ([#217](https://github.com/mauriciabad/sukrara/issues/217)).
+
 ## 0.18.0 — 2026-11-24
 
 - **When the phone and the watch speak different versions, Sukrara says which to update**: a watch app that can't
