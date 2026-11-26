@@ -1,5 +1,5 @@
 {
-  "about": "THE registry of Sukrara's apps, one per store listing, each with its own version (docs/48-release-versioning.md). 'version': where the app's version lives (a VERSION file, or a Connect IQ manifest's <iq:application> / <iq:barrel> version); versionCode / CFBundleVersion = major*1000000 + minor*1000 + patch of it. 'tag': the prefix of its git tags and GitHub releases (<tag><version>; Android keeps the plain 'v' every installed GitHub build's updater reads). 'latest': the one app whose GitHub release is GitHub's Latest (Obtainium and IzzyOnDroid take its APK). 'changelog': its own CHANGELOG.md, written from the change files (changes/*.md) at each release. 'paths' (minus 'exclude'): the files whose change concerns it (check `changes`: a change there without a change file naming the app gets a NOTE). 'channels': where tools/release/release.py publishes it. 'garmin': its entry in contracts/watchface/payload/apps.json. 'mentions': files that link one of its release's files, and the pattern each one has ({tag} and {version} are the app's): the release rewrites them to the new release.",
+  "about": "THE registry of Sukrara's apps, one per store listing, each with its own version (docs/48-release-versioning.md). 'version': where the app's version lives (a VERSION file, or a Connect IQ manifest's <iq:application> / <iq:barrel> version); versionCode / CFBundleVersion = major*1000000 + minor*1000 + patch of it. 'tag': the prefix of its git tags and GitHub releases (<tag><version>; Android keeps the plain 'v' every installed GitHub build's updater reads). 'latest': the one app whose GitHub release is GitHub's Latest (Obtainium and IzzyOnDroid take its APK). 'changelog': its own CHANGELOG.md, written from the change files (changes/*.md) at each release. 'paths' (minus 'exclude'): the files whose change concerns it (check `changes`: a change there without a change file naming the app gets a NOTE). 'build': what its build takes from outside 'paths' (into the APK or app bundle): a release build of it is refused when one of its files ('paths' minus 'exclude', its version file kept) or of these differs from its release commit, and only then (tools/release/build-info.sh), so other apps' commits since don't hold it back. 'channels': where tools/release/release.py publishes it. 'garmin': its entry in contracts/watchface/payload/apps.json. 'mentions': files that link one of its release's files, and the pattern each one has ({tag} and {version} are the app's): the release rewrites them to the new release.",
   "apps": [
     {
       "id": "android",
@@ -10,6 +10,7 @@
       "changelog": "apps/android/CHANGELOG.md",
       "paths": ["apps/android/"],
       "exclude": ["apps/android/VERSION", "apps/android/CHANGELOG.md", "apps/android/README.md", "apps/android/fastlane/"],
+      "build": ["contracts/alerts/sounds/android/"],
       "channels": ["github", "play"]
     },
     {
@@ -20,6 +21,7 @@
       "changelog": "apps/macos/CHANGELOG.md",
       "paths": ["apps/macos/"],
       "exclude": ["apps/macos/VERSION", "apps/macos/CHANGELOG.md", "apps/macos/README.md", "apps/macos/AppStore/whats-new/"],
+      "build": ["contracts/alerts/sounds/mac/", "assets/brand/sukrara/macos/"],
       "channels": ["github", "sparkle", "homebrew", "testflight", "appstore"]
     },
     {

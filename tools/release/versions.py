@@ -117,6 +117,15 @@ def concerns(app, path):
     return under(path, app["paths"]) and not under(path, app.get("exclude", []))
 
 
+def built_from(app):
+    """What the app is built from, as git pathspecs: its files ('paths' minus 'exclude', its version file kept) and
+    'build' (what its build takes from outside them). A release is built only while these are its release commit's
+    (the last commit that changed its version): tools/release/build-info.sh (Android, the Mac) and release.py --from
+    (every app). Other apps, the docs and the tools may have moved on since."""
+    return (app["paths"] + app.get("build", [])
+            + [":(exclude)" + p for p in app.get("exclude", []) if p != app["version"]])
+
+
 def is_change_file(path):
     return path.startswith(CHANGES) and path.endswith(".md") and path != CHANGES_README and "/" not in path[len(CHANGES):]
 
@@ -252,3 +261,15 @@ def with_mentions(text, pattern, app, version):
     if not n:
         raise ValueError("no %r to rewrite" % pattern)
     return out
+
+
+if __name__ == "__main__":  # python3 tools/release/versions.py built-from <app>: its pathspecs, one a line
+    import os
+    import sys
+    if len(sys.argv) != 3 or sys.argv[1] != "built-from":
+        sys.exit("usage: versions.py built-from <app>")
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", REGISTRY), encoding="utf-8") as f:
+        app = by_id(load_apps(f.read())).get(sys.argv[2])
+    if not app:
+        sys.exit("%s isn't an app of %s" % (sys.argv[2], REGISTRY))
+    print("\n".join(built_from(app)))

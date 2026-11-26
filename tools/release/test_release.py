@@ -8,6 +8,7 @@ import base64
 import datetime
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -114,7 +115,7 @@ class RegistryTest(unittest.TestCase):
         for a in APPS:
             versions.read_version(a, read(a["version"]))  # a version every source has
             self.assertTrue(read(a["changelog"]).startswith("# "), a["changelog"])
-            for p in a["paths"]:
+            for p in a["paths"] + a.get("build", []):
                 self.assertTrue(os.path.exists(os.path.join(release.ROOT, p)), p)
             for m in a.get("mentions", []):  # each is where the release rewrites it
                 versions.with_mentions(read(m["file"]), m["pattern"], a, "9.9.9")
@@ -849,6 +850,19 @@ class WorktreeGitTest(GitRepo):
         self.assertEqual(release.start_problems(r.head(), self.git(self.wt, "rev-parse", "origin/next"), r.dirty()), [])
         r.resume_check()  # no Stop: the branch isn't next
 
+    def test_resuming_needs_each_app_built_from_its_release_commit(self):
+        self.commit(self.wt, "apps/android/VERSION", "0.19.0\n")  # the release commit
+        self.commit(self.wt, "apps/garmin/aura/source/AuraDraw.mc", "fix\n")  # another app's release since
+        self.commit(self.wt, "docs/DEVELOPMENT.md", "more\n")
+        release.Release({"android": "0.19.0"}, False, apps=APPS).resume_check()  # no Stop: Android's build is the same
+        self.commit(self.wt, "apps/android/app/Main.kt", "changed\n")
+        with self.assertRaisesRegex(release.Stop, "Sukrara for Android changed since its release commit .*Main.kt"):
+            release.Release({"android": "0.19.0"}, False, apps=APPS).resume_check()
+        release.Release({"mac": "0.18.0"}, False, apps=APPS).resume_check()  # not the Mac's
+        self.commit(self.wt, "apps/garmin/shared/link/Link.mc", "changed\n")  # every Garmin app's
+        with self.assertRaisesRegex(release.Stop, "Sukrara watch app changed since"):
+            release.Release({"garmin-app": "0.18.0"}, False, apps=APPS).resume_check()
+
     def test_push_next_merges_when_next_moved_and_keeps_head_on_the_release(self):
         appcast_commit = self.commit(self.wt, "appcast.xml", "0.14.0\n")
         other = self.commit(self.main, "other.txt", "unreleased\n")  # next moved meanwhile
@@ -906,8 +920,9 @@ class WorktreeGitTest(GitRepo):
 @unittest.skipUnless(shutil.which("git"), "needs git")
 class BuildInfoTest(unittest.TestCase):
     """tools/release/build-info.sh <app>: what an app says it is. A release only from the release scripts
-    (SUKRARA_RELEASE_BUILD=1) at the app's release commit (website/public/appcast.xml aside); every other build a
-    development build, counted from the app's own last release."""
+    (SUKRARA_RELEASE_BUILD=1) when what the app is built from (apps.json 'paths' minus 'exclude', and 'build') is its
+    release commit's; other apps' commits, the docs and the tools since don't matter. Every other build a development
+    build, counted from the app's own last release."""
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
@@ -916,12 +931,19 @@ class BuildInfoTest(unittest.TestCase):
                         GIT_COMMITTER_DATE="2026-11-14T10:00:00Z")
         self.env.pop("SUKRARA_RELEASE_BUILD", None)
         os.makedirs(os.path.join(self.tmp, "tools", "release"))
-        shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), "build-info.sh"),
-                    os.path.join(self.tmp, "tools", "release"))
+        os.makedirs(os.path.join(self.tmp, "contracts", "apps"))
+        for name in ("build-info.sh", "versions.py"):
+            shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), name),
+                        os.path.join(self.tmp, "tools", "release"))
+        shutil.copy(os.path.join(release.ROOT, versions.REGISTRY),
+                    os.path.join(self.tmp, "contracts", "apps"))  # the real registry
         self.git("init", "-q")
         self.write("apps/macos/VERSION", "0.14.5\n")
+        self.write("apps/macos/Sources/App.swift", "1\n")
+        self.write("contracts/alerts/sounds/android/raw/high.ogg", "1\n")
         self.mac = self.commit("Release Sukrara for Mac 0.14.5")
         self.write("apps/android/VERSION", "0.14.5\n")
+        self.write("apps/android/app/Main.kt", "1\n")
         self.write("website/public/appcast.xml", "0.14.4\n")
         self.release = self.commit("Release Sukrara for Android 0.14.5")
 
@@ -954,7 +976,7 @@ class BuildInfoTest(unittest.TestCase):
 
     def test_each_app_counts_from_its_own_release(self):
         self.assertEqual(self.info("mac"), (0, "development 1 %s 2026-11-14" % self.release))
-        self.assertEqual(self.info("mac", release=True)[0], 1)  # the Mac's release commit is the one before
+        self.assertEqual(self.info("mac", release=True), (0, "release"))  # Android's release commit isn't the Mac's
         self.assertEqual(subprocess.run(["sh", "tools/release/build-info.sh"], cwd=self.tmp, capture_output=True,
                                         env=self.env).returncode, 2)  # which app?
 
@@ -965,20 +987,62 @@ class BuildInfoTest(unittest.TestCase):
         self.assertEqual(self.info(release=True), (0, "release"))
         self.assertEqual(self.info(), (0, "development 0 %s 2026-11-14" % feed))
 
-    def test_a_later_commit_or_a_change_is_never_a_release(self):
-        self.write("CHANGELOG.md", "more\n")
+    def test_other_apps_docs_and_tools_since_are_still_the_release(self):
+        # 0.18.0: Android and Mac waited while the Garmin apps were released; their builds hadn't changed
+        self.write("apps/garmin/aura/source/AuraDraw.mc", "fix\n")
+        self.write("apps/garmin/aura/manifest.xml", "0.18.1\n")
+        self.write("docs/DEVELOPMENT.md", "more\n")
+        self.write("tools/release/release.py", "more\n")
+        self.write("contracts/apps/formats.json", "{}\n")  # a contract the build doesn't carry
+        self.write("apps/android/README.md", "more\n")  # the app's exclude
+        self.write("apps/android/fastlane/metadata/android/en-US/changelogs/14006.txt", "next\n")
+        self.commit("Release Sukrara Aura 0.18.1")
+        self.write("apps/garmin/bin/SukraraAura.iq", "untracked\n")
+        self.assertEqual(self.info(release=True), (0, "release"))
+        self.assertEqual(self.info("mac", release=True), (0, "release"))
+        self.assertEqual(self.info(), (0, "development 1 %s 2026-11-14" % self.git("rev-parse", "--short=8", "HEAD")))
+
+    def test_a_change_to_what_the_app_is_built_from_is_never_a_release(self):
+        self.write("apps/android/app/Main.kt", "2\n")
         self.assertEqual(self.info(release=True)[0], 1)  # uncommitted
-        later = self.commit("more")
-        self.write("other.txt", "x\n")
-        self.commit("other")
+        self.assertEqual(self.info("mac", release=True), (0, "release"))  # not the Mac's
+        self.commit("more")
+        self.assertEqual(self.info(release=True)[0], 1)  # committed after the release commit
+        self.write("apps/android/app/Main.kt", "1\n")
+        self.commit("back")
+        self.assertEqual(self.info(release=True), (0, "release"))  # the same files as the release commit
+        self.write("contracts/alerts/sounds/android/raw/high.ogg", "2\n")  # 'build': into the APK
         self.assertEqual(self.info(release=True)[0], 1)
-        self.assertEqual(self.info(), (0, "development 2 %s 2026-11-14" % self.git("rev-parse", "--short=8", "HEAD")))
-        self.assertNotEqual(later, self.release)
+        self.git("checkout", "--", ".")
+        self.write("apps/android/app/New.kt", "untracked\n")
+        self.assertEqual(self.info(release=True)[0], 1)
 
     def test_outside_git_it_is_a_development_build(self):
         shutil.rmtree(os.path.join(self.tmp, ".git"))
         self.assertEqual(self.info(), (0, "development ? ? ?"))
         self.assertEqual(self.info(release=True)[0], 1)
+
+    def test_what_the_builds_take_from_outside_their_app_is_in_build(self):
+        """The release builds' outside inputs, as their scripts name them, are each under the app's 'build', so a
+        change to one is a change to the release (Gradle's repoRoot.dir(...) in main source sets, the bundle and dmg
+        scripts' repo paths)."""
+        apps = BY_ID
+        found = {"android": set(), "mac": set()}
+        for dirpath, _, names in os.walk(os.path.join(release.ROOT, "apps", "android")):
+            if "build" in dirpath.split(os.sep) or ".gradle" in dirpath:
+                continue
+            for n in names:
+                if n.endswith(".gradle.kts"):
+                    found["android"].update(re.findall(r'repoRoot\.dir\("([^"]+)"\)', open(os.path.join(dirpath, n)).read()))
+        bundle = open(os.path.join(release.ROOT, "apps/macos/Bundle/bundle.sh")).read()
+        found["mac"].update(re.findall(r'\$REPO/((?:contracts|assets)/[^"\s)]+)', bundle))
+        dmg = open(os.path.join(release.ROOT, "apps/macos/Bundle/dmg.sh")).read()
+        found["mac"].update(re.findall(r'\)/((?:contracts|assets)/[^"\s)]+)', dmg))
+        for app_id, paths in found.items():
+            self.assertTrue(paths, app_id)  # the patterns still find them
+            for p in paths:
+                self.assertTrue(any((p + "/").startswith(b) for b in apps[app_id]["build"]),
+                                "%s's build reads %s: add it to its apps.json 'build'" % (app_id, p))
 
 
 if __name__ == "__main__":

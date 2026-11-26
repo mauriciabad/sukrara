@@ -7,9 +7,13 @@
 # Info.plist SukraraBuild) and show it wherever they show their version; verify-apk.sh / verify-app.sh check it. The
 # app's release commit is the last commit that changed its version file (apps/android/VERSION, apps/macos/VERSION).
 #   release                                   only with SUKRARA_RELEASE_BUILD=1 (the release scripts set it), and then
-#                                             the source must be the app's release commit's (website/public/appcast.xml
-#                                             may differ, release.py commits it after the gate), else this refuses
-#                                             (exit 1)
+#                                             what the app is built from must be its release commit's, else this
+#                                             refuses (exit 1): its files (contracts/apps/apps.json 'paths' minus
+#                                             'exclude', its version file kept) and 'build' (what its build takes from
+#                                             outside them), nothing changed or untracked there. Other apps' commits
+#                                             since, the docs, the tools and website/public/appcast.xml (release.py
+#                                             commits it after the gate) make no other build: release.py --from gate
+#                                             releases it from a later commit (docs/48 › Built)
 #   development <commits> <commit> <date>     every other build: the commits since the app's release commit (those
 #                                             that change more than website/public/appcast.xml; "?" in a shallow
 #                                             clone), HEAD's short hash and its commit date (yyyy-mm-dd); "?" for what
@@ -32,10 +36,18 @@ base=$(git log -1 --format=%H -- "$file" 2>/dev/null || true)
 if [ "$release" = 1 ]; then
   [ -n "$base" ] || refuse "no commit changed $file"
   [ "$(git rev-parse --is-shallow-repository)" = false ] || refuse "this clone is shallow"
-  git diff --quiet "$base" -- . ':(exclude)website/public/appcast.xml' ||
-    refuse "the source differs from the release commit $(git rev-parse --short=8 "$base") ($(git diff --name-only "$base" -- . ':(exclude)website/public/appcast.xml' | head -3 | tr '\n' ' '))"
-  untracked=$(git ls-files --others --exclude-standard | head -3 | tr '\n' ' ')
-  [ -z "$untracked" ] || refuse "files git doesn't track are in the tree ($untracked)"
+  # what the app is built from, as git pathspecs, one a line
+  specs=$(python3 tools/release/versions.py built-from "$1") ||
+    refuse "contracts/apps/apps.json doesn't say what $1 is built from"
+  set -f; IFS='
+'
+  # shellcheck disable=SC2086 # one pathspec a line, no globbing
+  set -- $specs
+  unset IFS; set +f
+  git diff --quiet "$base" -- "$@" ||
+    refuse "what it is built from differs from its release commit $(git rev-parse --short=8 "$base") ($(git diff --name-only "$base" -- "$@" | head -3 | tr '\n' ' '))"
+  untracked=$(git ls-files --others --exclude-standard -- "$@" | head -3 | tr '\n' ' ')
+  [ -z "$untracked" ] || refuse "files git doesn't track are in what it is built from ($untracked)"
   echo release; exit 0
 fi
 commits="?"

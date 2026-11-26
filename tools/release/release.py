@@ -62,8 +62,9 @@ failure with what's done and what's left (resume with --from <step>; every step 
 
 --dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
                exits 1 when a check would stop the release
---from STEP    starts at STEP, gate or later (the release commit must be checked out; the versions are the apps'
-               current ones)
+--from STEP    starts at STEP, gate or later, at the release commit or a later one (next after other apps' releases):
+               the versions are the apps' current ones, and what each app is built from (apps.json 'paths' minus
+               'exclude', and 'build') must be its release commit's
 """
 import argparse
 import datetime
@@ -559,9 +560,17 @@ class Release:
         return refs.get(ref + "^{}") or refs.get(ref, "")  # an annotated tag's commit is the peeled ^{} line
 
     def resume_check(self):
-        """--from a later step: the release commit (or the appcast commit on it) checked out, nothing else changed."""
+        """--from a later step: a commit with the release's versions checked out (the release commit, or a later one:
+        next after other apps' releases), each app still built from its release commit's files (versions.built_from:
+        a change since is the next version, released anew), nothing changed besides website/public/appcast.xml."""
         for problem in resume_problems(self.dirty()):
             self.ok(False, problem)
+        for i in self.v:
+            app = self.apps[i]
+            base = self.sh(["git", "log", "-1", "--format=%H", "--", app["version"]], mutate=False)
+            changed = self.sh(["git", "diff", "--name-only", base, "--"] + versions.built_from(app), mutate=False)
+            self.ok(not changed, "%s changed since its release commit %s (%s): that's its next version, released with "
+                    "a change file, not --from" % (app["name"], base[:8], ", ".join(changed.splitlines()[:3])))
 
     def push_next(self):
         """Pushes HEAD to next. If next moved meanwhile (other work landed), merges HEAD into it instead, so main stays
@@ -765,7 +774,7 @@ class Release:
         sha = self.head()
         for i in self.v:
             self.ok(self.current_version(i) == self.v[i] or (self.dry and i in self.changelogs),
-                    "%s's version isn't %s: check out the release commit" % (i, self.v[i]))
+                    "%s's version isn't %s: check out a commit with the release's versions" % (i, self.v[i]))
         self.wait("Checks on %s" % sha[:8], lambda: self.checks_state(sha), 150 * 60)
         if self.has("mac"):
             self.check_dmg_is_the_signed_one()
@@ -1157,13 +1166,13 @@ def main(argv):
         except ValueError as e:
             sys.exit(str(e) + ("\nReleased already? Resume with --from gate (or a later step)." if "no change file" in
                                str(e) else ""))
-    else:  # the release commit is checked out: its versions are the release's
+    else:  # the release commit or a later one is checked out: its versions are the release's
         unknown = [i for i in asked if i not in current]
         if unknown:
             sys.exit("%s isn't an app of %s" % (", ".join(unknown), versions.REGISTRY))
         wrong = ["%s is %s, not %s" % (i, current[i], v) for i, v in asked.items() if v and v != current[i]]
         if wrong and not a.dry_run:
-            sys.exit("--from %s: %s (check out the release commit)" % (a.start, "; ".join(wrong)))
+            sys.exit("--from %s: %s (check out a commit with the release's versions)" % (a.start, "; ".join(wrong)))
         releases = {app["id"]: asked[app["id"]] or current[app["id"]] for app in registry if app["id"] in asked}
     rel = Release(releases, a.dry_run)
     steps = STEPS[STEPS.index(a.start):]

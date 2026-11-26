@@ -72,8 +72,8 @@ kind: fix          # fix → patch, feature → minor
 
 `tools/release/release.py` without apps lists, per app, its pending change files and the next version.
 `release.py android mac` releases those apps (`android=0.18.0` overrides a version; `--from <step>` resumes from
-`gate` on with the checked-out release commit's versions: the `version` step consumes the change files, so it is never
-re-run):
+`gate` on with the checked-out commit's versions, the release commit or a later one: the `version` step consumes the
+change files, so it is never re-run):
 
 - **preconditions**: per app a change file, a version above its current one and no tag yet, and its channels' needs
   (Play notes, App Store notes, the Connect IQ listing and store key); then every function in `RELEASE_CHECKS`, the
@@ -362,6 +362,13 @@ differs from the design above, and why:
 - The Garmin key pin no longer switches the Garmin apps on: an app is released when it is named, and
   `garmin-release.sh` still signs only with the pinned key.
 - The CHANGELOG entry is `## <version> — <date>`: no summary title (no change file owns one).
+- **A release waits without being bumped** (2026-11-26). `build-info.sh` still refused a release build unless the
+  whole repo was the app's release commit, a leftover of the one version: Android and the Mac 0.18.0 (their release
+  commit 89ac9bd6, CI red on a release test) couldn't go out after the Garmin apps' releases and fix had landed, though
+  neither app had changed. A release build now compares only what the app is built from (`versions.built_from`: its
+  `paths` minus `exclude`, its version file kept, and apps.json `build`, what its build takes from outside them), and
+  `release.py --from` refuses, for every app (the Garmin ones had no check), one whose build changed since its release
+  commit: that's its next version. Tags go on the commit the run is at, whose app files are the release commit's.
 
 ## Plan
 

@@ -118,11 +118,14 @@ Every build says what it is wherever the version shows, so nobody takes a build 
 the Mac Info.plist `SukraraBuild`):
 
 - **Release** (`release`): only with `SUKRARA_RELEASE_BUILD=1`, which only the release scripts set
-  (`android-release.sh`, `play-bundle.sh`, `mac-release.sh`, `mac-appstore.sh`), and only from the app's release
-  commit (`build-info.sh android | mac`: the last commit that changed its `VERSION` file, with no other change and no
-  untracked file; `website/public/appcast.xml` may differ: `mac-release.sh` writes it in the gate and `release.py`
-  commits it before `testflight`); anything else stops the build. About and Settings keep the version with *GitHub
-  version* / *Google Play version* / *App Store version*.
+  (`android-release.sh`, `play-bundle.sh`, `mac-release.sh`, `mac-appstore.sh`), and only while what the app is
+  built from is its release commit's (`build-info.sh android | mac`; the release commit is the last commit that changed
+  its `VERSION` file): its files (`contracts/apps/apps.json` `paths` minus `exclude`) and `build` (what its build
+  takes from outside them: the alert sounds, the Mac's icons), nothing changed or untracked there; anything else stops
+  the build. Other apps' commits since, the docs, the tools and `website/public/appcast.xml` (`mac-release.sh` writes
+  it in the gate, `release.py` commits it before `testflight`) don't make it another build, so an app waits for its
+  release while the others go out (Android and the Mac 0.18.0 after the Garmin apps'). About and Settings keep the
+  version with *GitHub version* / *Google Play version* / *App Store version*.
 - **Development** (`development <commits> <commit> <date>`): every other build: `tools/install.sh` (which unsets the
   flag), CI, Android debug builds (`development` alone, so the build cache keeps them), `swift build` / `swift test`
   (no Info.plist). About and Settings say *Development build · 0.14.5 + 23 commits · d744fd74 · 14 Nov* (Spanish
@@ -171,7 +174,9 @@ new on Android, at most 500 characters each; Fastlane's layout, which F-Droid an
 the App Store notes, `apps/macos/AppStore/whats-new/en-US/<versionCode>.txt` and `es-ES/…` (at most 4000 characters
 each; no build reads either). Then the steps, in order, each only for the apps released; each checks its result and
 stops with what's done, what's left and the `--from <step>` that resumes (every step from `gate` on can run again: it
-skips what's already there; `--from` takes the versions of the checked-out release commit):
+skips what's already there; `--from` takes the checked-out commit's versions: the release commit or a later one, such
+as `next` after other apps' releases, as long as what each app is built from is still its release commit's, else
+that's its next version, released with a change file):
 
 1. `preconditions`: a clean tree at `origin/next`, its Checks run green or still running (not awaited: a failed one
    stops the release); per app a change file, the version above its current one and no tag yet; the Play notes
