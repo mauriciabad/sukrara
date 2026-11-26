@@ -14,6 +14,17 @@
     <description>Updates of Sukrara for Mac (the GitHub and Homebrew version).</description>
     <language>en</language>
     <item>
+      <title>Sukrara 0.18.0</title>
+      <pubDate>Thu, 26 Nov 2026 01:44:51 GMT</pubDate>
+      <sparkle:version>18000</sparkle:version>
+      <sparkle:shortVersionString>0.18.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>https://github.com/mauriciabad/sukrara/releases/tag/mac-v0.18.0</sparkle:fullReleaseNotesLink>
+      <description><![CDATA[<ul><li><b>Hide the quiet-alerts warning</b>: when you turned alert sounds or banners down on purpose (the phone beside you already rings), <i>Hide warning</i> puts the warning away for exactly that. It comes back if anything else is turned down, or if you turn it back up and later down again. <i>Show warning</i> is in Settings › Alert reliability (Android) and Settings › Alerts (Mac).</li><li><b>When the phone and the watch speak different versions, Sukrara says which to update</b>: a watch app that can't read the phone's payload keeps showing the current glucose and names the app to update (Sukrara Aura under the value, the watch app with <i>Open on phone</i> to that update, the data field in its label), and the phone says it on home and on its Garmin page, with one button to that update (the Connect IQ listing, or Sukrara's own). Entries from the watch wait until both match.</li><li><b>A follower whose Sukrara and the wearer's differ says which to update</b>: on Android's home and the Mac's panel, the reason names it (<i>Update Sukrara</i>, with one button to this copy's update, or <i>Ana needs to update Sukrara</i>) over the last value, and clears itself once the readings come again. Its <i>No data</i> alarm says the same, with <i>Update</i>, and the wearer's Settings › Sharing says it on that follower's row. An invite, or a phone offering <i>Pair nearby</i>, from a Sukrara of another version says which one to update instead of failing. A wearer whose Sukrara is older than a follower's is told so on home, with <i>Update</i>.</li><li><b>An entry added while Nightscout or LibreLinkUp syncs is kept</b>: a treatment added on the Mac at the moment a round saved what it had read could be dropped; every change now reads and saves the source's log in one step.</li><li><b>Following no longer fills the memory</b> (<a href="https://github.com/mauriciabad/sukrara/issues/263"><a href="https://github.com/mauriciabad/sukrara/issues/263">#263</a></a>): a relay that answered and then closed every connection was reconnected every 2 s, and each connection stayed in memory (4.7 GB after a day and a half). Closed connections are now freed, and such a relay is retried less and less often.</li></ul>]]></description>
+      <enclosure url="https://github.com/mauriciabad/sukrara/releases/download/mac-v0.18.0/Sukrara-0.18.0.dmg" length="16787419" type="application/octet-stream"
+        sparkle:edSignature="YaQUDTkAAAaNp/qzpKSB/LbWoNXsxwC/L+NoWuqwqoDeLPyNlU2aQ4Tk9j/eaNsBqGrj4xZbDcRGTPyqAXMvAA=="/>
+    </item>
+    <item>
       <title>Sukrara 0.17.1</title>
       <pubDate>Mon, 23 Nov 2026 15:09:20 GMT</pubDate>
       <sparkle:version>17001</sparkle:version>
