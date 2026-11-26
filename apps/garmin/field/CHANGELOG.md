@@ -4,6 +4,11 @@ Each release of Sukrara data field (GitHub tag `garmin-field-v<version>`), newes
 from the [change files](../../../changes/README.md) that name it. Up to 0.17.1 every Sukrara app shared one version and one
 [changelog](../../../CHANGELOG.md).
 
+## 0.18.1 — 2026-11-26
+
+- **0.18.0 on the Connect IQ store**: its upload there didn't go through, and the store takes each version number only
+  once, so 0.18.0's changes reach the store as 0.18.1. Nothing else changed.
+
 ## 0.18.0 — 2026-11-24
 
 - **When the phone and the watch speak different versions, Sukrara says which to update**: a watch app that can't
