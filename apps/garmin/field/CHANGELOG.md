@@ -6,8 +6,9 @@ from the [change files](../../../changes/README.md) that name it. Up to 0.17.1 e
 
 ## 0.18.1 — 2026-11-26
 
-- **0.18.0 on the Connect IQ store**: its upload there didn't go through, and the store takes each version number only
-  once, so 0.18.0's changes reach the store as 0.18.1. Nothing else changed.
+- **Less of the watch's memory**: the field's settings and its report to the phone are no longer kept in memory
+  between updates, the change that ended Sukrara Aura's out-of-memory crashes
+  ([#217](https://github.com/mauriciabad/sukrara/issues/217)). Nothing you see changes.
 
 ## 0.18.0 — 2026-11-24
 
